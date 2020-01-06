@@ -1,0 +1,6 @@
+proc            /proc           proc    defaults          0       0
+PARTUUID=a8bf1dfc-01  /boot           vfat    defaults          0       2
+PARTUUID=a8bf1dfc-02  /               ext4    defaults,noatime  0       1
+# a swapfile is not a swap partition, no line here
+#   use  dphys-swapfile swap[on|off]  for that
+tmpfs /var/www/html/tmp/ tmpfs nodev,nosuid,size=1M 0 0

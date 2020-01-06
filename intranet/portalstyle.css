@@ -1,0 +1,105 @@
+body {
+	background-color: black;
+	color: white;	
+	text-align: center;
+	font-family: Arial;
+}
+#portal_front,#portal_svg{
+	pointer-events: none;
+}
+#portal_svg{
+	margin-top:80px;
+    animation-iteration-count: infinite;
+    display: inline-block;
+    animation-name: ckw;
+	animation-timing-function: linear;
+    animation-duration: 14.4s;
+    transform-origin: 50% 50%;
+	
+}
+#portal_svg path {
+    fill: #FFFFFF;
+}
+
+@keyframes ckw {
+    0% {
+    transform: scale(1,1.65) rotate(360deg);
+	-webkit-transform: scale(1,1.65) rotate(360deg);
+    -ms-transform: scale(1,1.65) rotate(360deg);
+    }
+    100% {
+    transform: scale(1,1.65) rotate(0deg) ;
+	-webkit-transform: scale(1,1.65) rotate(0deg) ;
+    -ms-transform: scale(1,1.65) rotate(0deg) ;
+    }
+}
+.auto_margin {
+    margin: 0 auto;
+}
+
+.button {
+	width: 55px;
+	height: 30px;
+	text-align: center;
+	font-size: 12px;
+}
+
+.table_top {
+    vertical-align: text-top;
+	text-align: left;
+}
+
+.centertop {
+    vertical-align: text-top;
+	text-align: center;
+}
+
+.button_text {
+    width: 120px;
+	height: 30px;
+	text-align: center;
+	font-size: 12px;
+}
+
+.hidden_div {
+	display: none;
+	margin: 0 auto;
+}
+
+.imageWrapper {
+	position: relative;
+}
+
+.portal_image {
+	position: absolute;
+	top: 130;
+	left:0;
+	right:0;
+	margin-left:auto;
+	margin-right:auto;
+	height: 400;
+	width: 240;
+}
+
+
+
+#custom_preview {
+	height: 400;
+	width: 240;
+}
+
+#portal_text {
+	position: absolute;
+	left:0;
+	right:0;
+	margin-left:auto;
+	margin-right:auto;
+	top: 100px;
+
+}
+
+#temp_div,#batt_div {
+	
+	font-size: 85%;
+	
+}

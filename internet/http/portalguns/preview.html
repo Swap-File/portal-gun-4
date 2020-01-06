@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<title>Portal Gun 3.1</title>
+<link rel="stylesheet" type="text/css" href="portalstyle.css">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+<div id="playlist_duo_div"> 
+<h3>Effect Previews</h3>
+<input style="width:30px" type="button" onclick="edit_change(-1)" value="<-"/>
+
+<select id="playlist_duo_select" onchange="playlist_onchange(this)">
+<optgroup label="Effects">
+<option value="4">4</option>
+<option value="19">19</option>
+<option value="20">20</option>
+<option value="21">21</option>
+<option value="22">22</option>
+<option value="23">19</option>
+<option value="24">24</option>
+<option value="25">25</option>
+<option value="26">26</option>
+<option value="27">27</option>
+<option value="28">28</option>
+<option value="29">29</option>
+<option value="30">30</option>
+<option value="31">31</option>
+<option value="32">32</option>
+<option value="33">33</option>
+<option value="34">34</option>
+<option value="35">35</option>
+<option value="36">36</option>
+<option value="37">37</option>
+</optgroup> 
+<optgroup label="Audio">
+<option value="10">10</option>
+<option value="11">11</option>
+<option value="12">12</option>
+<option value="13">13</option>
+<option value="14">14</option>
+<option value="15">15</option>
+</optgroup> 
+<optgroup label="Test">
+<option value="-1">-1</option>
+<option value="0">0</option>
+<option value="1">1</option>
+<option value="2">2</option>
+</optgroup> 
+<optgroup label="Movies">
+<option value="50">50</option>
+<option value="51">51</option>
+<option value="52">52</option>
+<option value="53">53</option>
+<option value="54">54</option>
+<option value="55">55</option>
+<option value="56">56</option>
+<option value="57">57</option>
+<option value="58">58</option>
+<option value="59">59</option>
+<option value="60">60</option>
+<option value="61">61</option>
+</optgroup>
+</select>
+
+<input style="width:30px" type="button" onclick="edit_change(1)" value="->"/>
+</div>
+<img id="custom_preview" alt="" src="">
+
+<script>
+
+//populate playlist options
+for(var i=0; i < playlist_duo_select.length; i++){
+	playlist_duo_select.options[i].text = effect_name(parseInt(playlist_duo_select.options[i].value));
+}
+
+playlist_onchange(playlist_duo_select);
+
+function playlist_onchange(thing){
+	custom_preview.src = effect_preview(thing.value);
+}
+function effect_preview(num){
+	return "assetsp/" + num + ".gif";
+}
+function edit_change(inputnum){
+	var obj = playlist_duo_select;
+	var new_index = obj.selectedIndex + inputnum;
+	if (new_index < 0){
+		new_index = obj.length - 1;
+	}
+	if (new_index >=  obj.length){ 
+		new_index = 0;
+	}
+	obj.selectedIndex = new_index;
+	playlist_onchange(obj);
+}
+function effect_name(a) {
+	switch(a) {
+	case -1:	return "RESTART";
+	case 0:		return "BLANK";
+	case 1:		return "TEST";
+	case 2:		return "TEST_CUBE";	
+	case 3:		return "CAMERA";	
+	case 4:		return "NORMAL";
+	case 10:	return "JESS";
+	case 11:	return "INFINITE";
+	case 12:	return "JAKDAW";
+	case 13:	return "OINKSIE";
+	case 14:	return "GOOM";
+	case 15:	return "GOOM2K1";
+	case 19:	return "RADIOACT";
+	case 20:	return "REV";
+	case 21:	return "AGING";
+	case 22:	return "DICE";
+	case 23:	return "WARP";
+	case 24:	return "SHAGADELIC";
+	case 25:	return "VERTIGO";
+	case 26:	return "KALEIDOSCOPE";
+	case 27:	return "MARBLE";		
+	case 28:	return "RIPPLE";
+	case 29:	return "EDGE";	
+	case 30:	return "GL_CUBE";
+	case 31:	return "GL_MIRROR";
+	case 32:	return "GL_SQUEEZE";
+	case 33:	return "GL_STRETCH";
+	case 34:	return "GL_TUNNEL";
+	case 35:	return "GL_TWIRL";
+	case 36:	return "GL_BULGE";
+	case 37:	return "GLHEAT";		
+	case 50:	return "MOVIE1";
+	case 51:	return "MOVIE2";
+	case 52:	return "MOVIE3";
+	case 53:	return "MOVIE4";
+	case 54:	return "MOVIE5";
+	case 55:	return "MOVIE6";
+	case 56:	return "MOVIE7";
+	case 57:	return "MOVIE8";		
+	case 58:	return "MOVIE9";
+	case 59:	return "MOVIE10";
+	case 60:	return "MOVIE11";
+	case 61:	return "MOVIE12";	
+	default:	return "UKNOWN";
+	}
+}
+</script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-76741703-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</body>

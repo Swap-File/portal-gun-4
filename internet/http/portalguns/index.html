@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<title>Portal Guns 3.1</title>
+<link rel="stylesheet" type="text/css" href="portalstyle.css">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+<link rel="stylesheet" type="text/css" href="datetimepicker/jquery.datetimepicker.css"/>
+<link rel="stylesheet" href="dropit/dropit.css" type="text/css" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+<script src="datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script src="dropit/dropit.js"></script>
+
+</head>
+<body>
+
+<div id="menu_div" onclick="force_menu()">
+<ul class="menu">
+<li>
+<a><i id="menu_icon" class="fa fa-chevron-down"></i></a>
+<ul>
+<li><a onclick="set_mode(1)"><i class="fa fa-home fa-fw"></i> Live Feed</a></li>
+<li><a onclick="set_mode(0)"><i class="fa fa-history fa-fw"></i> Archives</a></li>
+<li><a href="https://github.com/Swap-File/portal-gun-3"><i class="fa fa-code fa-fw"></i> View Code</a></li>
+<li><a href="preview.html"><i class="fa fa-wrench fa-fw"></i> Effects</a></li>
+<li><a href="state1.png"><i class="fa fa-wrench fa-fw"></i> States</a></li>
+<li><a href="sim.html"><i class="fa fa-wrench fa-fw"></i> Simulator</a></li>
+<li><a href="http://192.168.1.20"><i class="fa fa-wrench fa-fw"></i> Gordon (LAN)</a></li>
+<li><a href="http://192.168.1.21"><i class="fa fa-wrench fa-fw"></i> Chell (LAN)</a></li>
+</ul>
+</li>
+</ul>
+<div id="menutxt">Menu</div>
+</div>
+
+<div id="running_div" onclick="running_man_click()">
+<div class="flip_wrap">
+<div class="flipper">
+<div class="front"><img class="running_img" alt="" src="assets/2.png"></div>
+<div class="back"><img class="running_img" alt="" src="assets/1.png" ></div>
+</div>
+</div>
+<div id="loading_txt">Loading</div>
+</div>
+
+<div id="titletext">Portal Guns 3.1</div>
+<div id="subtext">Live Feed</div>
+<div id="mainpage">
+
+<div id="livepage">
+<div id="gordontxt"></div>
+<div id="gordonstats_live"></div>
+<div id="chelltxt"></div>
+<div id="chellstats_live"></div>
+</div>
+
+<div id="histpage">
+<div id="timestampdiv"></div>
+<div id="gordonstats_hist"></div>
+<div id="chellstats_hist"></div>
+<input class="histbutton" type="button" onclick="req_id(-2)" value="<<">
+<input class="histbutton" type="button" onclick="req_id(-1)" value="<">
+<input id="search_button" type="button" onclick="browser_toggle()" value= "Search">
+<input class="histbutton" type="button" onclick="req_id(1)" value= ">">
+<input class="histbutton" type="button" onclick="req_id(2)" value=">>">
+</div>
+
+<div class="portal_spacer"></div>
+<img class="portal_image" id="portal_back" alt="" src="test.jpg">
+<img class="portal_image" id="portal_front" alt="" src="mask.png">
+<svg id="portal_svg" width="240" height="240" viewBox="0 0 900 900" xmlns="http://www.w3.org/2000/svg">
+<path id="portal_svg1" d="M 756.40902,784.0783 C 616.0042,905.68214 406.7082,935.38868 255.32421,855.20018 95.456062,770.51755 -14.28054,574.63033 1.5088513,402.12233 c 0.7212765,-7.88061 9.9179217,27.56439 18.6659637,71.94121 7.144324,36.24178 13.115668,58.30906 24.861546,78.0185 6.269958,10.5211 6.05171,10.08558 4.01957,2.16031 C -39.956792,207.09946 264.09254,-88.248872 593.22907,24.359284 914.50598,134.27856 1007.3874,566.70754 756.40902,784.0783 Z m 26.3128,-101.80801 c 11.1115,-16.00214 19.61599,-29.92739 25.06045,-43.92576 3.42873,-8.81569 2.62855,-9.94171 -9.91798,4.42425 -97.29734,111.40648 -241.34032,149.46671 -369.73254,95.95989 -10.90363,-4.54408 -10.40659,-4.79062 3.83466,-1.90211 178.69635,36.24486 346.73752,-71.53617 372.99635,-239.23868 28.98311,-185.10091 -131.06343,-382.66985 -337.576,-416.719266 -15.40391,-2.539801 -15.60922,-2.237873 -1.99385,2.93177 92.94107,35.289056 159.2535,96.896116 168.65244,156.684996 1.19408,7.59634 1.00593,10.8979 -0.36128,6.337 C 621.1429,204.98718 547.70656,146.46123 479.0548,123.58889 201.7575,31.203709 19.725511,327.98554 183.57947,605.32674 c 128.859,218.10822 375.55268,273.9781 554.84391,126.02091 4.36065,-3.59853 15.70861,-14.3553 16.66543,-15.57231 5.38114,-6.84445 21.44862,-24.59842 27.63301,-33.50505 z" fill="orange" stroke-width="0" />
+<use id="use" xlink:href="#c1" />
+</svg>
+
+<div id="hist_browser">Searching for Portal Openings prior to:
+<input id="datetimepicker" type="text"><br><br>
+<div id="hist_results"></div>
+<input id="find_button" type="button"  value="Start Search" onclick="initiate_search()" >
+<input id="search_again_button" type="button"  value="Search Again" onclick="datepicker_show()" >
+</div>
+
+</div>
+<script>
+
+var set_search_time = true;
+var current_id = 0;
+var transform_support = true; //fallback to GIF if false
+var suppress_menu_close = 0; //this needs to be set before forcing open the menu
+var secret_menu_clicks = 0; //keeps track of clicks to load secret menu
+var portal_color_saved = 0; //0 is orange 1 is blue
+var running_man_orientation = 0; //spin in degrees
+var interval_obj; //keeps track of timer for reset during mode changes
+var live_mode = 1; //selects live or historical data
+
+//initial menu setup, since init portal is orange set to blue
+$(document).ready(function() {
+	//prep the menu, set init color, and hide secret items
+	$('.menu').dropit();	
+	$(".menu ul.dropit-submenu a").addClass("blue");
+	$(".menu li:eq(4)").hide();
+	$(".menu li:eq(5)").hide();
+	$(".menu li:eq(6)").hide();
+	$(".menu li:eq(7)").hide();
+	$(".menu li:eq(8)").hide();
+	//check for SVG Transform support, if none, fallback to GIF
+	getSupportedTransform();
+	//load live data  
+	request_data(-1);
+});
+function initiate_search(){
+	hist_results.innerHTML = "";
+	var searchtime = parseInt($('#datetimepicker').datetimepicker('getValue').getTime() / 1000);
+	$('#datetimepicker').datetimepicker('destroy');
+	find_button.style.display = 'none';
+	$.post('search.php', {time: searchtime}, function(data){hist_results.innerHTML = data});
+	hist_results.style.display = 'inline';
+	search_again_button.style.display = 'inline';
+}
+function datepicker_show(){
+	search_again_button.style.display = 'none';
+	find_button.style.display = 'inline';
+	hist_results.style.display = 'none';
+	if (set_search_time == true){
+		var date = Date.now();
+		$('#datetimepicker').datetimepicker({inline:true,theme:'dark',mask:true,value:date});
+		set_search_time = false;
+	}else{
+	   $('#datetimepicker').datetimepicker({inline:true,theme:'dark',mask:true});
+	}
+	$('#datetimepicker').show(); 
+}
+function browser_toggle(){
+	search_button.value = "Close";
+	if (hist_browser.style.display == 'none'){
+		datepicker_show();
+		hist_browser.style.display = 'inline';
+		portal_back.style.display = 'none';
+		portal_front.style.display = 'none';
+		portal_svg.style.display = 'none';
+	}else{
+		browser_close();
+	}
+}
+function browser_close(){
+	search_button.value = "Search";
+	hist_results.style.display = 'none';
+	$('#datetimepicker').datetimepicker('destroy');
+	$('#datetimepicker').hide();
+	hist_browser.style.display = 'none';
+	if (transform_support == true){
+		portal_svg.style.display = 'inline';
+	}
+	portal_front.style.display = 'inline';
+	portal_back.style.display = 'inline';
+	
+}
+function req_id(num){
+	browser_close();
+	$.post('history.php', {id: current_id,dir: num}, function(data) {
+		live_mode = 0;
+		current_id = parseInt(data);
+		request_data(current_id);
+	});
+}
+function id_load(num){
+	browser_close();
+	request_data(num);
+}
+function set_mode(mode_req){
+	browser_close();
+	live_mode = mode_req;
+	clearTimeout(interval_obj);
+	livepage.style.display  = 'none';  
+	histpage.style.display  = 'none';  
+	request_data(-1);
+}
+function rotate_running_man(){
+	running_man_orientation += 180;
+	$(".flipper").css("transform", "rotateY("+running_man_orientation+"deg)");
+}
+function running_man_click(){
+	rotate_running_man();
+	secret_menu_clicks++;
+	if (secret_menu_clicks == 5){
+		titletext.innerHTML = "Unlocked!"
+		$(".menu li:eq(4)").show();
+		$(".menu li:eq(5)").show();
+		$(".menu li:eq(6)").show();
+		$(".menu li:eq(7)").show();
+		$(".menu li:eq(8)").show();
+		suppress_menu_close = 1;
+		$('#menu_icon').trigger('click');
+	}
+}
+function force_menu(){
+	suppress_menu_close = 1;
+	$('#menu_icon').trigger('click');
+}
+function getSupportedTransform() {
+	var prefixes = 'transform WebkitTransform MozTransform msTransform'.split(' ');
+	var div = document.createElement('div');
+	for(var i = 0; i < prefixes.length; i++) {
+		if(div && div.style[prefixes[i]] !== undefined) {
+			transform_support = true;
+			return;
+		}
+	}
+	portal_svg.style.display = "none";
+	portal_front.src = "orange.gif"
+	transform_support = false;
+}
+function request_data(number) {
+
+	$('#loading_txt').stop(true,true).show();
+	
+	$.post('index_get.php', {id: number,live: live_mode}, function(data) {
+		var line = data.split("\t");
+
+		if (line.length == 17){
+			
+			var timestamp = line[0];
+			var id = parseInt(line[1]);
+			var synced = parseInt(line[2]);
+			
+			var g_live = parseInt(line[3]);
+			var g_time = line[4];
+			var g_lag = parseFloat(line[5]);
+			var g_volts = parseFloat(line[6]);
+			var g_temp1 = parseFloat(line[7]);
+			var g_temp2 = parseFloat(line[8]);
+			
+			var c_live = parseInt(line[9]);
+			var c_time = line[10];
+			var c_lag = parseFloat(line[11]);
+			var c_volts = parseFloat(line[12]);
+			var c_temp1 = parseFloat(line[13]);
+			var c_temp2 = parseFloat(line[14]);
+			
+			var g_state = parseFloat(line[15]);
+			var c_state = parseFloat(line[16]);
+			current_id = id;
+			timestampdiv.innerHTML = timestamp;
+			
+			if (g_live){
+				gordonstats_live.innerHTML = g_volts + "V " + g_lag + "ms " + g_temp1 + "F " + g_temp2 + "F";
+				gordonstats_hist.innerHTML = "Gordon: " + gordonstats_live.innerHTML;	
+			}else{
+				gordonstats_live.innerHTML = "Last Seen: " + g_time;
+				gordonstats_hist.innerHTML = "Gordon " + gordonstats_live.innerHTML;	
+			}
+			
+			if (c_live){
+				chellstats_live.innerHTML = c_volts + "V " + c_lag + "ms " + c_temp1 + "F " + c_temp2 + "F";
+				chellstats_hist.innerHTML = "Chell: " + chellstats_live.innerHTML;
+			}else{
+				chellstats_live.innerHTML = "Last Seen: " + c_time;
+				chellstats_hist.innerHTML = "Chell " + chellstats_live.innerHTML;
+			}
+			
+			if (synced == 1){
+				gordontxt.innerHTML = "Gordon - Synced";
+				chelltxt.innerHTML = "Chell - Synced";
+			}else{
+				if (g_live){
+					gordontxt.innerHTML = "Gordon - Online";
+				}else{
+					gordontxt.innerHTML = "Gordon - Offline";
+				}
+				if (c_live){
+					chelltxt.innerHTML = "Chell - Online";
+				}else{
+					chelltxt.innerHTML = "Chell - Offline";
+				}
+			}
+			
+			if (g_state < 0 ){
+				if (portal_color_saved != 0){
+					portal_color_saved = 0;
+					if (transform_support){
+						portal_svg1.style.fill = "#F79126";
+					}
+					else{
+						portal_front.src = "orange.gif"
+					}
+					$(".menu ul.dropit-submenu a").addClass("blue");
+					$(".menu ul.dropit-submenu a").removeClass("orange");
+				}
+				portal_back.src = "getimage.php?id=" +id;
+			}else if (c_state < 0){
+				if (portal_color_saved != 1){
+					portal_color_saved = 1;
+					if (transform_support){
+						portal_svg1.style.fill = "#16ABE3";
+					}
+					else{
+						portal_front.src = "blue.gif"
+					}
+					$(".menu ul.dropit-submenu a").addClass("orange");
+					$(".menu ul.dropit-submenu a").removeClass("blue");
+				}
+				portal_back.src = "getimage.php?id=" +id;
+			}else{
+				if (synced == 1){
+					if (portal_color_saved == 1 ){
+						portal_back.src = "assets/blue_0.jpg";
+					}else if (portal_color_saved == 0){
+						portal_back.src  = "assets/orange_0.jpg"; 
+					}
+				}else{
+					portal_back.src  = "test.jpg";
+				}				
+			}	
+			
+			if (live_mode == 1 ){
+				set_search_time = true;
+				histpage.style.display  = 'none';  
+				livepage.style.display  = 'inline'; 
+				subtext.innerHTML = "Live Feed"
+				interval_obj = setTimeout(request_data,2000,-1);
+			}else if (live_mode == 0 ){
+				livepage.style.display = 'none';  
+				histpage.style.display = 'inline'; 
+				subtext.innerHTML = "Archives"
+			}
+			rotate_running_man();
+			setTimeout(function(){
+				$( "#loading_txt" ).fadeOut("slow");
+			},300);			
+		}		
+	});
+}
+
+
+
+</script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-76741703-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</body>
+</html>

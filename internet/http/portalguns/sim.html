@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<title>Portal Gun 3.1 Simulator</title>
+<link rel="stylesheet" type="text/css" href="simstyle.css">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+<h3>Portal Gun 3.1 Simulator</h3>
+
+<div class="auto_margin">
+Gordon's Gun:<br>
+<table style="width:300px" align="center">
+<tr id="gordon_title">
+	<th>Portal</th>
+	<th>Lights</th> 
+	<th>Mode</th>
+	<th>State</th>
+</tr>
+<tr>
+	<td><div id="gordon_portal"></div></td>
+	<td><div id="gordon_leds"></div></td> 
+	<td><div id="gordon_mode"></div></td>
+	<td><div id="gordon_state"></div></td>
+</tr>
+</table>
+<div id="gordon_gun"> 
+<input type="button" class="button" id="gordon_primary_fire" value="Primary (Button 1)" onclick="button(gordon,chell,100)"/><br>
+<input type="button" class="button" id="gordon_alt_fire" value="Alt (Button 2)" onclick="button(gordon,chell,101)"/><br>
+<input type="button" class="button" id="gordon_mode_toggle" value="Mode (Button 3)" onclick="button(gordon,chell,102)"/><br>
+<input type="button" class="button" id="gordon_reset" value="Reset (Button 4)" onclick="button(gordon,chell,103)"/><br>
+</div>
+<div id="gordon_special"></div>
+<br>
+<br>
+Chell's Gun:<br>
+<table style="width:300px" align="center">
+<tr id="chell_title">
+<th>Portal</th>
+<th>Lights</th> 
+<th>Mode</th>
+<th>State</th>
+</tr>
+<tr>
+<td><div id="chell_portal"></div></td>
+<td><div id="chell_leds"></div></td> 
+<td><div id="chell_mode"></div></td>
+<td><div id="chell_state"></div></td>
+</tr>
+</table>
+<div id="chell_gun"> 
+<input type="button" class="button" id="chell_primary_fire" value="Primary (Button 1)" onclick="button(chell,gordon,100)"/><br>
+<input type="button" class="button" id="chell_alt_fire" value="Alt (Button 2)" onclick="button(chell,gordon,101)"/><br>
+<input type="button" class="button" id="chell_mode_toggle" value="Mode (Button 3)" onclick="button(chell,gordon,102)"/><br>
+<input type="button" class="button" id="chell_reset" value="Reset (Button 4)" onclick="button(chell,gordon,103)"/><br>
+</div>
+<div id="chell_special"></div>
+</div>
+<script>
+
+var MODE_SOLO = 1;
+var MODE_DUO = 2;
+var BUTTON_PRIMARY_FIRE = 100;
+var BUTTON_ALT_FIRE  = 101;
+var BUTTON_MODE_TOGGLE = 102;
+var BUTTON_RESET = 103;
+
+var recusrive_depth = 0;
+
+var gordon = { 'mode': MODE_DUO, 'state_solo': 0 ,'state_duo': 0, 'state': 0, 'state_previous': 0, 'skip_states': false};
+var chell  = { 'mode': MODE_DUO, 'state_solo': 0 ,'state_duo': 0, 'state': 0, 'state_previous': 0, 'skip_states': false};
+
+update();
+
+//state engine code copy/pasted out of C core logic
+function button(this_gun,other_gun,button){
+	recusrive_depth = 0;
+	this_gun.state_previous = this_gun.state;
+
+	
+	//button event transitions
+	if(button == BUTTON_RESET){
+		this_gun.state_solo = 0; //reset self state
+		this_gun.state_duo = 0; //reset local state
+		this_gun.skip_states = false; 
+		this_gun.mode = MODE_DUO; //reset to duo mode for common use case
+	}
+	else if(button == BUTTON_MODE_TOGGLE){
+		if (this_gun.state_solo == 0 && this_gun.state_duo == 0){//only allow mode toggle when completely off
+			if (this_gun.mode == MODE_DUO){
+				this_gun.mode = MODE_SOLO;
+			}else if (this_gun.mode == MODE_SOLO){
+				this_gun.mode = MODE_DUO;
+			}
+		}
+	}//TODO: add LONG PRESS from V2?
+	else if (button == BUTTON_PRIMARY_FIRE){
+		if (this_gun.mode == MODE_DUO){
+			//projector modes
+			if(this_gun.state_duo == 0){
+				this_gun.state_duo = 1;
+			}else if(this_gun.state_duo == 1){
+				this_gun.state_duo = 2;
+			}else if((this_gun.state_duo == 2 || this_gun.state_duo == 3) && (other_gun.state <= -3 || this_gun.skip_states)){ 	
+			    this_gun.state_duo = 4; //answer an incoming call immediately and open portal on button press
+			}else if(this_gun.state_duo == 5){ //playlist advance with closed portal
+				this_gun.state_duo = 4; //open the portal
+			}else if(this_gun.state_duo == 2 && other_gun.state > -3){ 
+				this_gun.state_duo = 3; //wait at  mode 3 for other gun
+			}
+			//camera modes
+			else if (this_gun.state_duo == -1){
+				this_gun.state_duo = -2;
+			}else if((this_gun.state_duo == -2 || this_gun.state_duo == -3) && other_gun.state >= 3 ){ 	
+			   this_gun.state_duo = -4;
+			}else if (this_gun.state_duo == -2){
+				this_gun.state_duo = -3;//wait at -3 for the other gun
+			}
+		}else if (this_gun.mode == MODE_SOLO){
+			if(this_gun.state_solo >= 0 && this_gun.state_solo < 4){
+				this_gun.state_solo++;
+			}else if(this_gun.state_solo == 4){
+				this_gun.state_solo = 3; //possibly move this to alt fire for consistency?  But then solo color change needs to be moved
+			}else if(this_gun.state_solo < 0 && this_gun.state_solo > -4){
+				this_gun.state_solo--;
+			}else if(this_gun.state_solo == -4){
+				this_gun.state_solo = -3; //possibly move this to alt fire for consistency? But then solo color change needs to be moved
+			}		
+		}
+	}
+	else if (button == BUTTON_ALT_FIRE){
+		if (this_gun.mode == MODE_DUO){
+			if (this_gun.state_duo == 0){ //start duo camera mode
+				this_gun.state_duo = -1;
+			}else if(this_gun.state_duo == 4){ //go back to closed portal for effect change 
+				this_gun.state_duo = 5;  //moved to alt fire from primary to prevent mode overrun when quickly tapping fire
+			}else if(this_gun.state_duo == -4){ //quick swap function
+				this_gun.state_duo = 4;
+			}
+		}else if (this_gun.mode == MODE_SOLO){
+			if(this_gun.state_solo == 0){ //blue solo portal open
+				this_gun.state_solo = -1;
+			}else if(this_gun.state_solo == 3 || this_gun.state_solo == 4){//solo portal color change
+				this_gun.state_solo = -3;
+			}else if(this_gun.state_solo == -3 || this_gun.state_solo == -4){//solo portal color change
+				this_gun.state_solo = 3;
+			}			
+		}
+	}
+	
+	//let the other gun isntantly reply
+	if ( Math.abs(this_gun.state_duo) > 1)	this_gun.state = this_gun.state_duo;
+	else this_gun.state = 0; 
+	other_gun_transitions(other_gun,this_gun);
+	
+	update();
+}
+
+
+function other_gun_transitions(this_gun,other_gun){
+
+	recusrive_depth = recusrive_depth + 1;
+	console.log (recusrive_depth);
+	
+	this_gun.state_previous = this_gun.state;
+
+	//other gun transitions
+	if (other_gun.state_previous != other_gun.state){
+		if (this_gun.mode == MODE_DUO){
+			if (other_gun.state == 0){
+				this_gun.state_duo = 0;
+				this_gun.skip_states = false; 
+			}else if ((other_gun.state == -2 || other_gun.state == -3) && this_gun.state_duo < 2){
+				this_gun.state_duo = 2;
+				this_gun.skip_states = true; 
+			}else if ((other_gun.state == 2 || other_gun.state == 3) && this_gun.state_duo > -2){
+				this_gun.state_duo = -2;
+			}else if (other_gun.state <= -4 && this_gun.state_duo == 3){ //special case
+				this_gun.state_duo = 4; //only bump into state 4 from 3, since 3 & 4 turn on the projector, below 3 the portal is off
+			}else if (other_gun.state >= 4 && this_gun.state_duo > -4){
+				this_gun.state_duo = -4;
+			}
+		}else if (this_gun.mode == MODE_SOLO){  //code to pull out of solo states
+			if (other_gun.state <= -3){
+				if (this_gun.state_solo <= -3 || this_gun.state_solo >= 3){
+					this_gun.state_duo = 4;  //if a portal is open, go direct to projecting
+				}else{
+					this_gun.state_duo = 2; //if a portal is closed, don't blind anyone and just go to duo mode 2
+				}			
+				this_gun.mode = MODE_DUO;
+				this_gun.state_solo = 0;
+			}
+		}
+		
+	//let the other gun isntantly reply
+	if ( Math.abs(this_gun.state_duo) > 1)	this_gun.state = this_gun.state_duo;
+	else this_gun.state = 0; 
+	other_gun_transitions(other_gun,this_gun);
+		
+	}
+}
+
+function update_portal(this_gun){
+
+	if (this_gun.state_duo == 4 || Math.abs(this_gun.state_solo) == 4) return "Open";
+	else if (this_gun.state_duo == 5 || this_gun.state_duo == 3 || Math.abs(this_gun.state_solo) == 3) return "Closed";
+	
+	return "Off"
+}		
+
+function update_lights(this_gun){
+
+	if (Math.abs(this_gun.state_duo) >= 3 || Math.abs(this_gun.state_solo) >= 3) return "Full";
+	else if (this_gun.state_duo == 0 && this_gun.state_solo == 0) return "Off";
+	
+	return "Partial";
+}
+
+function update_special(this_gun){
+
+	if (this_gun.state_duo == 5) return "Playlist Advance"; 
+	else if (this_gun.state_duo >= 4 && this_gun.state_previous <= -4) return "Swap To Projecting"; 
+	else if (this_gun.state_previous >= 4 && this_gun.state_duo <= -4) return "Swap To Camera"; 
+	else if (this_gun.state_duo == 4 && this_gun.state_previous == 0) return "Auto Solo to Duo";
+	else if (this_gun.state_duo == 4) return "Projecting Live Video";
+	else if (this_gun.state_duo == -4) return "Sending Live Video";
+	else if (this_gun.state_solo == 4 || this_gun.state_solo == -4) return "Projecting Solo Portal";
+	else if (this_gun.state_solo == 3 || this_gun.state_solo == -3 || this_gun.state_duo == 3) return "Projecting Closed Portal";
+	
+	return "-"; 	
+}
+
+function update_color(this_gun){
+
+	if (this_gun.state_duo > 0 || this_gun.state_solo > 0 ) return "Orange"; 
+	else if (this_gun.state_duo < 0 || this_gun.state_solo < 0 ) return "Blue"; 
+
+	return "White"; 
+}	
+
+function update(){
+
+	if (chell.mode == MODE_DUO){
+		chell_mode.innerHTML = "Duo";
+		chell_state.innerHTML = chell.state_duo;
+	}else if (chell.mode == MODE_SOLO){
+		chell_mode.innerHTML = "Solo";
+		chell_state.innerHTML = chell.state_solo;
+	}
+	
+	if (gordon.mode == MODE_DUO){
+		gordon_mode.innerHTML = "Duo";
+		gordon_state.innerHTML = gordon.state_duo;
+	}else if (gordon.mode == MODE_SOLO){
+		gordon_mode.innerHTML = "Solo";
+		gordon_state.innerHTML = gordon.state_solo;
+	}
+	
+	gordon_portal.innerHTML = update_portal(gordon);
+	chell_portal.innerHTML = update_portal(chell);
+	
+	gordon_leds.innerHTML = update_lights(gordon);
+	chell_leds.innerHTML = update_lights(chell);
+
+	gordon_special.innerHTML = update_special(gordon);
+	chell_special.innerHTML = update_special(chell);
+
+	gordon_title.style.color = update_color(gordon);
+	chell_title.style.color = update_color(chell);
+}
+
+</script>
+</body>
