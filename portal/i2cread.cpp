@@ -17,6 +17,7 @@ static int i2c_adc[4];
 
 static int adc_channel = 0;  //what channel we are working on
 static bool adc_done = true; //is a conversion in progress?
+bool gordon = true;
 
 float temperature_reading(int input){
 	float R =  10000.0 / (26000.0/((float)input) - 1.0);
@@ -32,143 +33,129 @@ float temperature_reading(int input){
 
 void read_acclerometer(){
 	
-	 bcm2835_i2c_setSlaveAddress(accel_fd); 
-	  
-	//wiringPiI2CWrite(accel_fd, 0x80 | 0x28);
-
 	char temp[6];
-	temp[0] =  0x80 | 0x28;
-	bcm2835_i2c_write(temp,1);
+	temp[0] = 0x80 | 0x28;
 	
-	//read(accel_fd, temp,6);
+	bcm2835_i2c_setSlaveAddress(accel_fd); 	
+	bcm2835_i2c_write(temp,1);
 	bcm2835_i2c_read(temp,6);
 	
 	i2c_accel[0] = (int16_t)(temp[0] | temp[1] << 8);
 	i2c_accel[1] = (int16_t)(temp[2] | temp[3] << 8);
 	i2c_accel[2] = (int16_t)(temp[4] | temp[5] << 8);
-	
-}
-void i2c_write16(uint16_t input){
-	char temp[2];
-	temp[0] = (uint8_t)(input>>8);
-	temp[1] = ((uint8_t)(input & 0xFF));
-	bcm2835_i2c_write(temp,2);
+	//printf("%d %d %d\n",i2c_accel[0],i2c_accel[1],i2c_accel[2]);
 }
 
-uint16_t i2c_read16(uint8_t reg) {
+int16_t i2c_read16(uint8_t reg) {
   char temp[2];
   temp[0] = reg;
   bcm2835_i2c_write(temp,1);
   bcm2835_i2c_read(temp,2);
-  return ((temp[0] << 8) | temp[1]);  
+  return (temp[1] | temp[0] << 8);
 }
 
 void start_analog_read(){
 	adc_done = false;
 	uint16_t config = CONFIG_DEFAULT;
 
-	// Setup the configuration register
-	//	Set PGA/voltage range
+	//Setup the configuration register
+	//Set PGA/voltage range
 	config &= ~CONFIG_PGA_MASK;
 	config |= CONFIG_PGA_4_096V;  //set gain
 
-	//	Set sample speed
+	//Set sample speed
 	config &= ~CONFIG_DR_MASK;
 	config |= CONFIG_DR_128SPS; //adc sample speed is ideally at least the accelerometer rate
 
-	//	Set single-ended channel or differential mode
+	//Set single-ended channel or differential mode
 	config &= ~CONFIG_MUX_MASK ;
 
 	switch (adc_channel){
-	case 0: config |= CONFIG_MUX_SINGLE_0 ; break ;
-	case 1: config |= CONFIG_MUX_SINGLE_1 ; break ;
-	case 2: config |= CONFIG_MUX_SINGLE_2 ; break ;
-	case 3: config |= CONFIG_MUX_SINGLE_3 ; break ;
+	case 0: config |= CONFIG_MUX_SINGLE_0; break;
+	case 1: config |= CONFIG_MUX_SINGLE_1; break;
+	case 2: config |= CONFIG_MUX_SINGLE_2; break;
+	case 3: config |= CONFIG_MUX_SINGLE_3; break;
 	}
 
-	//	Start a single conversion
+	//Start a single conversion
 	config |= CONFIG_OS_SINGLE;
-	config = __bswap_16 (config);
-	//wiringPiI2CWriteReg16 (adc_fd, 1, config);
-	bcm2835_i2c_setSlaveAddress(adc_fd); 
-	i2c_write16(config);
 	
+	char temp[3];
+	temp[0] = 1;
+	temp[1] = (config >> 8);
+	temp[2] = (config & 0xFF);
+	
+	bcm2835_i2c_setSlaveAddress(adc_fd); 
+	bcm2835_i2c_write(temp,3);
 }
 
 void finish_analog_read(){
-	
-	//int16_t result = wiringPiI2CReadReg16 (adc_fd, 0);
 	bcm2835_i2c_setSlaveAddress(adc_fd); 
 	int16_t result = i2c_read16(0);
 	
-	result = __bswap_16 (result);
 
 	//Sometimes with a 0v input on a single-ended channel the internal 0v reference
 	//can be higher than the input, so you get a negative result...
 	
 	if (result < 0)  result = 0;
-	i2c_adc[adc_channel] = result;
-	adc_channel++;
+	i2c_adc[adc_channel++] = result;
 	if (adc_channel > 3) adc_channel = 0;
 	
 	adc_done = true;	
 }
 
 bool analog_read_ready(){
-	//int16_t  result =  wiringPiI2CReadReg16(adc_fd, 1);
 	bcm2835_i2c_setSlaveAddress(adc_fd); 
 	int16_t result = i2c_read16(1);
-	
-	result = __bswap_16 (result);
+
 	if ((result & CONFIG_OS_MASK) != 0) return true;
 	return false;
 }
 
-bool gordon = true;
 void i2creader_setup(void){
-	if (getenv("GORDON")){
+	if (getenv("GORDON"))
 		gordon = true;
-	}
-	else if (getenv("CHELL")){
+	else if (getenv("CHELL"))
 		gordon = false;
-	}
-	//accelerometer start
-	//accel_fd =  wiringPiI2CSetup (0x19);
 
-	//adc start
-	//adc_fd =  wiringPiI2CSetup (0x48);
 	bcm2835_i2c_begin();
 	bcm2835_i2c_setClockDivider(BCM2835_I2C_CLOCK_DIVIDER_2500); //100hz
 	bcm2835_i2c_setSlaveAddress(accel_fd); 
 
 	char temp[2];
+	
 	//// LSM303DLHC Accelerometer
 	// ODR = 0100 (50 Hz ODR)
 	// LPen = 0 (normal mode)
 	// Zen = Yen = Xen = 1 (all axes enabled)
-
 	temp[0] = CTRL_REG1_A;
 	temp[1] = 0b01010111;
-	//wiringPiI2CWriteReg8(accel_fd,CTRL_REG1_A, 0b01010111);
-	 bcm2835_i2c_write(temp,2);
+	bcm2835_i2c_write(temp,2);
+	 
 	// FS = 10 (8 g full scale)
 	// HR = 1 (high resolution enable)
-	
 	temp[0] = CTRL_REG4_A;
 	temp[1] = 0b00101000;
-	//wiringPiI2CWriteReg8(accel_fd,temp, 0b00101000);
-	 bcm2835_i2c_write(temp,2);
-	 
+	bcm2835_i2c_write(temp,2);
 }
 
 void i2creader_update(this_gun_struct& this_gun){
 	//uint32_t start_time = micros();
 	
-	if (!adc_done){
-		if(analog_read_ready()) finish_analog_read();
+	//only do one ADC operation per tick
+	//this gives the ADC time to stabilize as it reads each channel
+	//and causes minimal (and an even) cycle delay per tick
+	if (adc_done){
+		start_analog_read();
 	}
-	if (adc_done) start_analog_read();
-	
+	else{
+		if(analog_read_ready()){
+			finish_analog_read();
+		}else{
+			printf("Waiting on ADC....\n");  //this should never happen since the main loop is busy
+		}
+	}
+
 	read_acclerometer();
 	
 	//printf("Took %d microseconds!\n",micros() - start_time);	

@@ -45,8 +45,8 @@ void pipecontrol_setup(){
 	//let this priority get inherited to the children
 	setpriority(PRIO_PROCESS, getpid(), -10);
 
-	system("sudo -E xinit ~/portal/gstvideo/auto.sh");
-    sleep(8);
+	system("sudo -E xinit ~/portal/gstvideo/auto.sh &");
+    sleep(5);
 	
     //system("LD_LIBRARY_PATH=/usr/local/lib mjpg_streamer -i 'input_file.so -f /var/www/html/tmp -n snapshot.jpg' -o 'output_http.so -w /usr/local/www' &");
 	
@@ -59,8 +59,6 @@ void pipecontrol_setup(){
 	
 	bash_fp = popen("bash", "w");
 	fcntl(fileno(bash_fp), F_SETFL, fcntl(fileno(bash_fp), F_GETFL, 0) | O_NONBLOCK);
-
-  
  
 	mkfifo ("/home/pi/FIFO_PIPE", 0777 );
 	
@@ -95,20 +93,22 @@ void pipecontrol_setup(){
 	bcm2835_gpio_fsel(PIN_IR_PWM, BCM2835_GPIO_FSEL_ALT0);  //PWM_CHANNEL 1
 	  
 	bcm2835_pwm_set_clock(BCM2835_PWM_CLOCK_DIVIDER_16);
+	
     bcm2835_pwm_set_mode(FAN_PWM_CHANNEL, 1, 1); //PWM_CHANNEL 0
     bcm2835_pwm_set_range(FAN_PWM_CHANNEL, 1024);//PWM_CHANNEL 0 Set Range to 1024
+	
 	bcm2835_pwm_set_mode(IR_PWM_CHANNEL, 1, 1);  //PWM_CHANNEL 1
     bcm2835_pwm_set_range(IR_PWM_CHANNEL, 1024);   //PWM_CHANNEL 1 Set Range to 1024
 	
-	 bcm2835_gpio_fsel (PIN_PRIMARY, BCM2835_GPIO_FSEL_INPT);
-	 bcm2835_gpio_fsel (PIN_ALT, BCM2835_GPIO_FSEL_INPT);
-	 bcm2835_gpio_fsel (PIN_MODE, BCM2835_GPIO_FSEL_INPT);
-	 bcm2835_gpio_fsel (PIN_RESET, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_gpio_fsel(PIN_PRIMARY, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_gpio_fsel(PIN_ALT, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_gpio_fsel(PIN_MODE, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_gpio_fsel(PIN_RESET, BCM2835_GPIO_FSEL_INPT);
 	
-	 bcm2835_gpio_set_pud  (PIN_PRIMARY, BCM2835_GPIO_PUD_UP);
-	 bcm2835_gpio_set_pud  (PIN_ALT, BCM2835_GPIO_PUD_UP);
-	 bcm2835_gpio_set_pud  (PIN_MODE, BCM2835_GPIO_PUD_UP);
-	 bcm2835_gpio_set_pud  (PIN_RESET, BCM2835_GPIO_PUD_UP);
+	bcm2835_gpio_set_pud(PIN_PRIMARY, BCM2835_GPIO_PUD_UP);
+	bcm2835_gpio_set_pud(PIN_ALT, BCM2835_GPIO_PUD_UP);
+	bcm2835_gpio_set_pud(PIN_MODE, BCM2835_GPIO_PUD_UP);
+	bcm2835_gpio_set_pud(PIN_RESET, BCM2835_GPIO_PUD_UP);
 }
 
 void gstvideo_command(int portal_state, int video_state,int x, int y, int z){

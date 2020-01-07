@@ -310,9 +310,8 @@ float ledcontrol_update(int width_temp,int width_update_speed_temp,int overlay_t
 	
 	//end of data
 	for (int j = 0; j < 4; j++) output_buffer[i++] = 0x00;
-		
-	bcm2835_spi_writenb(output_buffer, sizeof(output_buffer));
 
+	bcm2835_spi_writenb(output_buffer, sizeof(output_buffer));
 	//printf("Benchmark Microseconds! %d \n",micros()- start_time);
 	
 	//return a number representing the current breathing of the array for other LEDs to use
@@ -341,5 +340,4 @@ void ledcontrol_wipe(void){
 	
 	bcm2835_spi_writenb(output_buffer, sizeof(output_buffer));
 	bcm2835_spi_end();
-
 }
