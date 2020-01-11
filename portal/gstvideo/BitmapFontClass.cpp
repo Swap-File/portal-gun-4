@@ -18,7 +18,7 @@ bool CBitmapFont::Load(char *fname)
  {
   char *dat,*img;
   fstream in;
-  unsigned long fileSize;
+  int fileSize;
   char bpp;
   int ImgX,ImgY;
 
@@ -246,7 +246,7 @@ void CBitmapFont::Print(char* Text)
      glTexCoord2f(U1,V ); glVertex2i(CurX+CellX,CurY+YOffset);
      glTexCoord2f(U, V ); glVertex2i(CurX,      CurY+YOffset);
 
-     CurX+=Width[Text[Loop]];
+     CurX+=Width[(int)Text[Loop]];
     }
    glEnd();
 
@@ -281,7 +281,7 @@ void CBitmapFont::Print(char* Text, int x, int y)
      glTexCoord2f(U1,V ); glVertex2i(CurX+CellX,CurY+CellY);
      glTexCoord2f(U, V ); glVertex2i(CurX,      CurY+CellY);
 
-     CurX+=Width[Text[Loop]];
+     CurX+=Width[(int)Text[Loop]];
     }
    glEnd();
  }
@@ -345,7 +345,7 @@ int CBitmapFont::GetWidth(char* Text)
   // Add up all width values
    for(Loop=0,Size=0;Loop!=sLen;++Loop)
     {
-     Size+=Width[Text[Loop]];
+     Size+=Width[(int)Text[Loop]];
     }
 
   return Size;

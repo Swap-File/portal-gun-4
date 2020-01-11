@@ -48,7 +48,7 @@ void pipecontrol_setup(){
 	system("sudo -E xinit ~/portal/gstvideo/auto.sh &");
     sleep(5);
 	
-    //system("LD_LIBRARY_PATH=/usr/local/lib mjpg_streamer -i 'input_file.so -f /var/www/html/tmp -n snapshot.jpg' -o 'output_http.so -w /usr/local/www' &");
+    system("LD_LIBRARY_PATH=/usr/local/lib mjpg_streamer -i 'input_file.so -f /var/www/html/tmp -n snapshot.jpg' -o 'output_http.so -w /usr/local/www' &");
 	
 	//kick the core logic up to realtime for faster bit banging
 	piHiPri(40);
@@ -111,9 +111,44 @@ void pipecontrol_setup(){
 	bcm2835_gpio_set_pud(PIN_RESET, BCM2835_GPIO_PUD_UP);
 }
 
-void gstvideo_command(int portal_state, int video_state,int x, int y, int z){
-	fprintf(gstvideo_fp, "%d %d %d %d %d\n",portal_state,video_state,x,y,z);
+void gstvideo_command(const this_gun_struct& this_gun ){
+		
+	//gstreamer state stuff, blank it if shared state and private state are 0
+	int gst_state = GST_BLANK;
+	//camera preload
+	if(this_gun.state_duo <= -1) gst_state = GST_RPICAMSRC;
+	//project shared preload
+	else if(this_gun.state_duo >= 1) gst_state = this_gun.effect_duo;		
+	//project private preload
+	else if(this_gun.state_solo != 0) gst_state = this_gun.effect_solo;	
+	
+	//ahrs effects
+	int ahrs_state = AHRS_CLOSED; 
+	// for networked modes
+	if (this_gun.state_solo == 0){
+		if (this_gun.state_duo == 3)      ahrs_state = AHRS_CLOSED_ORANGE;
+		else if (this_gun.state_duo == 4) ahrs_state = AHRS_OPEN_ORANGE;		
+		else if (this_gun.state_duo == 5) ahrs_state = AHRS_CLOSED_ORANGE; //blink shut on effect change
+	}
+	// for self modes
+	if (this_gun.state_duo == 0){
+		if (this_gun.state_solo == 3)       ahrs_state = AHRS_CLOSED_ORANGE;
+		else if (this_gun.state_solo == -3) ahrs_state = AHRS_CLOSED_BLUE;
+		else if (this_gun.state_solo <= -4) ahrs_state = AHRS_OPEN_BLUE;
+		else if (this_gun.state_solo >= 4)  ahrs_state = AHRS_OPEN_ORANGE;
+	} 
+		
+		
+	fprintf(gstvideo_fp, "%d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d\n",\
+	ahrs_state,gst_state,this_gun.accel[0],this_gun.accel[1],this_gun.accel[2],\
+	this_gun.state_solo,this_gun.state_duo,this_gun.connected,\
+	this_gun.playlist_solo[this_gun.playlist_solo_index],this_gun.effect_solo,\
+	this_gun.playlist_duo[this_gun.playlist_duo_index],this_gun.effect_duo,\
+	this_gun.battery_level_pretty,this_gun.temperature_pretty,this_gun.coretemp,\
+	this_gun.latency,this_gun.mode);
+
 	fflush(gstvideo_fp);
+	
 	if (errno == EPIPE) {
 		printf("BROKEN PIPE TO gstvideo_command!\n");
 	}
@@ -143,18 +178,7 @@ void web_output(const this_gun_struct& this_gun ){
 	this_gun.latency,web_packet_counter,this_gun.mode);
 	fclose(webout_fp);
 	rename("/var/www/html/tmp/temp.txt","/var/www/html/tmp/portal.txt");
-	
-	//dont send full playlist, only active and pending effect
-	webout_fp = fopen("/var/www/html/tmp/temp.txt", "w");
-	fprintf(webout_fp, "%d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d %d\n" ,\
-	this_gun.state_solo,this_gun.state_duo,this_gun.connected,\
-	this_gun.playlist_solo[this_gun.playlist_solo_index],this_gun.effect_solo,\
-	this_gun.playlist_duo[this_gun.playlist_duo_index],this_gun.effect_duo,\
-	this_gun.battery_level_pretty,this_gun.temperature_pretty,this_gun.coretemp,\
-	this_gun.latency,web_packet_counter,this_gun.mode);
-	fclose(webout_fp);
-	rename("/var/www/html/tmp/temp.txt","/var/www/html/tmp/fd1.txt");
-	
+		
 	web_packet_counter++;
 }
 

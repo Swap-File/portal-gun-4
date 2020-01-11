@@ -137,33 +137,8 @@ int main(void){
 		local_state_engine(button_event,this_gun,other_gun);
 		if (button_event != BUTTON_NONE) changes++;
 		
-		//gstreamer state stuff, blank it if shared state and private state are 0
-		int gst_state = GST_BLANK;
-		//camera preload
-		if(this_gun.state_duo <= -1) gst_state = GST_RPICAMSRC;
-		//project shared preload
-		else if(this_gun.state_duo >= 1) gst_state = this_gun.effect_duo;		
-		//project private preload
-		else if(this_gun.state_solo != 0) gst_state = this_gun.effect_solo;	
-		
-		//ahrs effects
-		int ahrs_state = AHRS_CLOSED; 
-		// for networked modes
-		if (this_gun.state_solo == 0){
-			if (this_gun.state_duo == 3)      ahrs_state = AHRS_CLOSED_ORANGE;
-			else if (this_gun.state_duo == 4) ahrs_state = AHRS_OPEN_ORANGE;		
-			else if (this_gun.state_duo == 5) ahrs_state = AHRS_CLOSED_ORANGE; //blink shut on effect change
-		}
-		// for self modes
-		if (this_gun.state_duo == 0){
-			if (this_gun.state_solo == 3)       ahrs_state = AHRS_CLOSED_ORANGE;
-			else if (this_gun.state_solo == -3) ahrs_state = AHRS_CLOSED_BLUE;
-			else if (this_gun.state_solo <= -4) ahrs_state = AHRS_OPEN_BLUE;
-			else if (this_gun.state_solo >= 4)  ahrs_state = AHRS_OPEN_ORANGE;
-		}
-
 		//OUTPUT TO gstvideo (combo video and 3d data)
-		gstvideo_command(ahrs_state,gst_state,0,0,0);
+		gstvideo_command(this_gun);
 
 		//switch off updating the leds or i2c every other cycle, each takes about 1ms
 		if(freq_50hz){ 

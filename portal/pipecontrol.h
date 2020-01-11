@@ -21,8 +21,8 @@ void pipecontrol_setup(void);
 void pipecontrol_cleanup(void);
 void aplay(const char *filename);
 int io_update(const this_gun_struct& this_gun);
-void web_output(const this_gun_struct& this_gun); //checked
-void gstvideo_command(int portal_state, int video_state,int x, int y, int z);
+void web_output(const this_gun_struct& this_gun);
+void gstvideo_command(const this_gun_struct& this_gun);
 void audio_effects(const this_gun_struct& this_gun);
 int read_web_pipe(this_gun_struct& this_gun);
 void update_ping(float * ping);

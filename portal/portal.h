@@ -64,7 +64,6 @@ struct other_gun_struct {
 int piHiPri (const int pri);
 unsigned int millis (void);
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 
 #endif
