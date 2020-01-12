@@ -138,7 +138,7 @@ int main(void){
 		if (button_event != BUTTON_NONE) changes++;
 		
 		//OUTPUT TO gstvideo (combo video and 3d data)
-		gstvideo_command(this_gun);
+		gstvideo_command(this_gun, other_gun.clock);
 
 		//switch off updating the leds or i2c every other cycle, each takes about 1ms
 		if(freq_50hz){ 

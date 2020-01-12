@@ -111,7 +111,7 @@ void pipecontrol_setup(){
 	bcm2835_gpio_set_pud(PIN_RESET, BCM2835_GPIO_PUD_UP);
 }
 
-void gstvideo_command(const this_gun_struct& this_gun ){
+void gstvideo_command(const this_gun_struct& this_gun,int clock){
 		
 	//gstreamer state stuff, blank it if shared state and private state are 0
 	int gst_state = GST_BLANK;
@@ -139,13 +139,13 @@ void gstvideo_command(const this_gun_struct& this_gun ){
 	} 
 		
 		
-	fprintf(gstvideo_fp, "%d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d\n",\
+	fprintf(gstvideo_fp, "%d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d %d\n",\
 	ahrs_state,gst_state,this_gun.accel[0],this_gun.accel[1],this_gun.accel[2],\
 	this_gun.state_solo,this_gun.state_duo,this_gun.connected,\
 	this_gun.playlist_solo[this_gun.playlist_solo_index],this_gun.effect_solo,\
 	this_gun.playlist_duo[this_gun.playlist_duo_index],this_gun.effect_duo,\
 	this_gun.battery_level_pretty,this_gun.temperature_pretty,this_gun.coretemp,\
-	this_gun.latency,this_gun.mode);
+	this_gun.latency,this_gun.mode,clock);
 
 	fflush(gstvideo_fp);
 	

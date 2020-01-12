@@ -22,7 +22,7 @@ void pipecontrol_cleanup(void);
 void aplay(const char *filename);
 int io_update(const this_gun_struct& this_gun);
 void web_output(const this_gun_struct& this_gun);
-void gstvideo_command(const this_gun_struct& this_gun);
+void gstvideo_command(const this_gun_struct& this_gun,int clock);
 void audio_effects(const this_gun_struct& this_gun);
 int read_web_pipe(this_gun_struct& this_gun);
 void update_ping(float * ping);

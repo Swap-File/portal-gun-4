@@ -30,7 +30,7 @@
 
 char* effectnames[100];
 
-
+int other_gun_time;
 struct this_gun_struct this_gun;
 bool gordon = false;
 
@@ -462,6 +462,18 @@ void init_text_background(){
 	
 }
 
+
+void slide_to(float r, float g, float b){
+	static float r_target,g_target,b_target;
+	if (r_target < r) r_target += .02;
+	if (r_target > r) r_target -= .02;
+	if (g_target < g) g_target += .02;
+	if (g_target > g) g_target -= .02;
+	if (b_target < b) b_target += .02;
+	if (b_target > b) b_target -= .02;
+	glColor4f(r_target,g_target,b_target,1.0); 
+}
+
 void print_text_overlay(){
 	
 		
@@ -481,7 +493,13 @@ void print_text_overlay(){
 	glOrtho(0,1366,0,768/2,-1,1);
   
 	glBindTexture(GL_TEXTURE_2D, 0); //no texture	
-	glColor4f(0.0,0.5,0.5,1.0); 
+	
+	
+	if (this_gun.state_solo < 0 || this_gun.state_duo < 0) slide_to(0.0,0.5,0.5); 
+	else if (this_gun.state_solo > 0 || this_gun.state_duo > 0) slide_to(0.8,0.4,0.0); 
+	else slide_to(0.0,0.0,0.0); 
+	
+	
 	glCallList(text_vertex_list);
 	glTranslatef(1366 , 0, 0);
 	//angle here
@@ -504,7 +522,9 @@ void print_text_overlay(){
 	else  sprintf(temp,"Sync Err");	
     print_centered(temp,64* 7);
 	
-   sprintf(temp,"Emitting");	//collecting or countdown
+	 sprintf(temp,"Idle");
+	if (this_gun.state_solo > 0 || this_gun.state_solo < 0 ||  this_gun.state_duo > 1 )  sprintf(temp,"Emitting");	//collecting or countdown
+    if (this_gun.state_duo < 0)  sprintf(temp,"Capturing");
     print_centered(temp,64* 6);
 	
 	sprintf(temp,"%.1fV",this_gun.battery_level_pretty);	
@@ -516,15 +536,25 @@ void print_text_overlay(){
 	sprintf(temp,"%.2fms",this_gun.latency);	
     print_centered(temp, 64* 3);
 	
-	if (this_gun.mode == 2) sprintf(temp,"%s",effectnames[this_gun.effect_duo]);		  //effectnames
-	else					sprintf(temp,"%s",effectnames[this_gun.effect_solo]);		
+	if (this_gun.mode == 2) sprintf(temp,"%s",effectnames[this_gun.playlist_duo[1]]);		  //effectnames
+	else					sprintf(temp,"%s",effectnames[this_gun.playlist_solo[1]]);		
 	print_centered(temp,64* 2);
-			
-	if (this_gun.mode == 2)   sprintf(temp,"Duo Mode");	
-	else     sprintf(temp,"Solo Mode");	
+	
+		uint_fast32_t current_time;	
+	if (this_gun.mode == 2)  {
+		sprintf(temp,"Duo Mode");	
+		if (this_gun.connected) current_time = (millis() +other_gun_time)/2;
+		else current_time = millis();  
+	}
+	else   {  
+	sprintf(temp,"Solo Mode");	
+	 current_time = millis();
+	}
     print_centered(temp,64);
 	
-  	uint_fast32_t current_time = millis();
+	
+
+  	
 	uint_fast32_t milliseconds = (current_time % 1000);
 	uint_fast32_t seconds      = (current_time / 1000) % 60;
 	uint_fast32_t minutes      =((current_time / (1000*60)) % 60);
@@ -583,11 +613,11 @@ static gboolean idle_loop (gpointer data) {
 				int temp_int[14];
 				float temp_float[4];
 				
-				int result = sscanf(buffer,"%d %d %d %d %d %d %d %d %d %d %d %d %f %f %f %f %d", \
+				int result = sscanf(buffer,"%d %d %d %d %d %d %d %d %d %d %d %d %f %f %f %f %d %d", \
 				&temp_int[0],&temp_int[1],&temp_int[2],&temp_int[3],&temp_int[4],&temp_int[5],&temp_int[6], \
 				&temp_int[7],&temp_int[8],&temp_int[9],&temp_int[10],&temp_int[11],&temp_float[0],&temp_float[1], \
-				&temp_float[2],&temp_float[3],&temp_int[12]);
-				if (result != 17){
+				&temp_float[2],&temp_float[3],&temp_int[12],&temp_int[13]);
+				if (result != 18){
 					fprintf(stderr, "Unrecognized input with %d items.\n", result);
 				}else{
 					portal_mode_requested 			= temp_int[0];
@@ -607,6 +637,7 @@ static gboolean idle_loop (gpointer data) {
 					this_gun.coretemp 				= temp_float[2];
 					this_gun.latency 				= temp_float[3];
 					this_gun.mode 					= temp_int[12];
+					other_gun_time 					= temp_int[13];
 					
 				}
 				
@@ -682,7 +713,7 @@ int main(int argc, char *argv[]){
 	effectnames[GST_NORMAL] = (char *)"Normal";
 	
 	effectnames[GST_LIBVISUAL_JESS] = (char *)"Jess";
-    effectnames[GST_LIBVISUAL_INFINITE] =(char *) "Infinate";
+    effectnames[GST_LIBVISUAL_INFINITE] =(char *) "Infinite";
 	effectnames[GST_LIBVISUAL_JAKDAW] = (char *)"Jakdaw";
 	effectnames[GST_LIBVISUAL_OINKSIE] = (char *)"Oinksie";
 	effectnames[GST_GOOM] = (char *)"Goom";
