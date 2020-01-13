@@ -109,6 +109,7 @@ int main(void){
 		
 		//program code starts here
 		update_temp(&this_gun.coretemp);
+
 		update_ping(&this_gun.latency);
 			
 		//read states from buttons
@@ -156,6 +157,7 @@ int main(void){
 			udp_send_state(this_gun.state_duo,this_gun.clock);
 			time_udp_send = this_gun.clock;
 			web_output(this_gun);
+
 		}
 		
 		//cycle end code - fps counter and stats
@@ -165,6 +167,7 @@ int main(void){
 			fps = 0;
 			time_delay = 0;
 			time_fps += 1000;
+			update_bw(&this_gun.bw);
 			//readjust counter if we missed a cycle
 			if (time_fps < millis()) time_fps = millis() + 1000;
 		}	

@@ -18,6 +18,8 @@
 uint32_t ping_time = 0;
 uint8_t web_packet_counter = 0;
 
+int tx_bytes_in;
+int rx_bytes_in;
 int temp_in;
 int web_in;
 int gstreamer_crashes = 0;
@@ -71,10 +73,18 @@ void pipecontrol_setup(){
 	fflush(bash_fp);
 	
 	if ((temp_in = open ("/sys/class/thermal/thermal_zone0/temp",  ( O_RDONLY | O_NONBLOCK))) < 0) {
-		perror("TEMP_IN: Could not open named pipe for reading.");
+		perror("Could not open /sys/class/thermal/thermal_zone0/temp for reading.");
 		exit(-1);
 	}
-		
+	
+	if ((tx_bytes_in = open ("/sys/class/net/wlan0/statistics/tx_bytes",  ( O_RDONLY | O_NONBLOCK))) < 0) {
+		perror("Could not open /sys/class/net/wlan0/statistics/tx_bytes for reading.");
+		exit(-1);
+	}	
+	if ((rx_bytes_in = open ("/sys/class/net/wlan0/statistics/rx_bytes",  ( O_RDONLY | O_NONBLOCK))) < 0) {
+		perror("Could not open /sys/class/net/wlan0/statistics/tx_bytes for reading.");
+		exit(-1);
+	}	
 	
 	if(getenv("GORDON")) 		ping_fp = popen("ping 192.168.3.21", "r");
 	else if(getenv("CHELL")) 	ping_fp = popen("ping 192.168.3.20", "r");
@@ -299,6 +309,44 @@ void update_temp(float * temp){
 	return;
 }
 
+void update_bw(int * bw){
+	int count = 1;
+	char buffer[100];
+	static uint32_t bytes_rx_previous = 0;
+	static uint32_t bytes_tx_previous = 0;
+	
+	uint32_t bytes_rx = 0;
+	uint32_t bytes_tx = 0;
+	//stdin is line buffered so we can cheat a little bit
+	while (count > 0){ // dump entire buffer
+		count = read(rx_bytes_in, buffer, sizeof(buffer)-1);
+		if (count > 0){ //ignore blank lines
+		buffer[count-1] = '\0';
+			sscanf(buffer,"%d", &bytes_rx);
+		}
+	}
+	count = 1;
+	while (count > 0){ // dump entire buffer
+		count = read(tx_bytes_in, buffer, sizeof(buffer)-1);
+		if (count > 0){ //ignore blank lines
+		buffer[count-1] = '\0';
+			sscanf(buffer,"%d", &bytes_tx);
+		}
+	}
+	
+	if (bytes_rx != 0 &&  bytes_tx != 0){
+		*bw =(bytes_rx - bytes_rx_previous) + (bytes_tx - bytes_tx_previous);
+		bytes_rx_previous = bytes_rx;
+		bytes_tx_previous = bytes_tx;
+		printf("%d\n",*bw);
+	}
+	
+	lseek(rx_bytes_in,0,SEEK_SET);
+	lseek(tx_bytes_in,0,SEEK_SET);
+	return;
+	
+	
+}
 int io_update(const this_gun_struct& this_gun){
 	
 	bcm2835_pwm_set_data(FAN_PWM_CHANNEL, this_gun.fan_pwm);

@@ -26,5 +26,6 @@ void gstvideo_command(const this_gun_struct& this_gun,int clock);
 void audio_effects(const this_gun_struct& this_gun);
 int read_web_pipe(this_gun_struct& this_gun);
 void update_ping(float * ping);
-void update_temp(float * ping);
+void update_temp(float * temp);
+void update_bw(int * bw);
 #endif
