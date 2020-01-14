@@ -149,14 +149,14 @@ void gstvideo_command(const this_gun_struct& this_gun,int clock){
 	} 
 		
 		
-	fprintf(gstvideo_fp, "%d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d %d\n",\
+	fprintf(gstvideo_fp, "%d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d %d %d %d \n",\
 	ahrs_state,gst_state,this_gun.accel[0],this_gun.accel[1],this_gun.accel[2],\
 	this_gun.state_solo,this_gun.state_duo,this_gun.connected,\
 	this_gun.playlist_solo[this_gun.playlist_solo_index],this_gun.effect_solo,\
 	this_gun.playlist_duo[this_gun.playlist_duo_index],this_gun.effect_duo,\
 	this_gun.battery_level_pretty,this_gun.temperature_pretty,this_gun.coretemp,\
-	this_gun.latency,this_gun.mode,clock);
-
+	this_gun.latency,this_gun.mode,clock,this_gun.dbm,this_gun.tx_bitrate);
+			
 	fflush(gstvideo_fp);
 	
 	if (errno == EPIPE) {
@@ -309,43 +309,27 @@ void update_temp(float * temp){
 	return;
 }
 
-void update_bw(int * bw){
+void update_iw(int * dbm, int * tx_bitrate){
 	int count = 1;
-	char buffer[100];
-	static uint32_t bytes_rx_previous = 0;
-	static uint32_t bytes_tx_previous = 0;
-	
-	uint32_t bytes_rx = 0;
-	uint32_t bytes_tx = 0;
-	//stdin is line buffered so we can cheat a little bit
-	while (count > 0){ // dump entire buffer
-		count = read(rx_bytes_in, buffer, sizeof(buffer)-1);
-		if (count > 0){ //ignore blank lines
-		buffer[count-1] = '\0';
-			sscanf(buffer,"%d", &bytes_rx);
-		}
+	char buffer[1000];
+	FILE * iw_fp = popen("iw dev wlan0 station dump", "r");
+	count = read(fileno(iw_fp), buffer, sizeof(buffer)-1);
+	if (count > 0){ // one chance
+		char * signal_pointer = strstr(buffer,"signal:") + 7;
+		char * tx_pointer = strstr(buffer,"tx bitrate:") + 11;
+		char * end_pointer = strstr(signal_pointer,"\n");
+		*end_pointer = '\0';
+		end_pointer = strstr(tx_pointer,"\n");
+		*end_pointer = '\0';
+		sscanf(signal_pointer,"%d", dbm);
+		sscanf(tx_pointer,"%d", tx_bitrate);
+		
+	}else{
+		tx_bitrate = 0;
+		dbm = 0;
 	}
-	count = 1;
-	while (count > 0){ // dump entire buffer
-		count = read(tx_bytes_in, buffer, sizeof(buffer)-1);
-		if (count > 0){ //ignore blank lines
-		buffer[count-1] = '\0';
-			sscanf(buffer,"%d", &bytes_tx);
-		}
-	}
-	
-	if (bytes_rx != 0 &&  bytes_tx != 0){
-		*bw =(bytes_rx - bytes_rx_previous) + (bytes_tx - bytes_tx_previous);
-		bytes_rx_previous = bytes_rx;
-		bytes_tx_previous = bytes_tx;
-		printf("%d\n",*bw);
-	}
-	
-	lseek(rx_bytes_in,0,SEEK_SET);
-	lseek(tx_bytes_in,0,SEEK_SET);
+	pclose(iw_fp);
 	return;
-	
-	
 }
 int io_update(const this_gun_struct& this_gun){
 	

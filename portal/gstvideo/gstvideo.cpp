@@ -515,8 +515,11 @@ void print_text_overlay(){
 
 	if (gordon)   sprintf(temp,"Gordon");	
 	else  sprintf(temp,"Chell");	
-    print_centered(temp,550);
+   print_centered(temp,64* 9);
 	
+	sprintf(temp,"%ddB %dMB/s",this_gun.dbm , this_gun.tx_bitrate);	
+	print_centered(temp,64* 8);
+					
 	
     if (this_gun.connected) sprintf(temp,"Synced");	
 	else  sprintf(temp,"Sync Err");	
@@ -585,7 +588,7 @@ static gboolean idle_loop (gpointer data) {
 	//read as much as we can
 	while (1){
 		
-		#define buf_len 200
+		#define buf_len 250
 		static int buf_index = 0;
 		char buffer[buf_len];
 		
@@ -610,14 +613,14 @@ static gboolean idle_loop (gpointer data) {
 				//printf("\nParsing..\n");
 				//printf("\n%s\n",buffer);
 				
-				int temp_int[14];
+				int temp_int[16];
 				float temp_float[4];
 				
-				int result = sscanf(buffer,"%d %d %d %d %d %d %d %d %d %d %d %d %f %f %f %f %d %d", \
+				int result = sscanf(buffer,"%d %d %d %d %d %d %d %d %d %d %d %d %f %f %f %f %d %d %d %d", \
 				&temp_int[0],&temp_int[1],&temp_int[2],&temp_int[3],&temp_int[4],&temp_int[5],&temp_int[6], \
 				&temp_int[7],&temp_int[8],&temp_int[9],&temp_int[10],&temp_int[11],&temp_float[0],&temp_float[1], \
-				&temp_float[2],&temp_float[3],&temp_int[12],&temp_int[13]);
-				if (result != 18){
+				&temp_float[2],&temp_float[3],&temp_int[12],&temp_int[13],&temp_int[14],&temp_int[15]);
+				if (result != 20){
 					fprintf(stderr, "Unrecognized input with %d items.\n", result);
 				}else{
 					portal_mode_requested 			= temp_int[0];
@@ -638,7 +641,9 @@ static gboolean idle_loop (gpointer data) {
 					this_gun.latency 				= temp_float[3];
 					this_gun.mode 					= temp_int[12];
 					other_gun_time 					= temp_int[13];
-					
+					this_gun.dbm			 		= temp_int[14];
+					this_gun.tx_bitrate				= temp_int[15];		
+
 				}
 				
 				buf_index = 0;

@@ -167,7 +167,7 @@ int main(void){
 			fps = 0;
 			time_delay = 0;
 			time_fps += 1000;
-			update_bw(&this_gun.bw);
+			update_iw(&this_gun.dbm, &this_gun.tx_bitrate);
 			//readjust counter if we missed a cycle
 			if (time_fps < millis()) time_fps = millis() + 1000;
 		}	
