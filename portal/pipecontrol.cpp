@@ -18,13 +18,14 @@
 uint32_t ping_time = 0;
 uint8_t web_packet_counter = 0;
 
-int tx_bytes_in;
-int rx_bytes_in;
+
 int temp_in;
 int web_in;
 int gstreamer_crashes = 0;
 int ahrs_crashes = 0;
 
+FILE *iw_fp;
+FILE *ifstat_fp;
 FILE *bash_fp;
 FILE *gstvideo_fp;
 FILE *ping_fp;
@@ -37,8 +38,8 @@ bool temp_first_cycle = true;
 					
 void pipecontrol_cleanup(void){
 	printf("KILLING OLD PROCESSES\n");
-	system("pkill gst");
-	system("pkill mjpeg");
+	system("pkill gst*");
+	system("pkill mjpeg*");
 }
 
 
@@ -77,23 +78,19 @@ void pipecontrol_setup(){
 		exit(-1);
 	}
 	
-	if ((tx_bytes_in = open ("/sys/class/net/wlan0/statistics/tx_bytes",  ( O_RDONLY | O_NONBLOCK))) < 0) {
-		perror("Could not open /sys/class/net/wlan0/statistics/tx_bytes for reading.");
-		exit(-1);
-	}	
-	if ((rx_bytes_in = open ("/sys/class/net/wlan0/statistics/rx_bytes",  ( O_RDONLY | O_NONBLOCK))) < 0) {
-		perror("Could not open /sys/class/net/wlan0/statistics/tx_bytes for reading.");
-		exit(-1);
-	}	
-	
-	if(getenv("GORDON")) 		ping_fp = popen("ping 192.168.3.21", "r");
-	else if(getenv("CHELL")) 	ping_fp = popen("ping 192.168.3.20", "r");
+	if(getenv("GORDON")) 		ping_fp = popen("ping -i 0.2 192.168.3.21", "r");
+	else if(getenv("CHELL")) 	ping_fp = popen("ping -i 0.2 192.168.3.20", "r");
 	else {
 		printf("SET THE GORDON OR CHELL ENVIRONMENT VARIABLE!");
 		exit(1);
 	}
+	fcntl(fileno(ping_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);	
 	
-	fcntl(fileno(ping_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);
+	ifstat_fp  = popen("ifstat -i wlan0", "r");
+	fcntl(fileno(ifstat_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);
+	
+	iw_fp = popen("bash -c 'while true; do  iw dev wlan0 station dump; sleep 1; done'", "r");
+	fcntl(fileno(iw_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);
 	
 	//empty named pipe
 	char buffer[100]; 
@@ -272,6 +269,25 @@ void update_ping(float * ping){
 	return;
 }
 
+
+void update_ifstat(int * kbytes){	
+	int count = 1;
+	char buffer[100];
+	//stdin is line buffered so we can cheat a little bit
+	while (count > 0){ // dump entire buffer
+		count = read(fileno(ifstat_fp), buffer, sizeof(buffer)-1);
+		if (count > 1){ //ignore blank lines
+			buffer[count-1] = '\0';
+			float in = 0;
+			float out = 0;
+			sscanf(buffer,"%f %f", &in,&out);
+			*kbytes = in + out;
+			printf("                            %d\n",*kbytes);
+		}
+	}
+	return;
+}
+
 void update_temp(float * temp){	
 	int count = 1;
 	char buffer[100];
@@ -312,23 +328,25 @@ void update_temp(float * temp){
 void update_iw(int * dbm, int * tx_bitrate){
 	int count = 1;
 	char buffer[1000];
-	FILE * iw_fp = popen("iw dev wlan0 station dump", "r");
 	count = read(fileno(iw_fp), buffer, sizeof(buffer)-1);
 	if (count > 0){ // one chance
 		char * signal_pointer = strstr(buffer,"signal:") + 7;
 		char * tx_pointer = strstr(buffer,"tx bitrate:") + 11;
-		char * end_pointer = strstr(signal_pointer,"\n");
-		*end_pointer = '\0';
-		end_pointer = strstr(tx_pointer,"\n");
-		*end_pointer = '\0';
+		char * end_pointer1 = strstr(signal_pointer,"\n");
+		char * end_pointer2 = strstr(tx_pointer,"\n");
+		if (signal_pointer != NULL && signal_pointer <  buffer + 1000 && \
+		    tx_pointer != NULL && tx_pointer < buffer + 1000 && \
+			end_pointer1 != NULL && end_pointer1 < buffer + 1000 && \
+		    end_pointer2 != NULL && end_pointer2 < buffer + 1000 ){
+		*end_pointer1 = '\0';
+		*end_pointer2 = '\0';
 		sscanf(signal_pointer,"%d", dbm);
 		sscanf(tx_pointer,"%d", tx_bitrate);
-		
+		}
 	}else{
 		tx_bitrate = 0;
 		dbm = 0;
 	}
-	pclose(iw_fp);
 	return;
 }
 int io_update(const this_gun_struct& this_gun){

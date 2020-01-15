@@ -45,6 +45,7 @@ struct this_gun_struct {
 	float coretemp = 0.0;
 	int  dbm = 0;
 	int tx_bitrate = 0;
+	int kbytes = 0;
 	
 	//imported from arduino
 	int accel[3];

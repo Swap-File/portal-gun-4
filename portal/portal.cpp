@@ -109,9 +109,10 @@ int main(void){
 		
 		//program code starts here
 		update_temp(&this_gun.coretemp);
-
 		update_ping(&this_gun.latency);
-			
+		update_ifstat(&this_gun.kbytes);
+		update_iw(&this_gun.dbm, &this_gun.tx_bitrate);  
+		
 		//read states from buttons
 		int button_event = BUTTON_NONE;	
 		button_event = io_update(this_gun);
@@ -167,7 +168,6 @@ int main(void){
 			fps = 0;
 			time_delay = 0;
 			time_fps += 1000;
-			update_iw(&this_gun.dbm, &this_gun.tx_bitrate);
 			//readjust counter if we missed a cycle
 			if (time_fps < millis()) time_fps = millis() + 1000;
 		}	
