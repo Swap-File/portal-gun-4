@@ -1,16 +1,16 @@
 #include "portal.h"
 #include <stdio.h>
 
-void local_state_engine(int button, this_gun_struct& this_gun, other_gun_struct& other_gun){	
+void local_state_engine(int button, this_gun_struct& this_gun){	
 
 	//check for expiration of other gun
-	if (this_gun.clock - other_gun.last_seen > GUN_EXPIRE) {
+	if (this_gun.clock - this_gun.other_gun_last_seen > GUN_EXPIRE) {
 		if (this_gun.connected != false){
 			this_gun.connected = false;
-			other_gun.clock = 0;
+			this_gun.other_gun_clock = 0;
 			printf("MAIN Gun Expired\n");	
 		}
-		other_gun.state = 0;
+		this_gun.other_gun_state = 0;
 	}
 	else {
 		if(this_gun.connected == false){
@@ -42,17 +42,17 @@ void local_state_engine(int button, this_gun_struct& this_gun, other_gun_struct&
 				this_gun.state_duo = 1;
 			}else if(this_gun.state_duo == 1){
 				this_gun.state_duo = 2;
-			}else if((this_gun.state_duo == 2 || this_gun.state_duo == 3) && (other_gun.state <= -3 || this_gun.skip_states)){ 	
+			}else if((this_gun.state_duo == 2 || this_gun.state_duo == 3) && (this_gun.other_gun_state <= -3 || this_gun.skip_states)){ 	
 			    this_gun.state_duo = 4; //answer an incoming call immediately and open portal on button press
 			}else if(this_gun.state_duo == 5){ //playlist advance with closed portal
 				this_gun.state_duo = 4; //open the portal
-			}else if(this_gun.state_duo == 2 && other_gun.state > -3){ 
+			}else if(this_gun.state_duo == 2 && this_gun.other_gun_state > -3){ 
 				this_gun.state_duo = 3; //wait at  mode 3 for other gun
 			}
 			//camera modes
 			else if (this_gun.state_duo == -1){
 				this_gun.state_duo = -2;
-			}else if((this_gun.state_duo == -2 || this_gun.state_duo == -3) && other_gun.state >= 3 ){ 	
+			}else if((this_gun.state_duo == -2 || this_gun.state_duo == -3) && this_gun.other_gun_state >= 3 ){ 	
 			   this_gun.state_duo = -4;
 			}else if (this_gun.state_duo == -2){
 				this_gun.state_duo = -3;//wait at -3 for the other gun
@@ -90,23 +90,23 @@ void local_state_engine(int button, this_gun_struct& this_gun, other_gun_struct&
 	}
 
 	//other gun transitions
-	if (other_gun.state_previous != other_gun.state){
+	if (this_gun.other_gun_state_previous != this_gun.other_gun_state){
 		if (this_gun.mode == MODE_DUO){
-			if (other_gun.state == 0){
+			if (this_gun.other_gun_state == 0){
 				this_gun.state_duo = 0;
 				this_gun.skip_states = false; 
-			}else if ((other_gun.state == -2 || other_gun.state == -3) && this_gun.state_duo < 2){
+			}else if ((this_gun.other_gun_state == -2 || this_gun.other_gun_state == -3) && this_gun.state_duo < 2){
 				this_gun.state_duo = 2;
 				this_gun.skip_states = true; 
-			}else if ((other_gun.state == 2 || other_gun.state == 3) && this_gun.state_duo > -2){
+			}else if ((this_gun.other_gun_state == 2 || this_gun.other_gun_state == 3) && this_gun.state_duo > -2){
 				this_gun.state_duo = -2;
-			}else if (other_gun.state <= -4 && this_gun.state_duo == 3){ //special case
+			}else if (this_gun.other_gun_state <= -4 && this_gun.state_duo == 3){ //special case
 				this_gun.state_duo = 4; //only bump into state 4 from 3, since 3 & 4 turn on the projector, below 3 the portal is off
-			}else if (other_gun.state >= 4 && this_gun.state_duo > -4){
+			}else if (this_gun.other_gun_state >= 4 && this_gun.state_duo > -4){
 				this_gun.state_duo = -4;
 			}
 		}else if (this_gun.mode == MODE_SOLO){  //code to pull out of solo states
-			if (other_gun.state <= -3){
+			if (this_gun.other_gun_state <= -3){
 				if (this_gun.state_solo <= -3 || this_gun.state_solo >= 3){
 					this_gun.state_duo = 4;  //if a portal is open, go direct to projecting
 				}else{
@@ -151,4 +151,30 @@ void local_state_engine(int button, this_gun_struct& this_gun, other_gun_struct&
 		if (this_gun.playlist_solo[this_gun.playlist_solo_index] <= -1) this_gun.playlist_solo_index = 0;
 		if (this_gun.playlist_solo_index >= playlist_solo_SIZE) this_gun.playlist_solo_index = 0;
 	}
+	
+	//gstreamer state stuff, blank it if shared state and private state are 0
+	this_gun.gst_state = GST_BLANK;
+	//camera preload
+	if(this_gun.state_duo <= -1) this_gun.gst_state = GST_RPICAMSRC;
+	//project shared preload
+	else if(this_gun.state_duo >= 1) this_gun.gst_state = this_gun.effect_duo;		
+	//project private preload
+	else if(this_gun.state_solo != 0) this_gun.gst_state = this_gun.effect_solo;	
+	
+	//ahrs effects
+	this_gun.ahrs_state = AHRS_CLOSED; 
+	// for networked modes
+	if (this_gun.state_solo == 0){
+		if (this_gun.state_duo == 3)      this_gun.ahrs_state = AHRS_CLOSED_ORANGE;
+		else if (this_gun.state_duo == 4) this_gun.ahrs_state = AHRS_OPEN_ORANGE;		
+		else if (this_gun.state_duo == 5) this_gun.ahrs_state = AHRS_CLOSED_ORANGE; //blink shut on effect change
+	}
+	// for self modes
+	if (this_gun.state_duo == 0){
+		if (this_gun.state_solo == 3)       this_gun.ahrs_state = AHRS_CLOSED_ORANGE;
+		else if (this_gun.state_solo == -3) this_gun.ahrs_state = AHRS_CLOSED_BLUE;
+		else if (this_gun.state_solo <= -4) this_gun.ahrs_state = AHRS_OPEN_BLUE;
+		else if (this_gun.state_solo >= 4)  this_gun.ahrs_state = AHRS_OPEN_ORANGE;
+	} 
+		
 }

@@ -1,4 +1,4 @@
-OBJs := $(patsubst %.cpp, %.o, $(wildcard *.cpp)) model_board/model_board.o model_board/png_texture.o
+OBJs := $(patsubst %.cpp, %.o, $(wildcard *.cpp)) model_board/model_board.o model_board/png_texture.o  ../sharedmem.o
 DEPs := $(OBJs:%.o=%.d)
 BIN  := gstvideo
 CC  = g++
@@ -8,7 +8,7 @@ LDFLAGS = -L/usr/local/lib -lX11 -lXrender -lGL -lGLU -lpng -lgstgl-1.0 -lgstrea
 CPPFLAGS = -pthread -I/usr/include/gstreamer-1.0 -I/usr/lib/arm-linux-gnueabihf/gstreamer-1.0/include -I/usr/include/glib-2.0 -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include
 
 # Use a modern language
-CPPFLAGS += --std=c++11
+CPPFLAGS += --std=c++17
 
 # Turn on "all" warnings
 CPPFLAGS += -Wall  

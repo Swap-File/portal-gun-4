@@ -1,4 +1,5 @@
 #include "portal.h"
+#include "sharedmem.h"
 #include "i2cread.h"
 #include "ledcontrol.h"
 #include "udpcontrol.h"
@@ -13,42 +14,12 @@
 #include <sys/types.h>
 #include <time.h>
 #include <bcm2835.h>
-#include <sched.h>
-
-volatile bool video_done = false;
-
-int piHiPri (const int pri)
-{
-  struct sched_param sched ;
-
-  memset (&sched, 0, sizeof(sched)) ;
-
-  if (pri > sched_get_priority_max (SCHED_RR))
-    sched.sched_priority = sched_get_priority_max (SCHED_RR) ;
-  else
-    sched.sched_priority = pri ;
-
-  return sched_setscheduler (0, SCHED_RR, &sched) ;
-}
-
-unsigned int millis (void){
-  struct  timespec ts ;
-  clock_gettime (CLOCK_MONOTONIC_RAW, &ts) ;
-  uint64_t now  = (uint64_t)ts.tv_sec * (uint64_t)1000 + (uint64_t)(ts.tv_nsec / 1000000L) ;
-  return (uint32_t)now ;
-}
-
 
 void INThandler(int dummy) {
 	printf("\nCleaning up...\n");
 	ledcontrol_wipe();
 	pipecontrol_cleanup();
 	exit(1);
-}
-
-void gstvideo_handler(int dummy) {
-	printf("PORTAL: Video EoS caught, closing the portal...\n");
-	video_done = true;
 }
 
 int main(void){
@@ -60,15 +31,13 @@ int main(void){
 
 	pipecontrol_cleanup();
 	
-	struct this_gun_struct this_gun;
-	struct other_gun_struct other_gun;
-
+	struct this_gun_struct *this_gun;
+	shm_setup(&this_gun,true );
+	
 	//catch broken pipes to respawn threads if they crash
 	signal(SIGPIPE, SIG_IGN);
 	//catch ctrl+c when exiting
 	signal(SIGINT, INThandler);
-	//catch signal from gstvideo when videos are done
-	signal(SIGUSR2, gstvideo_handler);
 	
 	//stats
 	uint32_t time_start = 0;
@@ -79,7 +48,7 @@ int main(void){
 	int changes = 0;
 	
 	//setup libaries
-	web_output(this_gun);
+	web_output(*this_gun);
 	bcm2835_init();
 	ledcontrol_setup();
 	i2creader_setup();	
@@ -87,7 +56,7 @@ int main(void){
 	pipecontrol_setup();
 	
 	bool freq_50hz = true; //toggles every other cycle, cuts 100hz to 50hz
-	
+
 	while(1){
 		//cycle start code - delay code
 		time_start += 10;
@@ -101,64 +70,63 @@ int main(void){
 			printf("MAIN Skipping Idle...\n");
 			missed++;
 		}
-		this_gun.clock = millis();  //stop time for duration of frame
+		this_gun->clock = millis();  //stop time for duration of frame
 		freq_50hz = !freq_50hz; 
-		this_gun.state_duo_previous = this_gun.state_duo;
-		this_gun.state_solo_previous = this_gun.state_solo;
-		other_gun.state_previous = other_gun.state;
+		this_gun->state_duo_previous = this_gun->state_duo;
+		this_gun->state_solo_previous = this_gun->state_solo;
+		this_gun->other_gun_state_previous = this_gun->other_gun_state;
 		
 		//program code starts here
-		update_temp(&this_gun.coretemp);
-		update_ping(&this_gun.latency);
-		update_ifstat(&this_gun.kbytes);
-		update_iw(&this_gun.dbm, &this_gun.tx_bitrate);  
+		update_temp(&(this_gun->coretemp));
+		update_ping(&(this_gun->latency));
+		update_ifstat(&(this_gun->kbytes));
+		update_iw(&(this_gun->dbm), &(this_gun->tx_bitrate));  
 		
 		//read states from buttons
 		int button_event = BUTTON_NONE;	
-		button_event = io_update(this_gun);
+		button_event = io_update(*this_gun);
 
 		//if no event, read from the web
-		if (button_event == BUTTON_NONE) button_event = read_web_pipe(this_gun);
+		if (button_event == BUTTON_NONE) button_event = read_web_pipe(*this_gun);
 		//read other gun's data, only if no button events are happening this cycle
 
 		//if still no event, read button from the other gun for processing
 		while (button_event == BUTTON_NONE){
-			int result = udp_receive_state(&other_gun.state,&other_gun.clock);
+			int result = udp_receive_state(&(this_gun->other_gun_state),&(this_gun->other_gun_clock));
 			if (result <= 0) break;  //read until buffer empty
-			else other_gun.last_seen = this_gun.clock;  //update time data was seen
-			if (millis() - this_gun.clock > 5) break; //flood protect
+			else this_gun->other_gun_last_seen = this_gun->clock;  //update time data was seen
+			if (millis() - this_gun->clock > 5) break; //flood protect
 		}
 
-		if (video_done){
-			if (this_gun.state_solo == 4) this_gun.state_solo = 3;
-			else if (this_gun.state_solo == -4) this_gun.state_solo = -3;
-			video_done = false;
+		if (this_gun->video_done){
+			if (this_gun->state_solo == 4) this_gun->state_solo = 3;
+			else if (this_gun->state_solo == -4) this_gun->state_solo = -3;
+			this_gun->video_done = false;
 		}
 						
 		//process state changes
-		local_state_engine(button_event,this_gun,other_gun);
+		local_state_engine(button_event,*this_gun);
 		if (button_event != BUTTON_NONE) changes++;
 		
 		//OUTPUT TO gstvideo (combo video and 3d data)
-		gstvideo_command(this_gun, other_gun.clock);
+		//gstvideo_command(*this_gun, other_gun.clock);
 
 		//switch off updating the leds or i2c every other cycle, each takes about 1ms
 		if(freq_50hz){ 
-			this_gun.brightness = led_update(this_gun,other_gun);
+			this_gun->brightness = led_update(*this_gun);
 		}
 		else{
-			i2creader_update(this_gun);
+			i2creader_update(*this_gun);
 		}
 		
-		audio_effects(this_gun);
-		
+		audio_effects(*this_gun);
+	
 		//send data to other gun
 		static uint32_t time_udp_send = 0;
-		if (this_gun.clock - time_udp_send > 100){
-			udp_send_state(this_gun.state_duo,this_gun.clock);
-			time_udp_send = this_gun.clock;
-			web_output(this_gun);
-
+		if (this_gun->clock - time_udp_send > 100){
+			udp_send_state(this_gun->state_duo,this_gun->clock);
+			time_udp_send = this_gun->clock;
+			web_output(*this_gun);
 		}
 		
 		//cycle end code - fps counter and stats

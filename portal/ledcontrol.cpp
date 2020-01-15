@@ -52,7 +52,7 @@ uint8_t brightnesslookup[256][EFFECT_RESOLUTION];
 
 float ledcontrol_update(int width_temp,int width_speed_temp,int overlay_temp, int total_offset);
 
-uint8_t led_update(const this_gun_struct& this_gun,const other_gun_struct& other_gun){
+uint8_t led_update(const this_gun_struct& this_gun){
 	
 	//set color from state data		
 	if (this_gun.state_duo > 0 || this_gun.state_solo > 0)	{
@@ -90,7 +90,7 @@ uint8_t led_update(const this_gun_struct& this_gun,const other_gun_struct& other
 	
 	uint32_t total_time_offset;
 	if (this_gun.connected) {
-		total_time_offset = (this_gun.clock >> 1) + (other_gun.clock >> 1);  //average the two values
+		total_time_offset = (this_gun.clock >> 1) + (this_gun.other_gun_clock >> 1);  //average the two values
 	}else{
 		total_time_offset = this_gun.clock;
 	}

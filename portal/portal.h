@@ -21,6 +21,7 @@
 #define playlist_duo_SIZE 10
 #define playlist_solo_SIZE 10
 struct this_gun_struct {
+	bool gordon = false;
 	uint8_t mode = MODE_DUO;
 	uint8_t brightness = 0;
 	int8_t state_duo = 0;  //state reported to other gun
@@ -53,15 +54,18 @@ struct this_gun_struct {
 	
 	float  battery_level_pretty=0;
 	float  temperature_pretty=0;
-};  
-
-
-struct other_gun_struct {
-	int state = 0; //state read from other gun
-	int state_previous = 0;
 	
-	uint32_t last_seen = 0;
-	uint32_t clock = 0;
+	int gst_state = 0;
+	int ahrs_state = 0;
+	
+	bool video_done = false;  //flag set via shared memory with gstvideo
+	
+	int other_gun_state = 0; //state read from other gun
+	int other_gun_state_previous = 0;
+	
+	uint32_t other_gun_last_seen = 0;
+	uint32_t other_gun_clock = 0;
+	
 };  
 
 int piHiPri (const int pri);

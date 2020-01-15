@@ -1,4 +1,3 @@
-
 #define GL_GLEXT_PROTOTYPES
 
 #include <stdio.h>

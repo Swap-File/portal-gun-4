@@ -1,6 +1,5 @@
-//#define GST_USE_UNSTABLE_API  //if you're not out of control you're not in control
-
 #include "gstvideo.h"
+#include "../sharedmem.h"
 #include <sys/resource.h>
 #include <gst/gst.h>
 #include <gst/gl/gl.h>
@@ -15,8 +14,7 @@
 #include <GL/gl.h>
 #include <GL/glx.h>
 
-#include <fcntl.h>
-#include <unistd.h>
+#include <unistd.h>  //getpid for priority change
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -28,16 +26,9 @@
 #include "BitmapFontClass.h"
 #include "../portal.h"
 
-char* effectnames[100];
+char * effectnames[100];
+struct this_gun_struct *this_gun;
 
-int other_gun_time;
-struct this_gun_struct this_gun;
-bool gordon = false;
-
-int parentpid = 0;
-int raspivid_PID = 0;
-
-int input_command_pipe;
 Display *dpy;
 Window win;
 GLXContext ctx;
@@ -67,14 +58,6 @@ static double current_time(void) {
 	return (double) tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 
-unsigned int millis (void){
-  struct  timespec ts ;
-
-  clock_gettime (CLOCK_MONOTONIC_RAW, &ts) ;
-  uint64_t now  = (uint64_t)ts.tv_sec * (uint64_t)1000 + (uint64_t)(ts.tv_nsec / 1000000L) ;
-
-  return (uint32_t)now ;
-}
 
 /* new window size or exposure */
 static void reshape(int screen_width, int screen_height)
@@ -96,7 +79,7 @@ static void reshape(int screen_width, int screen_height)
 }
 
 void video_ended(){
-	if (parentpid != 0)	kill(parentpid,SIGUSR2);
+	this_gun->video_done = true;
 }
 
 static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data){
@@ -495,8 +478,8 @@ void print_text_overlay(){
 	glBindTexture(GL_TEXTURE_2D, 0); //no texture	
 	
 	
-	if (this_gun.state_solo < 0 || this_gun.state_duo < 0) slide_to(0.0,0.5,0.5); 
-	else if (this_gun.state_solo > 0 || this_gun.state_duo > 0) slide_to(0.8,0.4,0.0); 
+	if (this_gun->state_solo < 0 ||this_gun->state_duo < 0) slide_to(0.0,0.5,0.5); 
+	else if (this_gun->state_solo > 0 ||this_gun->state_duo > 0) slide_to(0.8,0.4,0.0); 
 	else slide_to(0.0,0.0,0.0); 
 	
 	
@@ -513,40 +496,40 @@ void print_text_overlay(){
 
     char temp[200];
 
-	if (gordon)   sprintf(temp,"Gordon");	
+	if (this_gun->gordon)   sprintf(temp,"Gordon");	
 	else  sprintf(temp,"Chell");	
-   print_centered(temp,64* 9.25);
+    print_centered(temp,64* 9.25);
 	
-	  sprintf(temp,"%.0f/%.0f\260F",this_gun.temperature_pretty ,this_gun.coretemp);	
+	  sprintf(temp,"%.0f/%.0f\260F",this_gun->temperature_pretty ,this_gun->coretemp);	
 	print_centered(temp,64* 8);
 					
 	
-    if (this_gun.connected) sprintf(temp,"Synced");	
+    if (this_gun->connected) sprintf(temp,"Synced");	
 	else  sprintf(temp,"Sync Err");	
     print_centered(temp,64* 7);
 	
 	 sprintf(temp,"Idle");
-	if (this_gun.state_solo > 0 || this_gun.state_solo < 0 ||  this_gun.state_duo > 1 )  sprintf(temp,"Emitting");	//collecting or countdown
-    if (this_gun.state_duo < 0)  sprintf(temp,"Capturing");
+	if (this_gun->state_solo > 0 ||this_gun->state_solo < 0 || this_gun->state_duo > 1 )  sprintf(temp,"Emitting");	//collecting or countdown
+    if (this_gun->state_duo < 0)  sprintf(temp,"Capturing");
     print_centered(temp,64* 6);
 	
 	sprintf(temp,"?");	
     print_centered(temp,64* 5);
 	
-   sprintf(temp,"%ddB %dMB/s",this_gun.dbm , this_gun.tx_bitrate);	 
+   sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
     print_centered(temp,64* 4);
 	
-	sprintf(temp,"%.1fV %.2fms",this_gun.battery_level_pretty,this_gun.latency );	
+	sprintf(temp,"%.1fV %.2fms",this_gun->battery_level_pretty,this_gun->latency );	
     print_centered(temp, 64* 3);
 	
-	if (this_gun.mode == 2) sprintf(temp,"%s",effectnames[this_gun.playlist_duo[1]]);		  //effectnames
-	else					sprintf(temp,"%s",effectnames[this_gun.playlist_solo[1]]);		
+	if (this_gun->mode == 2) sprintf(temp,"%s",effectnames[this_gun->playlist_duo[1]]);		  //FIX THIS
+	else					sprintf(temp,"%s",effectnames[this_gun->playlist_solo[1]]);		
 	print_centered(temp,64* 2);
 	
 		uint_fast32_t current_time;	
-	if (this_gun.mode == 2)  {
+	if (this_gun->mode == 2)  {
 		sprintf(temp,"Duo Mode");	
-		if (this_gun.connected) current_time = (millis() +other_gun_time)/2;
+		if (this_gun->connected) current_time = (millis() + this_gun->other_gun_clock)/2;
 		else current_time = millis();  
 	}
 	else   {  
@@ -554,10 +537,7 @@ void print_text_overlay(){
 	 current_time = millis();
 	}
     print_centered(temp,64);
-	
-	
 
-  	
 	uint_fast32_t milliseconds = (current_time % 1000);
 	uint_fast32_t seconds      = (current_time / 1000) % 60;
 	uint_fast32_t minutes      =((current_time / (1000*60)) % 60);
@@ -585,71 +565,8 @@ static gboolean idle_loop (gpointer data) {
 	static double tRate0 = -1.0;
 	double t = current_time();
 
-	//read as much as we can
-	while (1){
-		
-		#define buf_len 250
-		static int buf_index = 0;
-		char buffer[buf_len];
-		
-		int characters_read = read(input_command_pipe, &buffer[buf_index], 1);
-		//printf("\n-%d-\n",characters_read);
-		if (characters_read <= 0){ //done!
-			//printf("Done.");
-			break; 
-		}else{
-			buf_index++;
-		}
-		
-		if (buf_index >= buf_len - 1) { //overflow
-			buf_index = 0;  
-			printf("\nOverflow..\n");
-		}
-		
-		if (buf_index > 0){
-			if (buffer[buf_index-1] == '\n'){  //parse it!
-				
-				buffer[buf_index] = '\0'; //replace newline with null to terminate string  
-				//printf("\nParsing..\n");
-				//printf("\n%s\n",buffer);
-				
-				int temp_int[16];
-				float temp_float[4];
-				
-				int result = sscanf(buffer,"%d %d %d %d %d %d %d %d %d %d %d %d %f %f %f %f %d %d %d %d", \
-				&temp_int[0],&temp_int[1],&temp_int[2],&temp_int[3],&temp_int[4],&temp_int[5],&temp_int[6], \
-				&temp_int[7],&temp_int[8],&temp_int[9],&temp_int[10],&temp_int[11],&temp_float[0],&temp_float[1], \
-				&temp_float[2],&temp_float[3],&temp_int[12],&temp_int[13],&temp_int[14],&temp_int[15]);
-				if (result != 20){
-					fprintf(stderr, "Unrecognized input with %d items.\n", result);
-				}else{
-					portal_mode_requested 			= temp_int[0];
-					video_mode_requested  			= temp_int[1];
-					this_gun.accel[0]     			= temp_int[2];
-					this_gun.accel[1]     			= temp_int[3];
-					this_gun.accel[2]     			= temp_int[4];
-					this_gun.state_solo     		= temp_int[5];
-					this_gun.state_duo     			= temp_int[6];
-					this_gun.connected     			= temp_int[7];
-					this_gun.playlist_solo[0]   	= temp_int[8];
-					this_gun.playlist_solo[1]   	= temp_int[9];
-					this_gun.playlist_duo[0]    	= temp_int[10];
-					this_gun.playlist_duo[1]    	= temp_int[11];
-					this_gun.battery_level_pretty 	= temp_float[0];
-					this_gun.temperature_pretty 	= temp_float[1];
-					this_gun.coretemp 				= temp_float[2];
-					this_gun.latency 				= temp_float[3];
-					this_gun.mode 					= temp_int[12];
-					other_gun_time 					= temp_int[13];
-					this_gun.dbm			 		= temp_int[14];
-					this_gun.tx_bitrate				= temp_int[15];		
-
-				}
-				
-				buf_index = 0;
-			}
-		}
-	}
+	portal_mode_requested = this_gun->ahrs_state;
+	video_mode_requested  = this_gun->gst_state;
 	//printf("\ncycle..\n");
 	if (movieisplaying){
 		if (video_mode_current >= GST_MOVIE_FIRST && video_mode_current <= GST_MOVIE_LAST ){
@@ -667,17 +584,12 @@ static gboolean idle_loop (gpointer data) {
 				movieisplaying = false;
 			}
 			
-		}
-		
-		
+		}		
 	}
 	
 	model_board_animate(accleration,portal_mode_requested);
 	model_board_redraw(gst_shared_texture,portal_mode_requested);
-	
 	print_text_overlay();
-
-  
 
 	glXSwapBuffers(dpy, win);
 	
@@ -710,7 +622,7 @@ static gboolean idle_loop (gpointer data) {
 
 
 int main(int argc, char *argv[]){
-
+     shm_setup(&this_gun,false );
 	effectnames[GST_BLANK] = (char *)"Blank";
     effectnames[GST_VIDEOTESTSRC] =(char *) "Test";
 	effectnames[GST_VIDEOTESTSRC_CUBED] = (char *)"3D Test";
@@ -762,25 +674,6 @@ int main(int argc, char *argv[]){
 	//set priority for the opengl engine and video output
 	
 	setpriority(PRIO_PROCESS, getpid(), -10);
-	
-	if (argc < 2){
-		printf("GSTVIDEO: No Parent Pid Supplied, EoS signaling disabled!\n");
-	}else{
-		parentpid = atoi(argv[1]);
-	}
-	printf("GSTVIDEO: Using PID %d!\n",parentpid);
-	
-	mkfifo ("/home/pi/GSTVIDEO_IN_PIPE", 0777 );
-	system("chown pi /home/pi/GSTVIDEO_IN_PIPE");
-	
-	//OPEN PIPE WITH READ ONLY
-	if ((input_command_pipe = open ("/home/pi/GSTVIDEO_IN_PIPE",  ( O_RDONLY | O_NONBLOCK ) ))<0){
-		perror("GSTVIDEO: Could not open named pipe for reading.");
-		exit(-1);
-	}
-	printf("GSTVIDEO: /home/pi/GSTVIDEO_IN_PIPE has been opened.\n");
-
-	fcntl(input_command_pipe, F_SETFL, fcntl(input_command_pipe, F_GETFL, 0) | O_NONBLOCK);
 	
 	/* Initialize X11 */
 	//unsigned int winWidth = 720, winHeight = 480;
@@ -849,27 +742,21 @@ int main(int argc, char *argv[]){
 	load_pipeline(GST_VIDEOTESTSRC_CUBED ,(char *)"videotestsrc ! video/x-raw,width=640,height=480,framerate=(fraction)30/1 ! queue ! glupload ! glfiltercube ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true");
 	
  //camera launch 192.168.1.20 gordon    192.168.1.21 chell
-	if(getenv("GORDON")){
-		gordon = true;
+	if(this_gun->gordon){
 		load_pipeline(GST_RPICAMSRC ,(char *)"rpicamsrc preview=0 ! image/jpeg,width=640,height=480,framerate=30/1 ! "
 		"queue max-size-time=50000000 leaky=upstream ! jpegparse ! tee name=t "
 		"t. ! queue ! rtpjpegpay ! udpsink host=192.168.3.21 port=9000 sync=false "
 		"t. ! queue ! jpegdec ! videorate ! video/x-raw,framerate=10/1 ! videoscale ! video/x-raw,width=400,height=240 ! videoflip method=3 ! jpegenc ! multifilesink location=/var/www/html/tmp/snapshot.jpg sync=false "
 		"t. ! queue ! jpegdec ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false"
   );  //the order of this matters, the fakesink MUST Be last in the tee chain!
-	}else if(getenv("CHELL")){
+	}else {
 		load_pipeline(GST_RPICAMSRC ,(char *)"rpicamsrc preview=0 ! image/jpeg,width=640,height=480,framerate=30/1 ! "
 		"queue max-size-time=50000000 leaky=upstream ! jpegparse ! tee name=t "
 		"t. ! queue ! rtpjpegpay ! udpsink host=192.168.3.20 port=9000 sync=false "
 		"t. ! queue ! jpegdec ! videorate ! video/x-raw,framerate=10/1 ! videoscale ! video/x-raw,width=400,height=240 ! videoflip method=3 ! jpegenc ! multifilesink location=/var/www/html/tmp/snapshot.jpg sync=false "
 		"t. ! queue ! jpegdec ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false"
   );  //the order of this matters, the fakesink MUST Be last in the tee chain!
-	}
-	else {
-		printf("SET THE GORDON OR CHELL ENVIRONMENT VARIABLE!");
-		exit(1);
-	}
-	
+	}	
  
 	//normal
 	load_pipeline(GST_NORMAL ,(char *)"udpsrc port=9000 caps=application/x-rtp retrieve-sender-address=false ! rtpjpegdepay ! jpegdec ! queue ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false");
@@ -901,7 +788,7 @@ int main(int argc, char *argv[]){
 	//audio effects - alsasrc takes a second or so to init, so here a output-selector is used
 	//effect order matters since pads on the output selector can't easily be named in advance 
 	//audio format must match the movie output stuff, otherwise the I2S Soundcard will get slow and laggy when switching formats!
-	load_pipeline(GST_LIBVISUAL_FIRST,(char *)"alsasrc buffer-time=20000 ! audio/x-raw,layout=interleaved,rate=44100,format=S32LE,channels=2 ! queue max-size-time=10000000 leaky=downstream ! queue ! audioconvert ! audiorate ! "
+	load_pipeline(GST_LIBVISUAL_FIRST,(char *)"alsasrc buffer-time=20000 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! queue max-size-time=10000000 leaky=downstream ! queue ! audioconvert ! audiorate ! "
 	"output-selector name=audioin pad-negotiation-mode=Active "
 	"audioin. ! libvisual_jess     ! videosink. "
 	"audioin. ! libvisual_infinite ! videosink. "
@@ -919,7 +806,7 @@ int main(int argc, char *argv[]){
 	load_pipeline(GST_MOVIE_FIRST ,(char *) "filesrc location=/home/pi/assets/movies/all.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true async=false "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=44100,format=S32LE,channels=2 ! alsasink sync=true async=false device=dmix");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true async=false device=dmix");
 	//"dmux.audio_0 ! fakesink");  //disable sound for testing on the workbench
 
 	//save the output pads from the visualization pipelines

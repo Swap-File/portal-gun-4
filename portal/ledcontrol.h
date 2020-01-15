@@ -1,7 +1,7 @@
 #ifndef _LEDCONTROL_H
 #define _LEDCONTROL_H
 
-uint8_t led_update(const this_gun_struct& this_gun,const other_gun_struct& other_gun);
+uint8_t led_update(const this_gun_struct& this_gun);
 void ledcontrol_setup(void);
 void ledcontrol_wipe(void);
 

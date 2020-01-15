@@ -27,7 +27,6 @@ int ahrs_crashes = 0;
 FILE *iw_fp;
 FILE *ifstat_fp;
 FILE *bash_fp;
-FILE *gstvideo_fp;
 FILE *ping_fp;
 
 uint8_t temp_index = 0;
@@ -56,10 +55,6 @@ void pipecontrol_setup(){
 	//kick the core logic up to realtime for faster bit banging
 	piHiPri(40);
 	
-	gstvideo_fp = fopen("/home/pi/GSTVIDEO_IN_PIPE", "w");
-	int gstvideo_fp_int = fileno(gstvideo_fp);
-	fcntl(gstvideo_fp_int, F_SETFL, O_NONBLOCK);
-	
 	bash_fp = popen("bash", "w");
 	fcntl(fileno(bash_fp), F_SETFL, fcntl(fileno(bash_fp), F_GETFL, 0) | O_NONBLOCK);
  
@@ -80,10 +75,7 @@ void pipecontrol_setup(){
 	
 	if(getenv("GORDON")) 		ping_fp = popen("ping -i 0.2 192.168.3.21", "r");
 	else if(getenv("CHELL")) 	ping_fp = popen("ping -i 0.2 192.168.3.20", "r");
-	else {
-		printf("SET THE GORDON OR CHELL ENVIRONMENT VARIABLE!");
-		exit(1);
-	}
+
 	fcntl(fileno(ping_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);	
 	
 	ifstat_fp  = popen("ifstat -i wlan0", "r");
@@ -116,50 +108,7 @@ void pipecontrol_setup(){
 	bcm2835_gpio_set_pud(PIN_ALT, BCM2835_GPIO_PUD_UP);
 	bcm2835_gpio_set_pud(PIN_MODE, BCM2835_GPIO_PUD_UP);
 	bcm2835_gpio_set_pud(PIN_RESET, BCM2835_GPIO_PUD_UP);
-}
-
-void gstvideo_command(const this_gun_struct& this_gun,int clock){
-		
-	//gstreamer state stuff, blank it if shared state and private state are 0
-	int gst_state = GST_BLANK;
-	//camera preload
-	if(this_gun.state_duo <= -1) gst_state = GST_RPICAMSRC;
-	//project shared preload
-	else if(this_gun.state_duo >= 1) gst_state = this_gun.effect_duo;		
-	//project private preload
-	else if(this_gun.state_solo != 0) gst_state = this_gun.effect_solo;	
-	
-	//ahrs effects
-	int ahrs_state = AHRS_CLOSED; 
-	// for networked modes
-	if (this_gun.state_solo == 0){
-		if (this_gun.state_duo == 3)      ahrs_state = AHRS_CLOSED_ORANGE;
-		else if (this_gun.state_duo == 4) ahrs_state = AHRS_OPEN_ORANGE;		
-		else if (this_gun.state_duo == 5) ahrs_state = AHRS_CLOSED_ORANGE; //blink shut on effect change
-	}
-	// for self modes
-	if (this_gun.state_duo == 0){
-		if (this_gun.state_solo == 3)       ahrs_state = AHRS_CLOSED_ORANGE;
-		else if (this_gun.state_solo == -3) ahrs_state = AHRS_CLOSED_BLUE;
-		else if (this_gun.state_solo <= -4) ahrs_state = AHRS_OPEN_BLUE;
-		else if (this_gun.state_solo >= 4)  ahrs_state = AHRS_OPEN_ORANGE;
-	} 
-		
-		
-	fprintf(gstvideo_fp, "%d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d %d %d %d \n",\
-	ahrs_state,gst_state,this_gun.accel[0],this_gun.accel[1],this_gun.accel[2],\
-	this_gun.state_solo,this_gun.state_duo,this_gun.connected,\
-	this_gun.playlist_solo[this_gun.playlist_solo_index],this_gun.effect_solo,\
-	this_gun.playlist_duo[this_gun.playlist_duo_index],this_gun.effect_duo,\
-	this_gun.battery_level_pretty,this_gun.temperature_pretty,this_gun.coretemp,\
-	this_gun.latency,this_gun.mode,clock,this_gun.dbm,this_gun.tx_bitrate);
-			
-	fflush(gstvideo_fp);
-	
-	if (errno == EPIPE) {
-		printf("BROKEN PIPE TO gstvideo_command!\n");
-	}
-}		
+}	
 
 void aplay(const char *filename){
 	//use dmix for alsa so sounds can play over each other
