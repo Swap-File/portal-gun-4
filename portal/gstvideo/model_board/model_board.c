@@ -1,18 +1,11 @@
-#define GL_GLEXT_PROTOTYPES
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <assert.h>
-#include <unistd.h>
-#include <stdexcept>
-
+#include <math.h>  //sqrt
+#include <stdbool.h>
 #include <gst/gst.h>
 #include <gst/gl/gl.h>
 #include <GL/glx.h>
 #include <GL/glxext.h>
-
 #include "png_texture.h"
 #include "../gstvideo.h"
 
@@ -33,8 +26,6 @@ bool event_horizon_vertex_list_shimmer_direction = true;
 float event_horizon_transparency_level = 0;
 
 float global_zoom = 0;
-
-
 
 float torus_offset[360];
 float running_magnitude;
@@ -278,13 +269,13 @@ void model_board_animate(int acceleration[], int frame){
 		event_horizon_transparency_level = 1.0;
 	}else{
 		//wait for zoom to finish before fading to background
-		if (event_horizon_transparency_level == 1.0 and global_zoom >= 0.5){ //wait for portal to be open a bit before unfading
+		if (event_horizon_transparency_level == 1.0 && global_zoom >= 0.5){ //wait for portal to be open a bit before unfading
 			event_horizon_transparency_level = .99; //bump the transparency and let it fall the rest of the way
 		}
 	}
 	
 	//let transparency fall to maximum
-	if (event_horizon_transparency_level > 0.0 and event_horizon_transparency_level < 1.0 ){
+	if (event_horizon_transparency_level > 0.0 && event_horizon_transparency_level < 1.0 ){
 		event_horizon_transparency_level = event_horizon_transparency_level - 0.01;
 		if (event_horizon_transparency_level < 0) event_horizon_transparency_level = 0;
 	}
@@ -325,7 +316,8 @@ void model_board_init(void)
 	
 	if (orange_n == 0 || blue_n == 0 || texture_orange == 0 || texture_blue == 0 || orange_0 == 0 || orange_1 == 0 || blue_0 == 0 || blue_1 == 0 || circle64 == 0)
 	{
-		throw std::runtime_error("Loading textures failed.");
+		printf("Loading textures failed.\n");
+		exit(1);
 	}
 
 	glEnable(GL_DEPTH_TEST);

@@ -1,21 +1,10 @@
-OBJs := $(patsubst %.cpp, %.o, $(wildcard *.cpp)) 
+OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) 
 DEPs := $(OBJs:%.o=%.d)
 BIN  := portal
-CC  = g++
+CC  = gcc
 
-# Use a modern language
-CPPFLAGS += --std=c++0x
-
-# Turn on "all" warnings
-CPPFLAGS += -Wall
-
-# Generate .d files with dependency info
-CPPFLAGS += -MD -MP
-
-# Debuggable and optimized.
-CPPFLAGS += -O2
-
-LDFLAGS += -lpthread -lm
+CFLAGS += --std=gnu99 -Wall -Werror -O2
+LDFLAGS += -lm
 
 .PHONY: all
 all: subprocesses portal

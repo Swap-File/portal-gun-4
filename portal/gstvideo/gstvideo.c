@@ -4,35 +4,21 @@
 #include <gst/gst.h>
 #include <gst/gl/gl.h>
 #include <gst/gl/x11/gstgldisplay_x11.h>
-#include <math.h>
-#include <stdlib.h>
+#include <math.h> //M_PI
 #include <stdio.h>
-#include <string.h>
-
 #include <X11/Xlib.h>
-
-#include <GL/gl.h>
 #include <GL/glx.h>
-
 #include <unistd.h>  //getpid for priority change
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-
-#include <iostream>
-#include <string>
-
+#include <sys/time.h>  //gettimeofday
 #include "model_board/model_board.h"
 #include "BitmapFontClass.h"
 #include "../portal.h"
 
-char * effectnames[100];
-struct this_gun_struct *this_gun;
+struct gun_struct *this_gun;
 
 Display *dpy;
 Window win;
 GLXContext ctx;
-CBitmapFont FontNormal;
 
 GstPad *outputpads[6];	
 GstElement *outputselector;
@@ -58,7 +44,6 @@ static double current_time(void) {
 	return (double) tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 
-
 /* new window size or exposure */
 static void reshape(int screen_width, int screen_height)
 {
@@ -75,7 +60,6 @@ static void reshape(int screen_width, int screen_height)
 	hwd = hht * screen_width / screen_height;
 
 	glFrustum(-hwd, hwd, -hht, hht, nearp, farp);
-	
 }
 
 void video_ended(){
@@ -297,7 +281,7 @@ gint64 get_position(){
 gboolean drawCallback (GstElement* object, guint id , guint width ,guint height, gpointer user_data){
 
 	static GTimeVal current_time;
-	static glong last_sec = current_time.tv_sec;
+	static glong last_sec = 0;
 	static gint nbFrames = 0;
 	
 	//printf("Texture #:%d  X:%d  Y:%d!\n",id,width,height);
@@ -310,7 +294,7 @@ gboolean drawCallback (GstElement* object, guint id , guint width ,guint height,
 	if ((current_time.tv_sec - last_sec) >= 1)
 	{
 		get_position();
-		std::cout << "GSTREAMER FPS = " << nbFrames << std::endl;
+		printf("GSTREAMER FPS = %d\n",nbFrames);
 		nbFrames = 0;
 		last_sec = current_time.tv_sec;
 	}
@@ -349,7 +333,6 @@ void load_pipeline(int i, char * text){
 		gst_element_set_state (GST_ELEMENT (pipeline[i]), GST_STATE_PAUSED);
 	}
 }
-
 
 static int video_mode_requested = 0;
 static int video_mode_current = -1;
@@ -424,8 +407,8 @@ void start_pipeline(){
 
 
 void print_centered(char * input,int height){
-	int offset = ((768/2) - FontNormal.GetWidth(input) )/2;
-	FontNormal.Print(input,offset,height);
+	int offset = ((768/2) - CBitmapFontGetWidth(input) )/2;
+	CBitmapFontPrintXY(input,offset,height);
 }
 
 GLuint text_vertex_list;
@@ -491,8 +474,8 @@ void print_text_overlay(){
 	// Setup Texture, color and blend options
 	glEnable(GL_TEXTURE_2D);
 
-	FontNormal.Bind();
-	FontNormal.SetBlend();
+	CBitmapFontBind();
+	CBitmapFontSetBlend();
 
 	char temp[200];
 
@@ -627,53 +610,6 @@ static gboolean idle_loop (gpointer data) {
 
 int main(int argc, char *argv[]){
 	shm_setup(&this_gun,false );
-	effectnames[GST_BLANK] = (char *)"Blank";
-	effectnames[GST_VIDEOTESTSRC] =(char *) "Test";
-	effectnames[GST_VIDEOTESTSRC_CUBED] = (char *)"3D Test";
-	effectnames[GST_RPICAMSRC] = (char *)"Rpicam";
-	effectnames[GST_NORMAL] = (char *)"Normal";
-	
-	effectnames[GST_LIBVISUAL_JESS] = (char *)"Jess";
-	effectnames[GST_LIBVISUAL_INFINITE] =(char *) "Infinite";
-	effectnames[GST_LIBVISUAL_JAKDAW] = (char *)"Jakdaw";
-	effectnames[GST_LIBVISUAL_OINKSIE] = (char *)"Oinksie";
-	effectnames[GST_GOOM] = (char *)"Goom";
-	effectnames[GST_GOOM2K1] = (char *)"Goom2k1";
-
-	effectnames[GST_STREAKTV] = (char *)"Streak";
-	effectnames[GST_RADIOACTV] =(char *) "Radioact";
-	effectnames[GST_REVTV] =(char *) "Rev";
-	effectnames[GST_AGINGTV] = (char *)"Aging";
-	effectnames[GST_DICETV] = (char *)"Dice";
-	effectnames[GST_WARPTV] = (char *)"Warp";
-	effectnames[GST_SHAGADELICTV] = (char *)"Shag";
-	effectnames[GST_VERTIGOTV] = (char *)"Vertigo";
-	effectnames[GST_AATV] = (char *)"Ascii";
-	effectnames[GST_CACATV] =(char *) "Caca";
-	effectnames[GST_RIPPLETV] = (char *)"Ripple";
-	effectnames[GST_EDGETV] = (char *)"Edge";
-
-	effectnames[GST_GLCUBE] =(char *) "Cube";
-	effectnames[GST_GLMIRROR] =(char *) "Mirror";
-	effectnames[GST_GLSQUEEZE] = (char *)"Squeeze";
-	effectnames[GST_GLSTRETCH] = (char *)"Stretch";
-	effectnames[GST_GLTUNNEL] = (char *)"Tunnel";
-	effectnames[GST_GLTWIRL] = (char *)"Twirl";
-	effectnames[GST_GLBULGE] = (char *)"Buldge";
-	effectnames[GST_GLHEAT] = (char *)"Heat";
-
-	effectnames[GST_MOVIE1] = (char *)"Movie1";
-	effectnames[GST_MOVIE2] = (char *)"Movie2";
-	effectnames[GST_MOVIE3] = (char *)"Movie3";
-	effectnames[GST_MOVIE4] = (char *)"Movie4";
-	effectnames[GST_MOVIE5] = (char *)"Movie5";
-	effectnames[GST_MOVIE6] = (char *)"Movie6";
-	effectnames[GST_MOVIE7] = (char *)"Movie7";
-	effectnames[GST_MOVIE8] = (char *)"Movie8";
-	effectnames[GST_MOVIE9] = (char *)"Movie9";
-	effectnames[GST_MOVIE10] = (char *)"Movie10";
-	effectnames[GST_MOVIE11] = (char *)"Movie11";
-	effectnames[GST_MOVIE12] = (char *)"Movie12";
 
 	//set priority for the opengl engine and video output
 	
@@ -826,7 +762,7 @@ int main(int argc, char *argv[]){
 	outputpads[5] = gst_element_get_static_pad(outputselector,"src_5");
 
 
-	FontNormal.Load((char *)"/home/pi/portal/gstvideo/Consolas.bff");
+	CBitmapFontLoad((char *)"/home/pi/portal/gstvideo/Consolas.bff");
 	init_text_background();
 	model_board_init();
 	

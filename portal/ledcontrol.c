@@ -1,13 +1,7 @@
-#include "portal.h"
 #include "ledcontrol.h" 
-#include <unistd.h>
-#include <fcntl.h>
-
 #include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <math.h>
+#include <stdlib.h>  //abs
+#include <math.h>  //PI & E
 #include <bcm2835.h>
 
 #define EFFECT_LENGTH 20  //length of the effect, doubled for output
@@ -17,13 +11,13 @@
 #define EFFECT_RESOLUTION 400
 #define BREATHING_RATE 2000
 
-CRGB main_buffer_step1[EFFECT_LENGTH];
-CRGB main_buffer_step2[EFFECT_LENGTH];
+struct CRGB main_buffer_step1[EFFECT_LENGTH];
+struct CRGB main_buffer_step2[EFFECT_LENGTH];
 int timearray[EFFECT_LENGTH];
 
-CRGB color1;
-CRGB color2;
-CRGB color1_previous;
+struct CRGB color1;
+struct CRGB color2;
+struct CRGB color1_previous;
 
 uint8_t overlay = 0;
 
@@ -52,49 +46,49 @@ uint8_t brightnesslookup[256][EFFECT_RESOLUTION];
 
 float ledcontrol_update(int width_temp,int width_speed_temp,int overlay_temp, int total_offset);
 
-uint8_t led_update(const this_gun_struct& this_gun){
+uint8_t led_update(const struct gun_struct *this_gun){
 	
 	//set color from state data		
-	if (this_gun.state_duo > 0 || this_gun.state_solo > 0)	{
-		color1 = CRGB(214,40,0);
-		color2 = CRGB(0,30,224);
+	if (this_gun->state_duo > 0 || this_gun->state_solo > 0){
+		color1 = (struct CRGB){.r = 214, .g =  40, .b =   0};
+		color2 = (struct CRGB){.r =   0, .g =  30, .b = 224};
 	}
-	else if(this_gun.state_duo < 0 || this_gun.state_solo < 0)	{
-		color1 = CRGB(0,30,224);
-		color2 = CRGB(214,40,0);
+	else if(this_gun->state_duo < 0 || this_gun->state_solo < 0){
+		color1 = (struct CRGB){.r =   0, .g =  30, .b = 224};
+		color2 = (struct CRGB){.r = 214, .g =  40, .b =   0};
 	}
 	else{
-		color1 = CRGB(0,0,0);
-		color2 = CRGB(0,0,0);
+		color1 = (struct CRGB){.r =   0, .g =   0, .b =   0};
+		color2 = (struct CRGB){.r =   0, .g =   0, .b =   0};
 	}
-	
+
 	//set width
 	int width_request = 20; //default is full fill
 	
-	if(this_gun.state_duo == 1 || this_gun.state_solo == -1 || this_gun.state_solo == 1 || this_gun.state_duo == -3 ){
+	if(this_gun->state_duo == 1 || this_gun->state_solo == -1 || this_gun->state_solo == 1 || this_gun->state_duo == -3 ){
 		width_request = 10;
 	}
-	else if(this_gun.state_duo == -1)	width_request = 1;	
-	else if(this_gun.state_duo == -2)	width_request = 5;	
+	else if(this_gun->state_duo == -1)	width_request = 1;	
+	else if(this_gun->state_duo == -2)	width_request = 5;	
 	
 	//set width update speed
 	int width_update_speed = 200; //update every .2 seconds
 	
-	if (this_gun.state_duo <= -4 || this_gun.state_duo >= 4 || this_gun.state_solo <= -4 || this_gun.state_solo>= 4 ){
+	if (this_gun->state_duo <= -4 || this_gun->state_duo >= 4 || this_gun->state_solo <= -4 || this_gun->state_solo>= 4 ){
 		width_update_speed = 0; //immediate change
 	}
 	
 	int shutdown_effect = 0;
 	//shutdown_effect
-	if (this_gun.state_duo == 0 && this_gun.state_solo == 0) shutdown_effect = 1;
+	if (this_gun->state_duo == 0 && this_gun->state_solo == 0) shutdown_effect = 1;
 	
 	uint32_t total_time_offset;
-	if (this_gun.connected) {
-		total_time_offset = (this_gun.clock >> 1) + (this_gun.other_gun_clock >> 1);  //average the two values
+	if (this_gun->connected) {
+		total_time_offset = (this_gun->clock >> 1) + (this_gun->other_gun_clock >> 1);  //average the two values
 	}else{
-		total_time_offset = this_gun.clock;
+		total_time_offset = this_gun->clock;
 	}
-	total_time_offset = int((float)(total_time_offset % BREATHING_RATE) * ((float)EFFECT_RESOLUTION)/((float)BREATHING_RATE));
+	total_time_offset = (int)((float)(total_time_offset % BREATHING_RATE) * ((float)EFFECT_RESOLUTION)/((float)BREATHING_RATE));
 	
 	return 255 * ledcontrol_update(width_request,width_update_speed,shutdown_effect,total_time_offset);
 }
@@ -108,14 +102,14 @@ void ledcontrol_setup(void) {
 	printf("LED_Control: Building Lookup Table...\n");
 	for ( int i = 0; i < EFFECT_RESOLUTION; i++ ) { 
 		//add pi/2 to put max value (1) at start of range
-		effect_array[i] =  ((exp(sin( M_PI/2  +(float(i)/(EFFECT_RESOLUTION/BREATHING_PERIOD)*M_PI))) )/ (M_E));
+		effect_array[i] =  ((exp(sin( M_PI/2  +( (float) (i)/(EFFECT_RESOLUTION/BREATHING_PERIOD)*M_PI))) )/ (M_E));
 		//printf( "Y: %f\n", effect_array[i]);
 	}
 	
 	for ( int x = 0; x < 256; x++ ) { 
 		//printf( "X: %d Y:", x);
 		for ( int y = 0; y < EFFECT_RESOLUTION; y++ ) { 
-			brightnesslookup[x][y] = int(float(x * effect_array[y]));
+			brightnesslookup[x][y] = (int)((float)(x * effect_array[y]));
 			//printf( " %d", brightnesslookup[x][y]);
 		}
 		//printf( "\n");
@@ -225,10 +219,10 @@ float ledcontrol_update(int width_temp,int width_update_speed_temp,int overlay_t
 			led_width_requested = 0;
 			led_width_actual = 0 ;
 			color_update_index = 20;
-			color1 = CRGB(0,0,0);
+			color1 = (struct CRGB){.r = 0, .g = 0, .b = 0};
 			color1_previous = color1;
 			for ( int i = 0; i < EFFECT_LENGTH; i++ ){
-				main_buffer_step1[i] = CRGB(0,0,0);
+				main_buffer_step1[i] = (struct CRGB){.r = 0, .g = 0, .b = 0};
 				timearray[i] = timeoffset;
 			}
 			overlay = 0x00;

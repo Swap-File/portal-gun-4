@@ -1,10 +1,7 @@
 #ifndef _BITMAPFONTCLASS_H
 #define _BITMAPFONTCLASS_H
 
-#include <fstream>
-#include <string>
-#include <GL/gl.h>
-#include <string.h>
+#include <stdbool.h>
 
 #define BFG_RS_NONE  0x0      // Blend flags
 #define BFG_RS_ALPHA 0x1
@@ -21,43 +18,24 @@
 #define GL_CLAMP_TO_EDGE 0x812F 
 #endif
 
-typedef struct
- {
+typedef struct {
   unsigned char ID1,ID2;
   unsigned char BPP;
   int ImageWidth,ImageHeight,CellWidth,CellHeight;
   unsigned char StartPoint;
- }FontFileHeader;
+ } FontFileHeader;
 
-class CBitmapFont
- {
-  public:
-   CBitmapFont();
-   ~CBitmapFont();
-   bool Load(char *fname);
-   void SetScreen(int x, int y); 
-   void SetCursor(int x, int y); 
-   void SetColor(float Red, float Green, float Blue);
-   void ReverseYAxis(bool State);
-   void Select();                
-   void Bind();                  
-   void SetBlend();              
-   void Print(char *Text);       
-   void Print(char *Text, int x, int y); 
-   void ezPrint(char *Text, int x, int y);
-   int  GetWidth(char *Text);
-   
-
-  private:
-   int CellX,CellY,YOffset,RowPitch;
-   char Base;
-   char Width[256];   
-   GLuint TexID;
-   int CurX,CurY;
-   float RowFactor,ColFactor;
-   int RenderStyle;
-   float Rd,Gr,Bl;
-   bool InvertYAxis;
- };
+bool CBitmapFontLoad(char *fname);
+void CBitmapFontSetScreen(int x, int y); 
+void CBitmapFontSetCursor(int x, int y); 
+void CBitmapFontSetColor(float Red, float Green, float Blue);
+void CBitmapFontReverseYAxis(bool State);
+void CBitmapFontSelect();                
+void CBitmapFontBind();                  
+void CBitmapFontSetBlend();              
+void CBitmapFontPrint(char *Text);       
+void CBitmapFontPrintXY(char *Text, int x, int y); 
+void CBitmapFontezPrint(char *Text, int x, int y);
+int  CBitmapFontGetWidth(char *Text);
 
 #endif

@@ -6,13 +6,9 @@
 #include "pipecontrol.h"
 #include "statemachine.h"
 #include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <time.h>
+#include <stdlib.h> //exit
+#include <signal.h> //SIGPIPE
+#include <unistd.h> //getuid
 #include <bcm2835.h>
 
 void INThandler(int dummy) {
@@ -31,7 +27,7 @@ int main(void){
 
 	pipecontrol_cleanup();
 	
-	struct this_gun_struct *this_gun;
+	struct gun_struct *this_gun;
 	shm_setup(&this_gun,true );
 	
 	//catch broken pipes to respawn threads if they crash
@@ -48,7 +44,7 @@ int main(void){
 	int changes = 0;
 	
 	//setup libaries
-	web_output(*this_gun);
+	web_output(this_gun);
 	bcm2835_init();
 	ledcontrol_setup();
 	i2creader_setup();	
@@ -71,7 +67,7 @@ int main(void){
 			missed++;
 		}
 		this_gun->clock = millis();  //stop time for duration of frame
-		freq_50hz = !freq_50hz; 
+		freq_50hz = !freq_50hz;
 		this_gun->state_duo_previous = this_gun->state_duo;
 		this_gun->state_solo_previous = this_gun->state_solo;
 		this_gun->other_gun_state_previous = this_gun->other_gun_state;
@@ -85,10 +81,10 @@ int main(void){
 		
 		//read states from buttons
 		int button_event = BUTTON_NONE;	
-		button_event = io_update(*this_gun);
+		button_event = io_update(this_gun);
 
 		//if no event, read from the web
-		if (button_event == BUTTON_NONE) button_event = read_web_pipe(*this_gun);
+		if (button_event == BUTTON_NONE) button_event = read_web_pipe(this_gun);
 		//read other gun's data, only if no button events are happening this cycle
 
 		//if still no event, read button from the other gun for processing
@@ -106,28 +102,25 @@ int main(void){
 		}
 						
 		//process state changes
-		local_state_engine(button_event,*this_gun);
+		local_state_engine(button_event,this_gun);
 		if (button_event != BUTTON_NONE) changes++;
-		
-		//OUTPUT TO gstvideo (combo video and 3d data)
-		//gstvideo_command(*this_gun, other_gun.clock);
 
 		//switch off updating the leds or i2c every other cycle, each takes about 1ms
 		if(freq_50hz){ 
-			this_gun->brightness = led_update(*this_gun);
+			this_gun->brightness = led_update(this_gun);
 		}
 		else{
-			i2creader_update(*this_gun);
+			i2creader_update(this_gun);
 		}
 		
-		audio_effects(*this_gun);
+		audio_effects(this_gun);
 	
 		//send data to other gun
 		static uint32_t time_udp_send = 0;
 		if (this_gun->clock - time_udp_send > 100){
 			udp_send_state(this_gun->state_duo,this_gun->clock);
 			time_udp_send = this_gun->clock;
-			web_output(*this_gun);
+			web_output(this_gun);
 		}
 		
 		//cycle end code - fps counter and stats

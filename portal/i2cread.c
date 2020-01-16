@@ -1,13 +1,7 @@
-#include "portal.h"
 #include "i2cread.h"
-#include <bcm2835.h>
-
 #include <stdio.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <byteswap.h>
 #include <math.h>
-#include <stdlib.h>
+#include <bcm2835.h>
 
 static int i2c_accel[3];
 static int i2c_adc[4];
@@ -17,7 +11,6 @@ static int i2c_adc[4];
 
 static int adc_channel = 0;  //what channel we are working on
 static bool adc_done = true; //is a conversion in progress?
-bool gordon = true;
 
 float temperature_reading(int input){
 	float R =  10000.0 / (26000.0/((float)input) - 1.0);
@@ -113,10 +106,6 @@ bool analog_read_ready(){
 }
 
 void i2creader_setup(void){
-	if (getenv("GORDON"))
-		gordon = true;
-	else if (getenv("CHELL"))
-		gordon = false;
 
 	bcm2835_i2c_begin();
 	bcm2835_i2c_setClockDivider(BCM2835_I2C_CLOCK_DIVIDER_2500); //100hz
@@ -139,7 +128,7 @@ void i2creader_setup(void){
 	bcm2835_i2c_write(temp,2);
 }
 
-void i2creader_update(this_gun_struct& this_gun){
+void i2creader_update(struct gun_struct *this_gun){
 	//uint32_t start_time = micros();
 	
 	//only do one ADC operation per tick
@@ -160,17 +149,17 @@ void i2creader_update(this_gun_struct& this_gun){
 	
 	//printf("Took %d microseconds!\n",micros() - start_time);	
 	
-	this_gun.accel[0] = i2c_accel[0];
-	this_gun.accel[1] = i2c_accel[1];
-	this_gun.accel[2] = i2c_accel[2];
+	this_gun->accel[0] = i2c_accel[0];
+	this_gun->accel[1] = i2c_accel[1];
+	this_gun->accel[2] = i2c_accel[2];
 	
-	if (gordon){
-	this_gun.battery_level_pretty = this_gun.battery_level_pretty * .9 + .1 *(float)i2c_adc[1] * 0.00074;
+	if (this_gun->gordon){
+	this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)i2c_adc[1] * 0.00074;
 	}else{
-	this_gun.battery_level_pretty = this_gun.battery_level_pretty * .9 + .1 *(float)i2c_adc[1] * 0.00072;
+	this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)i2c_adc[1] * 0.00072;
 	}
 	//21600 = 16.1 v  16000  = 12.1v
-	this_gun.temperature_pretty =temperature_reading(i2c_adc[0]);
+	this_gun->temperature_pretty =temperature_reading(i2c_adc[0]);
 }
 
 

@@ -1,14 +1,9 @@
 #include "udpcontrol.h"
-
-#include <arpa/inet.h>
 #include <stdio.h>
-#include <sys/socket.h>
+#include <string.h> //strcpy
+#include <arpa/inet.h> //inet_aton
 #include <sys/fcntl.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <unistd.h>
 
 #define BUFLEN 512
 #define PORT 5005
@@ -48,11 +43,10 @@ void udpcontrol_setup(){
 	else
 	printf("UDP_Control : Sender Socket() successful\n");
 	
-	fcntl(sender_sockfd, F_SETFL, FNDELAY); //Set to nonblocking mode so send to wont block on a full UDP buffer both SENDING and REC
+	fcntl(sender_sockfd, F_SETFL, O_NDELAY); //Set to nonblocking mode so send to wont block on a full UDP buffer both SENDING and REC
 	int yes=1;
 	//setsockopt(sender_sockfd, SOL_SOCKET, SO_BROADCAST, &yes, sizeof(yes));
-	
-	bzero(&sender_addr, sizeof(sender_addr));
+	memset(&sender_addr, 0, sizeof(sender_addr));
 	sender_addr.sin_family = AF_INET;
 	sender_addr.sin_port = htons(PORT);
 
@@ -69,8 +63,8 @@ void udpcontrol_setup(){
 	}
 	else
 	printf("UDP_Control : Receiver Socket() successful\n");
-	fcntl(receiver_sockfd, F_SETFL, FNDELAY);  //Set to nonblocking mode so send to wont block on a full UDP buffer both SENDING and REC
-	bzero(&receiver_addr, sizeof(receiver_addr));
+	fcntl(receiver_sockfd, F_SETFL, O_NDELAY);  //Set to nonblocking mode so send to wont block on a full UDP buffer both SENDING and REC
+	memset(&receiver_addr, 0, sizeof(receiver_addr));
 	receiver_addr.sin_family = AF_INET;
 	receiver_addr.sin_port = htons(PORT);
 	//receiver_addr.sin_addr.s_addr = htonl(dest_ip);

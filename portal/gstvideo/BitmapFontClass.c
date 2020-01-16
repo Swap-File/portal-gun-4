@@ -1,61 +1,44 @@
 #include "BitmapFontClass.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <GL/gl.h>
 
-using namespace std;
+int CellX,CellY,YOffset,RowPitch;
+char Base;
+char Width[256];   
+GLuint TexID;
+int CurX = 0;
+int CurY = 0;
+float RowFactor,ColFactor;
+int RenderStyle;
+float Rd =0;
+float Gr = 0;
+float Bl =0;
+bool InvertYAxis =false;
 
-CBitmapFont::CBitmapFont()
+bool CBitmapFontLoad(char *fname)
  {
-  CurX=CurY=0;
-  Rd=Gr=Bl=1.0f;
-  InvertYAxis=false;
- }
-
-CBitmapFont::~CBitmapFont()
- {
-
- }
-
-bool CBitmapFont::Load(char *fname)
- {
-  char *dat,*img;
-  fstream in;
   int fileSize;
   char bpp;
   int ImgX,ImgY;
 
-  in.open(fname, ios_base::binary | ios_base::in);
+  FILE *f = fopen(fname, "rb");
+  fseek(f, 0, SEEK_END);
+  fileSize = ftell(f);
+  fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
 
-   if(in.fail())
-    return false;
-
-  // Get Filesize
-  in.seekg(0,ios_base::end);
-  fileSize=in.tellg();
-  in.seekg(0,ios_base::beg);
-
-  // allocate space for file data
-  dat=new char[fileSize];
-
-   // Read filedata
-   if(!dat)
-    return false;
-
-  in.read(dat,fileSize);
-
-   if(in.fail())
-    {
-     delete [] dat;
-     in.close();
-     return false;
-    }
-
-  in.close();
-
-   // Check ID is 'BFF2'
-   if((unsigned char)dat[0]!=0xBF || (unsigned char)dat[1]!=0xF2)
-    {
-     delete [] dat;
-     return false;
-    }
+  char *dat = malloc(fileSize);
+  fread(dat, 1, fileSize, f);
+  fclose(f);
+	
+  // Check ID is 'BFF2'
+  if((unsigned char)dat[0]!=0xBF || (unsigned char)dat[1]!=0xF2)
+  {
+  free(dat);
+  return false;
+  }
 
   // Grab the rest of the header
   memcpy(&ImgX,&dat[2],sizeof(int));
@@ -66,7 +49,7 @@ bool CBitmapFont::Load(char *fname)
   Base=dat[19];
 
    // Check filesize
-   if(fileSize!=((MAP_DATA_OFFSET)+((ImgX*ImgY)*(bpp/8))))
+   if (fileSize != ((MAP_DATA_OFFSET)+((ImgX*ImgY)*(bpp/8))) )
 	   return false;
 
   // Calculate font params
@@ -91,17 +74,17 @@ bool CBitmapFont::Load(char *fname)
       break;
 
      default: // Unsupported BPP
-      delete [] dat;
+      free(dat);
       return false;
       break;
     }
 
   // Allocate space for image
-  img=new char[(ImgX*ImgY)*(bpp/8)];
+  char * img=malloc((ImgX*ImgY)*(bpp/8));
 
    if(!img)
     {
-     delete [] dat;
+     free(dat);
      return false;
     }
 
@@ -138,27 +121,27 @@ bool CBitmapFont::Load(char *fname)
     }
 
   // Clean up
-  delete [] img;
-  delete [] dat;
+  free(img);
+  free(dat);
   
   return true;
  }
 
 // Set the position for text output, this will be updated as text is printed
-void CBitmapFont::SetCursor(int x, int y)
+void CBitmapFontSetCursor(int x, int y)
  { 
   CurX=x;
   CurY=y;
  }
 
 // The texture ID is a private member, so this function performs the texture bind
-void CBitmapFont::Bind()
+void CBitmapFontBind()
  {
   glBindTexture(GL_TEXTURE_2D,TexID);
  }
 
 // Set the color and blending options based on the Renderstyle member
-void CBitmapFont::SetBlend()
+void CBitmapFontSetBlend()
  {
   glColor3f(Rd,Gr,Bl);
 
@@ -181,15 +164,15 @@ void CBitmapFont::SetBlend()
  }
 
 // Shortcut, Enables Texturing and performs Bind and SetBlend
-void CBitmapFont::Select()
+void CBitmapFontSelect()
  {
   glEnable(GL_TEXTURE_2D);
-  Bind();
-  SetBlend();
+  CBitmapFontBind();
+  CBitmapFontSetBlend();
  }
 
 // Set the font color NOTE this only sets the polygon color, the texture colors are fixed
-void CBitmapFont::SetColor(float Red, float Green, float Blue)
+void CBitmapFontSetColor(float Red, float Green, float Blue)
  {
   Rd=Red;
   Gr=Green;
@@ -197,7 +180,7 @@ void CBitmapFont::SetColor(float Red, float Green, float Blue)
  }
 
 //
-void CBitmapFont::ReverseYAxis(bool State)
+void CBitmapFontReverseYAxis(bool State)
  {
    if(State)
     YOffset=-CellY;
@@ -208,7 +191,7 @@ void CBitmapFont::ReverseYAxis(bool State)
  }
 
 // Sets up an Ortho screen based on the supplied values 
-void CBitmapFont::SetScreen(int x, int y)
+void CBitmapFontSetScreen(int x, int y)
  {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -221,7 +204,7 @@ void CBitmapFont::SetScreen(int x, int y)
  }
 
 // Prints text at the cursor position, cursor is moved to end of text
-void CBitmapFont::Print(char* Text)
+void CBitmapFontPrint(char* Text)
  {
   int sLen,Loop;
   int Row,Col;
@@ -253,7 +236,7 @@ void CBitmapFont::Print(char* Text)
  }
 
 // Prints text at a specifed position, again cursor is updated
-void CBitmapFont::Print(char* Text, int x, int y)
+void CBitmapFontPrintXY(char* Text, int x, int y)
  {
   int sLen,Loop;
   int Row,Col;
@@ -289,7 +272,7 @@ void CBitmapFont::Print(char* Text, int x, int y)
 // Lazy way to draw text.
 // Preserves all GL attributes and does everything for you.
 // Performance could be an issue.
-void CBitmapFont::ezPrint(char *Text, int x, int y)
+void CBitmapFontezPrint(char *Text, int x, int y)
  {
   GLint CurMatrixMode;
   GLint ViewPort[4];
@@ -318,10 +301,10 @@ void CBitmapFont::ezPrint(char *Text, int x, int y)
   // Setup Texture, color and blend options
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D,TexID);
-  SetBlend();
+  CBitmapFontSetBlend();
 
   // Render text
-  Print(Text,x,y);
+  CBitmapFontPrintXY(Text,x,y);
 
   // Restore previous state
   glPopAttrib();
@@ -335,7 +318,7 @@ void CBitmapFont::ezPrint(char *Text, int x, int y)
  }
 
 // Returns the width in pixels of the specified text
-int CBitmapFont::GetWidth(char* Text)
+int CBitmapFontGetWidth(char* Text)
  {
   int Loop,sLen,Size;
 

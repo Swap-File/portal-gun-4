@@ -1,7 +1,9 @@
 #ifndef _I2CREAD_H
 #define _I2CREAD_H
 
-void i2creader_update(this_gun_struct& this_gun);
+#include "sharedmem.h"
+
+void i2creader_update(struct gun_struct *this_gun);
 void i2creader_setup(void);
 
 //ACCEL STUFF

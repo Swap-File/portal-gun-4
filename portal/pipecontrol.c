@@ -1,18 +1,12 @@
-#include "portal.h"
 #include "pipecontrol.h"
-#include <sys/resource.h>
-#include <unistd.h>
-#include <fcntl.h>
+#include "portal.h"
+#include <sys/resource.h> //setpriority
+#include <unistd.h> //sleep
+#include <fcntl.h>  
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <sys/time.h>  
+#include <stdlib.h> //system exit getenv
+#include <string.h> //strstr
+#include <sys/stat.h> //mkfifo  
 #include <bcm2835.h>
 
 int temp_in;
@@ -107,7 +101,7 @@ void aplay(const char *filename){
 	fflush(bash_fp);
 }
 
-void web_output(const this_gun_struct& this_gun ){
+void web_output(const struct gun_struct *this_gun ){
 	uint8_t web_packet_counter = 0;
 	
 	FILE *webout_fp;
@@ -115,22 +109,22 @@ void web_output(const this_gun_struct& this_gun ){
 	//send full playlist for editing
 	webout_fp = fopen("/var/www/html/tmp/temp.txt", "w");
 	fprintf(webout_fp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d %d\n" ,\
-	this_gun.state_solo,this_gun.state_duo,this_gun.connected,this_gun.ir_pwm,\
-	this_gun.playlist_solo[0],this_gun.playlist_solo[1],this_gun.playlist_solo[2],this_gun.playlist_solo[3],\
-	this_gun.playlist_solo[4],this_gun.playlist_solo[5],this_gun.playlist_solo[6],this_gun.playlist_solo[7],\
-	this_gun.playlist_solo[8],this_gun.playlist_solo[9],this_gun.effect_solo,\
-	this_gun.playlist_duo[0],this_gun.playlist_duo[1],this_gun.playlist_duo[2],this_gun.playlist_duo[3],\
-	this_gun.playlist_duo[4],this_gun.playlist_duo[5],this_gun.playlist_duo[6],this_gun.playlist_duo[7],\
-	this_gun.playlist_duo[8],this_gun.playlist_duo[9],this_gun.effect_duo,\
-	this_gun.battery_level_pretty,this_gun.temperature_pretty,this_gun.coretemp,\
-	this_gun.latency,web_packet_counter,this_gun.mode);
+	this_gun->state_solo,this_gun->state_duo,this_gun->connected,this_gun->ir_pwm,\
+	this_gun->playlist_solo[0],this_gun->playlist_solo[1],this_gun->playlist_solo[2],this_gun->playlist_solo[3],\
+	this_gun->playlist_solo[4],this_gun->playlist_solo[5],this_gun->playlist_solo[6],this_gun->playlist_solo[7],\
+	this_gun->playlist_solo[8],this_gun->playlist_solo[9],this_gun->effect_solo,\
+	this_gun->playlist_duo[0],this_gun->playlist_duo[1],this_gun->playlist_duo[2],this_gun->playlist_duo[3],\
+	this_gun->playlist_duo[4],this_gun->playlist_duo[5],this_gun->playlist_duo[6],this_gun->playlist_duo[7],\
+	this_gun->playlist_duo[8],this_gun->playlist_duo[9],this_gun->effect_duo,\
+	this_gun->battery_level_pretty,this_gun->temperature_pretty,this_gun->coretemp,\
+	this_gun->latency,web_packet_counter,this_gun->mode);
 	fclose(webout_fp);
 	rename("/var/www/html/tmp/temp.txt","/var/www/html/tmp/portal.txt");
 	
 	web_packet_counter++;
 }
 
-int read_web_pipe(this_gun_struct& this_gun){
+int read_web_pipe(struct gun_struct *this_gun){
 	int web_button = BUTTON_NONE;
 	int count = 1;
 	char buffer[100];
@@ -165,18 +159,18 @@ int read_web_pipe(this_gun_struct& this_gun){
 			
 			//ir stuff
 			if (tv[0] == 2 && results == 2) {
-				if (tv[1] >= 0 && tv[1] <= 1024) this_gun.ir_pwm = tv[1];
+				if (tv[1] >= 0 && tv[1] <= 1024) this_gun->ir_pwm = tv[1];
 			}
 			//self playlist setting
 			else if (tv[0] == 3 && results == 11) {
 				for (uint8_t i = 0; i < 10; i++){
-					this_gun.playlist_solo[i] = tv[i+1];
+					this_gun->playlist_solo[i] = tv[i+1];
 				}
 			}
 			//shared playlist setting
 			else if (tv[0] == 4 && results == 11) {
 				for (uint8_t i = 0; i < 10; i++){
-					this_gun.playlist_duo[i] = tv[i+1];
+					this_gun->playlist_duo[i] = tv[i+1];
 				}
 			}
 			
@@ -208,7 +202,6 @@ void update_ping(float * ping){
 		}
 	}
 	if (millis() - ping_time > 2000) *ping = 0.0;
-	return;
 }
 
 
@@ -236,10 +229,8 @@ void update_ifstat(int * kbytes,uint8_t unit){
 			}
 		}
 	}
-	if (bad_count > 3){
+	if (bad_count > 3)
 		*kbytes = 0;
-	}
-	return;
 }
 
 void update_temp(float * temp){	
@@ -279,7 +270,6 @@ void update_temp(float * temp){
 		}
 	}
 	lseek(temp_in,0,SEEK_SET);
-	return;
 }
 
 void update_iw(int * dbm, int * tx_bitrate){
@@ -318,15 +308,13 @@ void update_iw(int * dbm, int * tx_bitrate){
 		*dbm = 0;
 		*tx_bitrate = 0;
 	}
-	
-	return;
 }
 
-int io_update(const this_gun_struct& this_gun){
+int io_update(const struct gun_struct *this_gun){
 	
-	bcm2835_pwm_set_data(FAN_PWM_CHANNEL, this_gun.fan_pwm);
+	bcm2835_pwm_set_data(FAN_PWM_CHANNEL, this_gun->fan_pwm);
 	
-	if (this_gun.state_duo < 0)	bcm2835_pwm_set_data(IR_PWM_CHANNEL, this_gun.ir_pwm);
+	if (this_gun->state_duo < 0)	bcm2835_pwm_set_data(IR_PWM_CHANNEL, this_gun->ir_pwm);
 	else  						bcm2835_pwm_set_data(IR_PWM_CHANNEL, 0);
 	
 	static uint_fast8_t primary_bucket = 0;
@@ -395,86 +383,84 @@ int io_update(const this_gun_struct& this_gun){
 	
 	return BUTTON_NONE;	
 }
-void audio_effects(const this_gun_struct& this_gun){
+void audio_effects(const struct gun_struct *this_gun){
 	
 	//LOCAL STATES
-	if ((this_gun.state_duo_previous != 0 || this_gun.state_solo_previous != 0) && (this_gun.state_duo == 0 && this_gun.state_solo == 0)){
+	if ((this_gun->state_duo_previous != 0 || this_gun->state_solo_previous != 0) && (this_gun->state_duo == 0 && this_gun->state_solo == 0)){
 		aplay("/home/pi/assets/portalgun/portal_close1.wav");
 	}
 	//on entering state 1
-	else if ((this_gun.state_duo_previous != this_gun.state_duo) && (this_gun.state_duo == 1)){
+	else if ((this_gun->state_duo_previous != this_gun->state_duo) && (this_gun->state_duo == 1)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge1.wav");
 	}
 	//on entering state -1
-	else if ((this_gun.state_duo_previous != -1)&& (this_gun.state_duo == -1)){
+	else if ((this_gun->state_duo_previous != -1)&& (this_gun->state_duo == -1)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge1.wav");			
 	}
 	//on entering state 2
-	else if ((this_gun.state_duo_previous !=2 ) &&  (this_gun.state_duo == 2)){
+	else if ((this_gun->state_duo_previous !=2 ) &&  (this_gun->state_duo == 2)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge2.wav");		
 	}
 	//on entering state -2 from -1
-	else if ((this_gun.state_duo_previous !=-2 ) &&  (this_gun.state_duo == -2)){
+	else if ((this_gun->state_duo_previous !=-2 ) &&  (this_gun->state_duo == -2)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge2.wav");
 	}	
-	else if ((this_gun.state_duo_previous !=-3 ) &&  (this_gun.state_duo == -3)){
+	else if ((this_gun->state_duo_previous !=-3 ) &&  (this_gun->state_duo == -3)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge3.wav");
 	}	
 	//on entering state 3 from 2
-	else if ((this_gun.state_duo_previous == 2 ) && ( this_gun.state_duo ==3)){	
+	else if ((this_gun->state_duo_previous == 2 ) && ( this_gun->state_duo ==3)){	
 		aplay("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
 	}
 	//on quick swap to rec
-	else if ((this_gun.state_duo_previous < 4 )&& (this_gun.state_duo == 4)){
+	else if ((this_gun->state_duo_previous < 4 )&& (this_gun->state_duo == 4)){
 		aplay("/home/pi/assets/portalgun/portal_open2.wav");
 	}
 	//on quick swap to transmit
-	else if ((this_gun.state_duo_previous >= 4 )&& (this_gun.state_duo <= -4)){
+	else if ((this_gun->state_duo_previous >= 4 )&& (this_gun->state_duo <= -4)){
 		aplay("/home/pi/assets/portalgun/portal_fizzle2.wav");
 	}	
 
 	//shared effect change close portal end sfx
-	else if (this_gun.state_duo_previous == 4 && this_gun.state_duo == 5){
+	else if (this_gun->state_duo_previous == 4 && this_gun->state_duo == 5){
 		aplay("/home/pi/assets/portalgun/portal_close1.wav");
 	}	
 	//shared effect change open portal end sfx
-	else if (this_gun.state_duo_previous == 5 && this_gun.state_duo == 4){
+	else if (this_gun->state_duo_previous == 5 && this_gun->state_duo == 4){
 		aplay("/home/pi/assets/portalgun/portal_open1.wav");
 	}	
 	
 	//SELF STATES
-	else if ((this_gun.state_solo_previous != this_gun.state_solo) && (this_gun.state_solo == 1 || this_gun.state_solo == -1)){
+	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 1 || this_gun->state_solo == -1)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge1.wav");
 	}
 	//on entering state 2 or -2
-	else if ((this_gun.state_solo_previous != this_gun.state_solo) && (this_gun.state_solo == 2 || this_gun.state_solo == -2)){
+	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 2 || this_gun->state_solo == -2)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge2.wav");				
 	}
 	
 	//on entering state 3 or -3 from 0
-	else if ((this_gun.state_solo_previous < 3 && this_gun.state_solo_previous > -3  ) && (this_gun.state_solo == 3 || this_gun.state_solo == -3)){
+	else if ((this_gun->state_solo_previous < 3 && this_gun->state_solo_previous > -3  ) && (this_gun->state_solo == 3 || this_gun->state_solo == -3)){
 		aplay("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
 	}
 
 	//on quick swap 
-	else if (( this_gun.state_solo_previous >= 3 && this_gun.state_solo == -3) || (this_gun.state_solo_previous <= -3 && this_gun.state_solo == 3)){
+	else if (( this_gun->state_solo_previous >= 3 && this_gun->state_solo == -3) || (this_gun->state_solo_previous <= -3 && this_gun->state_solo == 3)){
 		aplay("/home/pi/assets/portalgun/portal_open2.wav");		
 	}
 	
 	//private end sfx
-	else if ((this_gun.state_solo_previous > 3 && this_gun.state_solo == 3) || (this_gun.state_solo_previous < -3 && this_gun.state_solo == -3)){
+	else if ((this_gun->state_solo_previous > 3 && this_gun->state_solo == 3) || (this_gun->state_solo_previous < -3 && this_gun->state_solo == -3)){
 		aplay("/home/pi/assets/portalgun/portal_close1.wav");
 	}
 	
 	//private start sfx
-	else if ((this_gun.state_solo_previous != -4 && this_gun.state_solo == -4) || (this_gun.state_solo_previous != 4 && this_gun.state_solo == 4)){
+	else if ((this_gun->state_solo_previous != -4 && this_gun->state_solo == -4) || (this_gun->state_solo_previous != 4 && this_gun->state_solo == 4)){
 		aplay("/home/pi/assets/portalgun/portal_open1.wav");
 	}
 	
 	//rip from private to shared mode sfx
-	else if ((this_gun.state_solo_previous <= -3 || this_gun.state_solo_previous>=3) && this_gun.state_duo == 4){
+	else if ((this_gun->state_solo_previous <= -3 || this_gun->state_solo_previous>=3) && this_gun->state_duo == 4){
 		aplay("/home/pi/assets/portalgun/portal_open2.wav");		
 	}
-	
-	return;
 }
