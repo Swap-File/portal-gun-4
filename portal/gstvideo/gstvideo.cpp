@@ -333,9 +333,9 @@ void load_pipeline(int i, char * text){
 	//set the glfilterapp callback that will capture the textures
 	//do this AFTER attaching the bus handler so context can be set
 	//if (i != GST_RPICAMSRC){  //the camera bus has no texture output  //NOT ANY MORE!
-		GstElement *grabtexture = gst_bin_get_by_name (GST_BIN (pipeline[i]), "grabtexture");
-		g_signal_connect (grabtexture, "client-draw",  G_CALLBACK (drawCallback), NULL);
-		gst_object_unref (grabtexture);	
+	GstElement *grabtexture = gst_bin_get_by_name (GST_BIN (pipeline[i]), "grabtexture");
+	g_signal_connect (grabtexture, "client-draw",  G_CALLBACK (drawCallback), NULL);
+	gst_object_unref (grabtexture);	
 	//}
 	
 	//warm up all of the pipelines that stay around
@@ -385,7 +385,7 @@ void start_pipeline(){
 			movieisplaying = false;
 		}
 		else if (video_mode_current == GST_RPICAMSRC ) {
-		gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
+			gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 			printf("PAUSE RPICAM!\n\n");
 		}else{//null everything else	
 			printf("NULL THE REST!\n\n");
@@ -411,11 +411,11 @@ void start_pipeline(){
 	
 	//if we dont se the callbacks here, the bus request handler can do it
 	//but explicitly setting it seems to be required when swapping pipelines
-		gst_element_set_context (GST_ELEMENT (pipeline_active), ctxcontext);  			
-		gst_element_set_context (GST_ELEMENT (pipeline_active), x11context);		
+	gst_element_set_context (GST_ELEMENT (pipeline_active), ctxcontext);  			
+	gst_element_set_context (GST_ELEMENT (pipeline_active), x11context);		
 
-		//start the show
-		gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PLAYING);	
+	//start the show
+	gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PLAYING);	
 
 	video_mode_current = video_mode_requested;
 	
@@ -459,10 +459,10 @@ void slide_to(float r, float g, float b){
 
 void print_text_overlay(){
 	
-		
+	
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(false);
-  
+
 	// Setup projection
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
@@ -471,10 +471,10 @@ void print_text_overlay(){
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
-  
+
 	//set size here
 	glOrtho(0,1366,0,768/2,-1,1);
-  
+
 	glBindTexture(GL_TEXTURE_2D, 0); //no texture	
 	
 	
@@ -490,71 +490,73 @@ void print_text_overlay(){
 	
 	// Setup Texture, color and blend options
 	glEnable(GL_TEXTURE_2D);
-  
+
 	FontNormal.Bind();
 	FontNormal.SetBlend();
 
-    char temp[200];
+	char temp[200];
 
 	if (this_gun->gordon)   sprintf(temp,"Gordon");	
 	else  sprintf(temp,"Chell");	
-    print_centered(temp,64* 9.25);
+	print_centered(temp,64* 9.25);
 	
-	  sprintf(temp,"%.0f/%.0f\260F",this_gun->temperature_pretty ,this_gun->coretemp);	
+	sprintf(temp,"%.0f/%.0f\260F",this_gun->temperature_pretty ,this_gun->coretemp);	
 	print_centered(temp,64* 8);
-					
 	
-    if (this_gun->connected) sprintf(temp,"Synced");	
+	
+	if (this_gun->connected) sprintf(temp,"Synced");	
 	else  sprintf(temp,"Sync Err");	
-    print_centered(temp,64* 7);
+	print_centered(temp,64* 7);
 	
-	 sprintf(temp,"Idle");
+	sprintf(temp,"Idle");
 	if (this_gun->state_solo > 0 ||this_gun->state_solo < 0 || this_gun->state_duo > 1 )  sprintf(temp,"Emitting");	//collecting or countdown
-    if (this_gun->state_duo < 0)  sprintf(temp,"Capturing");
-    print_centered(temp,64* 6);
+	if (this_gun->state_duo < 0)  sprintf(temp,"Capturing");
+	print_centered(temp,64* 6);
 	
-	sprintf(temp,"%dKb/s",this_gun->kbytes);	
-    print_centered(temp,64* 5);
+	int kbits = this_gun->kbytes_wlan;
+	if (this_gun->kbytes_bnep > 0)  kbits += this_gun->kbytes_bnep;
+	sprintf(temp,"%dKb/s",kbits);	
+	print_centered(temp,64* 5);
 	
-   sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
-    print_centered(temp,64* 4);
+	sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
+	print_centered(temp,64* 4);
 	
 	if (this_gun->latency > 99) sprintf(temp,"%.1fV %.0fms",this_gun->battery_level_pretty,this_gun->latency );	
 	else if (this_gun->latency > 9) sprintf(temp,"%.1fV %.1fms",this_gun->battery_level_pretty,this_gun->latency );
 	else  sprintf(temp,"%.1fV %.2fms",this_gun->battery_level_pretty,this_gun->latency );
-    print_centered(temp, 64* 3);
+	print_centered(temp, 64* 3);
 	
 	if (this_gun->mode == 2) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
 	else					sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
 	print_centered(temp,64* 2);
 	
-		uint_fast32_t current_time;	
+	uint_fast32_t current_time;	
 	if (this_gun->mode == 2)  {
 		sprintf(temp,"Duo Mode");	
 		if (this_gun->connected) current_time = (millis() + this_gun->other_gun_clock)/2;
 		else current_time = millis();  
 	}
 	else   {  
-	sprintf(temp,"Solo Mode");	
-	 current_time = millis();
+		sprintf(temp,"Solo Mode");	
+		current_time = millis();
 	}
-    print_centered(temp,64);
+	print_centered(temp,64);
 
 	uint_fast32_t milliseconds = (current_time % 1000);
 	uint_fast32_t seconds      = (current_time / 1000) % 60;
 	uint_fast32_t minutes      =((current_time / (1000*60)) % 60);
 	uint_fast32_t hours        =((current_time / (1000*60*60)) % 24);
-   sprintf(temp,"%.2d:%.2d:%.2d.%.3d",hours,minutes ,seconds,milliseconds);	
-   print_centered(temp,0);
+	sprintf(temp,"%.2d:%.2d:%.2d.%.3d",hours,minutes ,seconds,milliseconds);	
+	print_centered(temp,0);
 	
- glMatrixMode(GL_PROJECTION);
- glPopMatrix();
-  glMatrixMode(GL_MODELVIEW);
-  glPopMatrix();
-  
-  glEnable(GL_DEPTH_TEST);
-  glDepthMask(true);
-  glEnable(GL_BLEND); 
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(true);
+	glEnable(GL_BLEND); 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
 }
 
@@ -624,22 +626,22 @@ static gboolean idle_loop (gpointer data) {
 
 
 int main(int argc, char *argv[]){
-     shm_setup(&this_gun,false );
+	shm_setup(&this_gun,false );
 	effectnames[GST_BLANK] = (char *)"Blank";
-    effectnames[GST_VIDEOTESTSRC] =(char *) "Test";
+	effectnames[GST_VIDEOTESTSRC] =(char *) "Test";
 	effectnames[GST_VIDEOTESTSRC_CUBED] = (char *)"3D Test";
 	effectnames[GST_RPICAMSRC] = (char *)"Rpicam";
 	effectnames[GST_NORMAL] = (char *)"Normal";
 	
 	effectnames[GST_LIBVISUAL_JESS] = (char *)"Jess";
-    effectnames[GST_LIBVISUAL_INFINITE] =(char *) "Infinite";
+	effectnames[GST_LIBVISUAL_INFINITE] =(char *) "Infinite";
 	effectnames[GST_LIBVISUAL_JAKDAW] = (char *)"Jakdaw";
 	effectnames[GST_LIBVISUAL_OINKSIE] = (char *)"Oinksie";
 	effectnames[GST_GOOM] = (char *)"Goom";
 	effectnames[GST_GOOM2K1] = (char *)"Goom2k1";
 
 	effectnames[GST_STREAKTV] = (char *)"Streak";
-    effectnames[GST_RADIOACTV] =(char *) "Radioact";
+	effectnames[GST_RADIOACTV] =(char *) "Radioact";
 	effectnames[GST_REVTV] =(char *) "Rev";
 	effectnames[GST_AGINGTV] = (char *)"Aging";
 	effectnames[GST_DICETV] = (char *)"Dice";
@@ -647,11 +649,11 @@ int main(int argc, char *argv[]){
 	effectnames[GST_SHAGADELICTV] = (char *)"Shag";
 	effectnames[GST_VERTIGOTV] = (char *)"Vertigo";
 	effectnames[GST_AATV] = (char *)"Ascii";
-    effectnames[GST_CACATV] =(char *) "Caca";
+	effectnames[GST_CACATV] =(char *) "Caca";
 	effectnames[GST_RIPPLETV] = (char *)"Ripple";
 	effectnames[GST_EDGETV] = (char *)"Edge";
 
-    effectnames[GST_GLCUBE] =(char *) "Cube";
+	effectnames[GST_GLCUBE] =(char *) "Cube";
 	effectnames[GST_GLMIRROR] =(char *) "Mirror";
 	effectnames[GST_GLSQUEEZE] = (char *)"Squeeze";
 	effectnames[GST_GLSTRETCH] = (char *)"Stretch";
@@ -661,7 +663,7 @@ int main(int argc, char *argv[]){
 	effectnames[GST_GLHEAT] = (char *)"Heat";
 
 	effectnames[GST_MOVIE1] = (char *)"Movie1";
-    effectnames[GST_MOVIE2] = (char *)"Movie2";
+	effectnames[GST_MOVIE2] = (char *)"Movie2";
 	effectnames[GST_MOVIE3] = (char *)"Movie3";
 	effectnames[GST_MOVIE4] = (char *)"Movie4";
 	effectnames[GST_MOVIE5] = (char *)"Movie5";
@@ -669,7 +671,7 @@ int main(int argc, char *argv[]){
 	effectnames[GST_MOVIE7] = (char *)"Movie7";
 	effectnames[GST_MOVIE8] = (char *)"Movie8";
 	effectnames[GST_MOVIE9] = (char *)"Movie9";
-    effectnames[GST_MOVIE10] = (char *)"Movie10";
+	effectnames[GST_MOVIE10] = (char *)"Movie10";
 	effectnames[GST_MOVIE11] = (char *)"Movie11";
 	effectnames[GST_MOVIE12] = (char *)"Movie12";
 
@@ -743,23 +745,23 @@ int main(int argc, char *argv[]){
 	load_pipeline(GST_VIDEOTESTSRC ,(char *)"videotestsrc ! video/x-raw,width=640,height=480,framerate=(fraction)30/1 ! queue ! glupload ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true");
 	load_pipeline(GST_VIDEOTESTSRC_CUBED ,(char *)"videotestsrc ! video/x-raw,width=640,height=480,framerate=(fraction)30/1 ! queue ! glupload ! glfiltercube ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true");
 	
- //camera launch 192.168.1.20 gordon    192.168.1.21 chell
+	//camera launch 192.168.1.20 gordon    192.168.1.21 chell
 	if(this_gun->gordon){
 		load_pipeline(GST_RPICAMSRC ,(char *)"rpicamsrc preview=0 ! image/jpeg,width=640,height=480,framerate=30/1 ! "
 		"queue max-size-time=50000000 leaky=upstream ! jpegparse ! tee name=t "
 		"t. ! queue ! rtpjpegpay ! udpsink host=192.168.3.21 port=9000 sync=false "
 		"t. ! queue ! jpegdec ! videorate ! video/x-raw,framerate=10/1 ! videoscale ! video/x-raw,width=400,height=240 ! videoflip method=3 ! jpegenc ! multifilesink location=/var/www/html/tmp/snapshot.jpg sync=false "
 		"t. ! queue ! jpegdec ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false"
-  );  //the order of this matters, the fakesink MUST Be last in the tee chain!
+		);  //the order of this matters, the fakesink MUST Be last in the tee chain!
 	}else {
 		load_pipeline(GST_RPICAMSRC ,(char *)"rpicamsrc preview=0 ! image/jpeg,width=640,height=480,framerate=30/1 ! "
 		"queue max-size-time=50000000 leaky=upstream ! jpegparse ! tee name=t "
 		"t. ! queue ! rtpjpegpay ! udpsink host=192.168.3.20 port=9000 sync=false "
 		"t. ! queue ! jpegdec ! videorate ! video/x-raw,framerate=10/1 ! videoscale ! video/x-raw,width=400,height=240 ! videoflip method=3 ! jpegenc ! multifilesink location=/var/www/html/tmp/snapshot.jpg sync=false "
 		"t. ! queue ! jpegdec ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false"
-  );  //the order of this matters, the fakesink MUST Be last in the tee chain!
+		);  //the order of this matters, the fakesink MUST Be last in the tee chain!
 	}	
- 
+
 	//normal
 	load_pipeline(GST_NORMAL ,(char *)"udpsrc port=9000 caps=application/x-rtp retrieve-sender-address=false ! rtpjpegdepay ! jpegdec ! queue ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false");
 	
@@ -825,7 +827,7 @@ int main(int argc, char *argv[]){
 
 
 	FontNormal.Load((char *)"/home/pi/portal/gstvideo/Consolas.bff");
-init_text_background();
+	init_text_background();
 	model_board_init();
 	
 	//start the idle and main loops

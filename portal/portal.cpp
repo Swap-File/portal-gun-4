@@ -79,8 +79,9 @@ int main(void){
 		//program code starts here
 		update_temp(&(this_gun->coretemp));
 		update_ping(&(this_gun->latency));
-		update_ifstat(&(this_gun->kbytes));
-		update_iw(&(this_gun->dbm), &(this_gun->tx_bitrate));  
+		update_ifstat(&(this_gun->kbytes_wlan),IFSTAT_WLAN);
+		update_ifstat(&(this_gun->kbytes_bnep),IFSTAT_BNEP);
+		update_iw(&(this_gun->dbm), &(this_gun->tx_bitrate));
 		
 		//read states from buttons
 		int button_event = BUTTON_NONE;	
