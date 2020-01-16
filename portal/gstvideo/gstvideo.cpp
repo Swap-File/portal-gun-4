@@ -513,17 +513,19 @@ void print_text_overlay(){
     if (this_gun->state_duo < 0)  sprintf(temp,"Capturing");
     print_centered(temp,64* 6);
 	
-	sprintf(temp,"?");	
+	sprintf(temp,"%dKb/s",this_gun->kbytes);	
     print_centered(temp,64* 5);
 	
    sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
     print_centered(temp,64* 4);
 	
-	sprintf(temp,"%.1fV %.2fms",this_gun->battery_level_pretty,this_gun->latency );	
+	if (this_gun->latency > 99) sprintf(temp,"%.1fV %.0fms",this_gun->battery_level_pretty,this_gun->latency );	
+	else if (this_gun->latency > 9) sprintf(temp,"%.1fV %.1fms",this_gun->battery_level_pretty,this_gun->latency );
+	else  sprintf(temp,"%.1fV %.2fms",this_gun->battery_level_pretty,this_gun->latency );
     print_centered(temp, 64* 3);
 	
-	if (this_gun->mode == 2) sprintf(temp,"%s",effectnames[this_gun->playlist_duo[1]]);		  //FIX THIS
-	else					sprintf(temp,"%s",effectnames[this_gun->playlist_solo[1]]);		
+	if (this_gun->mode == 2) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
+	else					sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
 	print_centered(temp,64* 2);
 	
 		uint_fast32_t current_time;	
@@ -788,7 +790,7 @@ int main(int argc, char *argv[]){
 	//audio effects - alsasrc takes a second or so to init, so here a output-selector is used
 	//effect order matters since pads on the output selector can't easily be named in advance 
 	//audio format must match the movie output stuff, otherwise the I2S Soundcard will get slow and laggy when switching formats!
-	load_pipeline(GST_LIBVISUAL_FIRST,(char *)"alsasrc buffer-time=20000 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! queue max-size-time=10000000 leaky=downstream ! queue ! audioconvert ! audiorate ! "
+	load_pipeline(GST_LIBVISUAL_FIRST,(char *)"alsasrc buffer-time=40000 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! "
 	"output-selector name=audioin pad-negotiation-mode=Active "
 	"audioin. ! libvisual_jess     ! videosink. "
 	"audioin. ! libvisual_infinite ! videosink. "
@@ -796,7 +798,7 @@ int main(int argc, char *argv[]){
 	"audioin. ! libvisual_oinksie  ! videosink. "
 	"audioin. ! goom               ! videosink. "
 	"audioin. ! goom2k1            ! videosink. "
-	"funnel name=videosink ! video/x-raw,width=320,height=240,framerate=30/1 ! "
+	"funnel name=videosink ! video/x-raw,width=400,height=320,framerate=30/1 ! "
 	"glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! "
 	"glfilterapp name=grabtexture ! fakesink sync=false async=false");
 	

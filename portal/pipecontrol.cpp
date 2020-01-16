@@ -15,14 +15,8 @@
 #include <sys/time.h>  
 #include <bcm2835.h>
 
-uint32_t ping_time = 0;
-uint8_t web_packet_counter = 0;
-
-
 int temp_in;
 int web_in;
-int gstreamer_crashes = 0;
-int ahrs_crashes = 0;
 
 FILE *iw_fp;
 FILE *ifstat_fp;
@@ -40,7 +34,6 @@ void pipecontrol_cleanup(void){
 	system("pkill gst*");
 	system("pkill mjpeg*");
 }
-
 
 void pipecontrol_setup(){
 	
@@ -81,7 +74,7 @@ void pipecontrol_setup(){
 	ifstat_fp  = popen("ifstat -i wlan0", "r");
 	fcntl(fileno(ifstat_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);
 	
-	iw_fp = popen("bash -c 'while true; do  iw dev wlan0 station dump; sleep 1; done'", "r");
+	iw_fp = popen("bash -c 'while true; do  iw dev wlan0 station dump; echo 'a'; sleep 1; done'", "r");
 	fcntl(fileno(iw_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);
 	
 	//empty named pipe
@@ -117,6 +110,7 @@ void aplay(const char *filename){
 }
 
 void web_output(const this_gun_struct& this_gun ){
+	uint8_t web_packet_counter = 0;
 	
 	FILE *webout_fp;
 	
@@ -193,7 +187,8 @@ int read_web_pipe(this_gun_struct& this_gun){
 	return web_button;
 }
 
-void update_ping(float * ping){	
+void update_ping(float * ping){
+	static uint32_t ping_time = 0;
 	int count = 1;
 	char buffer[100];
 	//stdin is line buffered so we can cheat a little bit
@@ -229,9 +224,8 @@ void update_ifstat(int * kbytes){
 			buffer[count-1] = '\0';
 			float in = 0;
 			float out = 0;
-			sscanf(buffer,"%f %f", &in,&out);
-			*kbytes = in + out;
-			printf("                            %d\n",*kbytes);
+			int result = sscanf(buffer,"%f %f", &in,&out);
+			if (result == 2) *kbytes = in + out;
 		}
 	}
 	return;
@@ -246,8 +240,8 @@ void update_temp(float * temp){
 		if (count > 0){ //ignore blank lines
 			buffer[count-1] = '\0';
 			int number;
-			sscanf(buffer,"%d", &number);
-			if (number > 0 && number  < 85000){
+			int result = sscanf(buffer,"%d", &number);
+			if (number > 0 && number  < 85000 && result == 1){
 				number = (number * 9/5) + 32000;
 				
 				if (temp_first_cycle){
@@ -275,10 +269,11 @@ void update_temp(float * temp){
 }
 
 void update_iw(int * dbm, int * tx_bitrate){
+	static int bad_count = 0;
 	int count = 1;
 	char buffer[1000];
 	count = read(fileno(iw_fp), buffer, sizeof(buffer)-1);
-	if (count > 0){ // one chance
+	if (count > 2){ // full message is 370 char
 		char * signal_pointer = strstr(buffer,"signal:") + 7;
 		char * tx_pointer = strstr(buffer,"tx bitrate:") + 11;
 		char * end_pointer1 = strstr(signal_pointer,"\n");
@@ -287,17 +282,32 @@ void update_iw(int * dbm, int * tx_bitrate){
 		    tx_pointer != NULL && tx_pointer < buffer + 1000 && \
 			end_pointer1 != NULL && end_pointer1 < buffer + 1000 && \
 		    end_pointer2 != NULL && end_pointer2 < buffer + 1000 ){
-		*end_pointer1 = '\0';
-		*end_pointer2 = '\0';
-		sscanf(signal_pointer,"%d", dbm);
-		sscanf(tx_pointer,"%d", tx_bitrate);
+			*end_pointer1 = '\0';
+			*end_pointer2 = '\0';
+			int temp_dbm=0;
+			int temp_tx_bitrate=0;
+			int result1 = sscanf(signal_pointer,"%d", &temp_dbm);
+			int result2 = sscanf(tx_pointer,"%d", &temp_tx_bitrate);
+			if (result1 == 1 && result2 == 1){
+				*dbm = temp_dbm;
+				*tx_bitrate = temp_tx_bitrate;
+				bad_count = 0;
+			}else{
+				bad_count++;
+			}
 		}
-	}else{
-		tx_bitrate = 0;
-		dbm = 0;
+	}else if (count == 2){ //2 means no signal, only getting the letter A
+		bad_count++;
 	}
+	
+	if (bad_count > 3) {
+		*dbm = 0;
+		*tx_bitrate = 0;
+	}
+	
 	return;
 }
+
 int io_update(const this_gun_struct& this_gun){
 	
 	bcm2835_pwm_set_data(FAN_PWM_CHANNEL, this_gun.fan_pwm);
