@@ -45,7 +45,7 @@ struct gun_struct {
 	float  temperature_pretty;
 
 	int gst_state;
-	int ahrs_state;
+	int portal_state;
 
 	bool video_done;  //flag set via shared memory with gstvideo
 

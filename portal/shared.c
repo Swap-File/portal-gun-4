@@ -101,7 +101,7 @@ void shm_cleanup()
 	}
 }
 
-uint32_t millis (void)
+uint32_t millis(void)
 {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
@@ -109,7 +109,7 @@ uint32_t millis (void)
   return (uint32_t)now ;
 }
 
-int piHiPri (const int pri)
+int piHiPri(const int pri)
 {
   struct sched_param sched;
   memset (&sched, 0, sizeof(sched));

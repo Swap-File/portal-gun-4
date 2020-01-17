@@ -551,7 +551,7 @@ static gboolean idle_loop (gpointer data) {
 	static double tRate0 = -1.0;
 	double t = current_time();
 
-	portal_mode_requested = this_gun->ahrs_state;
+	portal_mode_requested = this_gun->portal_state;
 	video_mode_requested  = this_gun->gst_state;
 	//printf("\ncycle..\n");
 	if (movieisplaying){
@@ -563,7 +563,7 @@ static gboolean idle_loop (gpointer data) {
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 				movieisplaying = false;
 			}
-			if (portal_mode_requested != AHRS_OPEN_ORANGE &&portal_mode_requested != AHRS_OPEN_BLUE ) {
+			if (portal_mode_requested != PORTAL_OPEN_ORANGE &&portal_mode_requested != PORTAL_OPEN_BLUE ) {
 				printf("End EARLY!\n");
 				video_ended();
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
@@ -594,7 +594,7 @@ static gboolean idle_loop (gpointer data) {
 	
 	if (video_mode_requested != video_mode_current)	{
 		if (video_mode_requested >= GST_MOVIE_FIRST &&  video_mode_requested <= GST_MOVIE_LAST){
-			if (portal_mode_requested == AHRS_OPEN_ORANGE || portal_mode_requested == AHRS_OPEN_BLUE ) { //wait until portal is opening to start video
+			if (portal_mode_requested == PORTAL_OPEN_ORANGE || portal_mode_requested == PORTAL_OPEN_BLUE ) { //wait until portal is opening to start video
 				start_pipeline();
 			}
 		}

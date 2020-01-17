@@ -234,20 +234,20 @@ void scene_animate(int acceleration[], int frame){
 	if (event_horizon_vertex_list_shimmer_direction)	event_horizon_vertex_list_shimmer += .01;
 	else												event_horizon_vertex_list_shimmer -= .01;
 
-	if (frame == AHRS_OPEN_BLUE || frame == AHRS_CLOSED_BLUE){
-		if (frame_previous != AHRS_OPEN_BLUE && frame_previous != AHRS_CLOSED_BLUE ){
+	if (frame == PORTAL_OPEN_BLUE || frame == PORTAL_CLOSED_BLUE){
+		if (frame_previous != PORTAL_OPEN_BLUE && frame_previous != PORTAL_CLOSED_BLUE ){
 			global_zoom = 0.0;
 			event_horizon_transparency_level = 1.0; //close portal for a moment on rapid color change
 		} 
-	}else if (frame == AHRS_OPEN_ORANGE || frame == AHRS_CLOSED_ORANGE){
-		if (frame_previous != AHRS_OPEN_ORANGE  && frame_previous != AHRS_CLOSED_ORANGE ){
+	}else if (frame == PORTAL_OPEN_ORANGE || frame == PORTAL_CLOSED_ORANGE){
+		if (frame_previous != PORTAL_OPEN_ORANGE  && frame_previous != PORTAL_CLOSED_ORANGE ){
 			global_zoom = 0.0;
 			event_horizon_transparency_level = 1.0;  //close portal for a moment on rapid color change
 		} 
 	}
 
 	//this controls global zoom (0 is blanked)
-	if (frame == AHRS_CLOSED){
+	if (frame == PORTAL_CLOSED){
 		//turn off display
 		global_zoom = 0.0;
 	}else{
@@ -265,7 +265,7 @@ void scene_animate(int acceleration[], int frame){
 	}
 	
 	//this controls making the portal fade into the backgroud video
-	if (frame == AHRS_CLOSED_ORANGE || frame == AHRS_CLOSED_BLUE){
+	if (frame == PORTAL_CLOSED_ORANGE || frame == PORTAL_CLOSED_BLUE){
 		event_horizon_transparency_level = 1.0;
 	}else{
 		//wait for zoom to finish before fading to background
@@ -433,15 +433,15 @@ void scene_redraw(GLuint video_texture, int frame){
 	glScalef(1.0*1366/768,1,1.0);  //stretch portal to an oval
 	
 	//base event horizon texture
-	if      (frame == AHRS_OPEN_BLUE   || frame == AHRS_CLOSED_BLUE)   glBindTexture(GL_TEXTURE_2D, blue_0);
-	else if (frame == AHRS_OPEN_ORANGE || frame == AHRS_CLOSED_ORANGE) glBindTexture(GL_TEXTURE_2D, orange_0);		
+	if      (frame == PORTAL_OPEN_BLUE   || frame == PORTAL_CLOSED_BLUE)   glBindTexture(GL_TEXTURE_2D, blue_0);
+	else if (frame == PORTAL_OPEN_ORANGE || frame == PORTAL_CLOSED_ORANGE) glBindTexture(GL_TEXTURE_2D, orange_0);		
 	glColor4f(1.0,1.0,1.0,MIN(1.0,event_horizon_transparency_level)); //not transparent until forced open
 	glRotatef(event_horizon_spin, 0, 0,1.0); //rotate background	
 	glCallList(event_horizon_vertex_list);
 
 	//base event horizon texture
-	if      (frame == AHRS_OPEN_BLUE   || frame == AHRS_CLOSED_BLUE)   glBindTexture(GL_TEXTURE_2D, blue_1);
-	else if (frame == AHRS_OPEN_ORANGE || frame == AHRS_CLOSED_ORANGE) glBindTexture(GL_TEXTURE_2D, orange_1);	
+	if      (frame == PORTAL_OPEN_BLUE   || frame == PORTAL_CLOSED_BLUE)   glBindTexture(GL_TEXTURE_2D, blue_1);
+	else if (frame == PORTAL_OPEN_ORANGE || frame == PORTAL_CLOSED_ORANGE) glBindTexture(GL_TEXTURE_2D, orange_1);	
 	glColor4f(1.0,1.0,1.0, MIN( event_horizon_vertex_list_shimmer ,event_horizon_transparency_level)); //shimmer transparency until forced open
 	glRotatef(event_horizon_spin, 0, 0,1.0); //rotate background more
 	glCallList(event_horizon2_vertex_list);
@@ -452,8 +452,8 @@ void scene_redraw(GLuint video_texture, int frame){
 	glPushMatrix(); //save positions pre-rotation and scaling
 	
 	//portal texture
-	if      (frame == AHRS_OPEN_BLUE   || frame == AHRS_CLOSED_BLUE)   glBindTexture(GL_TEXTURE_2D, texture_blue);
-	else if (frame == AHRS_OPEN_ORANGE || frame == AHRS_CLOSED_ORANGE) glBindTexture(GL_TEXTURE_2D, texture_orange);
+	if      (frame == PORTAL_OPEN_BLUE   || frame == PORTAL_CLOSED_BLUE)   glBindTexture(GL_TEXTURE_2D, texture_blue);
+	else if (frame == PORTAL_OPEN_ORANGE || frame == PORTAL_CLOSED_ORANGE) glBindTexture(GL_TEXTURE_2D, texture_orange);
 
 	glColor4f(1.0,1.0,1.0,1.0); //portal texture is not transparent
 	glScalef(1.0*1366/768,1,1.0);  //stretch portal to an oval
@@ -479,8 +479,8 @@ void scene_redraw(GLuint video_texture, int frame){
 	glEnable(GL_DEPTH_TEST);
 	
 	//TEXTURED TORUS 
-	if      (frame == AHRS_OPEN_BLUE   || frame == AHRS_CLOSED_BLUE)   glBindTexture(GL_TEXTURE_2D, blue_n);
-	else if (frame == AHRS_OPEN_ORANGE || frame == AHRS_CLOSED_ORANGE) glBindTexture(GL_TEXTURE_2D, orange_n);
+	if      (frame == PORTAL_OPEN_BLUE   || frame == PORTAL_CLOSED_BLUE)   glBindTexture(GL_TEXTURE_2D, blue_n);
+	else if (frame == PORTAL_OPEN_ORANGE || frame == PORTAL_CLOSED_ORANGE) glBindTexture(GL_TEXTURE_2D, orange_n);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -496,7 +496,7 @@ void scene_redraw(GLuint video_texture, int frame){
 	glBindTexture(GL_TEXTURE_2D, 0); //no texture
 	
 	GLfloat shutter = 0.0; 
-	if (frame == AHRS_CLOSED)  shutter = 1.0;
+	if (frame == PORTAL_CLOSED)  shutter = 1.0;
 	
 	glColor4f(0.0,0.0,0.0,shutter); 
 	glCallList(shutter_vertex_list);	

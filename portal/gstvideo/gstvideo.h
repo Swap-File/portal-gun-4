@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 
-#define AHRS_CLOSED 0
-#define AHRS_OPEN_BLUE 8
-#define AHRS_OPEN_ORANGE 14
-#define AHRS_CLOSED_BLUE 9
-#define AHRS_CLOSED_ORANGE 15
+#define PORTAL_CLOSED 0
+#define PORTAL_OPEN_BLUE 8
+#define PORTAL_OPEN_ORANGE 14
+#define PORTAL_CLOSED_BLUE 9
+#define PORTAL_CLOSED_ORANGE 15
 
 #define GST_BLANK 0
 #define GST_VIDEOTESTSRC 1 

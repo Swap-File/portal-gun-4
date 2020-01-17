@@ -4,11 +4,18 @@
 #include "gstvideo/gstvideo.h"
 #include <stdio.h>
 
-#define GUN_EXPIRE 1000 //expire a gun in 1 second
+#define GUN_EXPIRE 1000 //expire a gun if not seen for 1 second
 
 void state_engine(int button,struct gun_struct *this_gun)
 {
-	//check for expiration of other gun
+	/* force video mode to change if a video ends. */
+	if (this_gun->video_done){
+		if (this_gun->state_solo == 4) this_gun->state_solo = 3;
+		else if (this_gun->state_solo == -4) this_gun->state_solo = -3;
+		this_gun->video_done = false;
+	}
+		
+	/* check for expiration of other gun */
 	if (this_gun->clock - this_gun->other_gun_last_seen > GUN_EXPIRE) {
 		if (this_gun->connected != false) {
 			this_gun->connected = false;
@@ -23,8 +30,8 @@ void state_engine(int button,struct gun_struct *this_gun)
 		}
 	}
 	
-	//button event transitions 
-	//TODO: add LONG PRESS from V2
+	/* button event transitions     */
+	/* TODO: add LONG PRESS from V2 */
 	if (button == BUTTON_RESET) {
 		this_gun->state_solo = 0; //reset self state
 		this_gun->state_duo = 0; //reset local state
@@ -40,7 +47,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 		}
 	} else if (button == BUTTON_PRIMARY_FIRE) {
 		if (this_gun->mode == MODE_DUO){ 
-			//projector modes
+			/* projector modes */
 			if (this_gun->state_duo == 0) {
 				this_gun->state_duo = 1;
 			} else if (this_gun->state_duo == 1) {
@@ -52,7 +59,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 			} else if (this_gun->state_duo == 2 && this_gun->other_gun_state > -3) { 
 				this_gun->state_duo = 3; //wait at  mode 3 for other gun
 			}
-			//camera modes
+			/* camera modes */
 			else if (this_gun->state_duo == -1) {
 				this_gun->state_duo = -2;
 			} else if ((this_gun->state_duo == -2 || this_gun->state_duo == -3) && this_gun->other_gun_state >= 3) { 	
@@ -92,7 +99,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 		}
 	}
 
-	//other gun transitions
+	/* other gun transitions */
 	if (this_gun->other_gun_state_previous != this_gun->other_gun_state){
 		if (this_gun->mode == MODE_DUO){
 			if (this_gun->other_gun_state == 0) {
@@ -121,13 +128,13 @@ void state_engine(int button,struct gun_struct *this_gun)
 		}
 	}
 	
-	//reset playlists to the start
-	//continually reload playlist if in state 0 to catch updates
+	/* reset playlists to the start */
+	/* continually reload playlist if in state 0 to catch updates */
 	if (this_gun->state_duo == 0) {
 		this_gun->effect_duo = this_gun->playlist_duo[0];
 		if (this_gun->effect_duo <= -1) this_gun->effect_duo = GST_VIDEOTESTSRC;
 		this_gun->playlist_duo_index = 1;
-		//special case of playlist 1 item long
+		/* special case of playlist 1 item long */
 		if (this_gun->playlist_duo[this_gun->playlist_duo_index] <= -1) this_gun->playlist_duo_index = 0;
 	}
 	
@@ -135,11 +142,11 @@ void state_engine(int button,struct gun_struct *this_gun)
 		this_gun->effect_solo = this_gun->playlist_solo[0];
 		if (this_gun->effect_solo <= -1) this_gun->effect_solo = GST_VIDEOTESTSRC;
 		this_gun->playlist_solo_index = 1;	
-		//special case of playlist 1 item long
+		/* special case of playlist 1 item long */
 		if (this_gun->playlist_solo[this_gun->playlist_solo_index] <= -1) this_gun->playlist_solo_index = 0;
 	}
 	
-	//load next shared playlist item
+	/* load next shared playlist item */
 	if (this_gun->state_duo == 5 && this_gun->state_duo_previous == 4) { 
 		this_gun->effect_duo = this_gun->playlist_duo[this_gun->playlist_duo_index];
 		this_gun->playlist_duo_index++;
@@ -147,7 +154,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 		if (this_gun->playlist_duo_index >= PLAYLIST_SIZE) this_gun->playlist_duo_index = 0;
 	}
 	
-	//load next private playlist item
+	/* load next private playlist item */
 	if ((this_gun->state_solo == 3 && (this_gun->state_solo_previous == 4 || this_gun->state_solo_previous == -4 )) || (this_gun->state_solo == -3 && (this_gun->state_solo_previous == -4 || this_gun->state_solo_previous == 4))) { 
 		this_gun->effect_solo = this_gun->playlist_solo[this_gun->playlist_solo_index];
 		this_gun->playlist_solo_index++;
@@ -155,82 +162,82 @@ void state_engine(int button,struct gun_struct *this_gun)
 		if (this_gun->playlist_solo_index >= PLAYLIST_SIZE) this_gun->playlist_solo_index = 0;
 	}
 	
-	//gstreamer state stuff, blank it if shared state and private state are 0
+	/* gstreamer state stuff, blank it if shared state and private state are 0 */
 	this_gun->gst_state = GST_BLANK;
-	//camera preload
+	/* camera preload */
 	if (this_gun->state_duo <= -1) this_gun->gst_state = GST_RPICAMSRC;
-	//project shared preload
+	/* project shared preload */
 	else if (this_gun->state_duo >= 1) this_gun->gst_state = this_gun->effect_duo;		
-	//project private preload
+	/* project private preload */
 	else if (this_gun->state_solo != 0) this_gun->gst_state = this_gun->effect_solo;	
 	
-	//ahrs effects
-	this_gun->ahrs_state = AHRS_CLOSED; 
-	// for networked modes
+	/* ahrs effects */
+	this_gun->portal_state = PORTAL_CLOSED; 
+	/* for networked modes */
 	if (this_gun->state_solo == 0) {
-		if      (this_gun->state_duo == 3) this_gun->ahrs_state = AHRS_CLOSED_ORANGE;
-		else if (this_gun->state_duo == 4) this_gun->ahrs_state = AHRS_OPEN_ORANGE;		
-		else if (this_gun->state_duo == 5) this_gun->ahrs_state = AHRS_CLOSED_ORANGE; //blink shut on effect change
+		if      (this_gun->state_duo == 3) this_gun->portal_state = PORTAL_CLOSED_ORANGE;
+		else if (this_gun->state_duo == 4) this_gun->portal_state = PORTAL_OPEN_ORANGE;		
+		else if (this_gun->state_duo == 5) this_gun->portal_state = PORTAL_CLOSED_ORANGE; //blink shut on effect change
 	}
-	// for self modes
+	/* for self modes */
 	if (this_gun->state_duo == 0) {
-		if      (this_gun->state_solo ==  3) this_gun->ahrs_state = AHRS_CLOSED_ORANGE;
-		else if (this_gun->state_solo == -3) this_gun->ahrs_state = AHRS_CLOSED_BLUE;
-		else if (this_gun->state_solo <= -4) this_gun->ahrs_state = AHRS_OPEN_BLUE;
-		else if (this_gun->state_solo >=  4) this_gun->ahrs_state = AHRS_OPEN_ORANGE;
+		if      (this_gun->state_solo ==  3) this_gun->portal_state = PORTAL_CLOSED_ORANGE;
+		else if (this_gun->state_solo == -3) this_gun->portal_state = PORTAL_CLOSED_BLUE;
+		else if (this_gun->state_solo <= -4) this_gun->portal_state = PORTAL_OPEN_BLUE;
+		else if (this_gun->state_solo >=  4) this_gun->portal_state = PORTAL_OPEN_ORANGE;
 	} 
 	
-   //SOUND - LOCAL STATES
+	/* SOUND - LOCAL STATES */
 	if ((this_gun->state_duo_previous != 0 || this_gun->state_solo_previous != 0) && (this_gun->state_duo == 0 && this_gun->state_solo == 0))
 		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");
-	//on entering state 1
+	/* on entering state 1 */
 	else if ((this_gun->state_duo_previous != this_gun->state_duo) && (this_gun->state_duo == 1))
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");
-	//on entering state -1
+	/* on entering state -1 */
 	else if ((this_gun->state_duo_previous != -1) && (this_gun->state_duo == -1))
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");			
-	//on entering state 2
+	/* on entering state 2 */
 	else if ((this_gun->state_duo_previous !=2) && (this_gun->state_duo == 2))
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");		
-	//on entering state -2 from -1
+	/* on entering state -2 from -1 */
 	else if ((this_gun->state_duo_previous !=-2) && (this_gun->state_duo == -2))
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");
 	else if ((this_gun->state_duo_previous !=-3) && (this_gun->state_duo == -3))
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge3.wav");	
-	//on entering state 3 from 2
+	/* on entering state 3 from 2 */
 	else if ((this_gun->state_duo_previous == 2) && (this_gun->state_duo ==3))
 		pipe_audio("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
-	//on quick swap to rec
+	/* on quick swap to rec */
 	else if ((this_gun->state_duo_previous < 4) && (this_gun->state_duo == 4))
 		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");
-	//on quick swap to transmit
+	/* on quick swap to transmit */
 	else if ((this_gun->state_duo_previous >= 4) && (this_gun->state_duo <= -4))
 		pipe_audio("/home/pi/assets/portalgun/portal_fizzle2.wav");	
-	//shared effect change close portal end sfx
+	/* shared effect change close portal end sfx */
 	else if (this_gun->state_duo_previous == 4 && this_gun->state_duo == 5)
 		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");	
-	//shared effect change open portal end sfx
+	/* shared effect change open portal end sfx */
 	else if (this_gun->state_duo_previous == 5 && this_gun->state_duo == 4)
 		pipe_audio("/home/pi/assets/portalgun/portal_open1.wav");
-	//SOUND - SELF STATES
+	/* SOUND - SELF STATES */
 	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 1 || this_gun->state_solo == -1))
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");
-	//on entering state 2 or -2
+	/* on entering state 2 or -2 */
 	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 2 || this_gun->state_solo == -2))
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");				
-	//on entering state 3 or -3 from 0
+	/* on entering state 3 or -3 from 0 */
 	else if ((this_gun->state_solo_previous < 3 && this_gun->state_solo_previous > -3  ) && (this_gun->state_solo == 3 || this_gun->state_solo == -3))
 		pipe_audio("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
-	//on quick swap 
+	/* on quick swap  */
 	else if (( this_gun->state_solo_previous >= 3 && this_gun->state_solo == -3) || (this_gun->state_solo_previous <= -3 && this_gun->state_solo == 3))
 		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");		
-	//private end sfx
+	/* private end sfx */
 	else if ((this_gun->state_solo_previous > 3 && this_gun->state_solo == 3) || (this_gun->state_solo_previous < -3 && this_gun->state_solo == -3))
 		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");
-	//private start sfx
+	/* private start sfx */
 	else if ((this_gun->state_solo_previous != -4 && this_gun->state_solo == -4) || (this_gun->state_solo_previous != 4 && this_gun->state_solo == 4))
 		pipe_audio("/home/pi/assets/portalgun/portal_open1.wav");
-	//rip from private to shared mode sfx
+	/* rip from private to shared mode sfx */
 	else if ((this_gun->state_solo_previous <= -3 || this_gun->state_solo_previous>=3) && this_gun->state_duo == 4)
 		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");		
 }

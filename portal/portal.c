@@ -25,17 +25,18 @@ int main(void){
 		exit(1);
 	}
 
+	/* cleanup incase of straggling processes */
 	pipe_cleanup();
 	
 	struct gun_struct *this_gun;
 	shm_init(&this_gun,true);
 	
-	//catch broken pipes to respawn threads if they crash
+	/* catch broken pipes */
 	signal(SIGPIPE, SIG_IGN);
-	//catch ctrl+c when exiting
+	/* catch ctrl+c for exit */
 	signal(SIGINT, INThandler);
 	
-	//setup libaries
+	/* setup libraries */
 	pipe_www_out(this_gun);
 	bcm2835_init();
 	led_init();
@@ -44,16 +45,17 @@ int main(void){
 	udp_init(this_gun->gordon);
 	pipe_init(this_gun->gordon);
 	
-	bool freq_50hz = true; //toggles every other cycle, cuts 100hz to 50hz
+	/* toggles every other cycle, cuts 100hz core tick speed to 50hz */
+	bool freq_50hz = true;
 	
 	//stats
-	uint32_t time_start = millis(); //set to now to avoid missing first cycle
+	uint32_t time_start = millis(); //reset timer to now to avoid missing first cycle
 	int missed = 0;
 	uint32_t time_delay = 0;
 	int changes = 0;
 	
 	while(1){
-		//cycle start code - delay code
+		/* Cycle Delay */
 		time_start += 10;
 		uint32_t predicted_delay = time_start - millis(); //calc predicted delay
 		if (predicted_delay > 10) predicted_delay = 0; //check for overflow
@@ -65,49 +67,44 @@ int main(void){
 			printf("MAIN Skipping Idle...\n");
 			missed++;
 		}
-		this_gun->clock = millis();  //stop time for duration of frame
+		
+		/* Cycle Setup */
+		this_gun->clock = millis(); //stop time for duration of frame
 		freq_50hz = !freq_50hz;
+		
 		this_gun->state_duo_previous = this_gun->state_duo;
 		this_gun->state_solo_previous = this_gun->state_solo;
 		this_gun->other_gun_state_previous = this_gun->other_gun_state;
 		
-		//program code starts here
+		/* Program Code */
 		pipe_update(this_gun);
 	
-		//read states from buttons first
+		/* Read Physical Buttons */
 		int button_event = io_update(this_gun);
 
-		//if no local events, read from the web
+		/* Otherwise Read Web Buttons */
 		if (button_event == BUTTON_NONE) button_event = pipe_www_in(this_gun);
 		//read other gun's data, only if no button events are happening this cycle
 
-		//if still no events, read from the other gun
+		/* Otherwise Read Other Gun */
 		while (button_event == BUTTON_NONE){
 			int result = udp_receive_state(&(this_gun->other_gun_state),&(this_gun->other_gun_clock));
 			if (result <= 0) break;  //read until buffer empty
 			else this_gun->other_gun_last_seen = this_gun->clock;  //update time data was seen
 			if (millis() - this_gun->clock > 5) break; //flood protect
 		}
-
-		//force video mode to change if a video ends.
-		//move in the state engine, now that we are using shared memory?
-		if (this_gun->video_done){
-			if (this_gun->state_solo == 4) this_gun->state_solo = 3;
-			else if (this_gun->state_solo == -4) this_gun->state_solo = -3;
-			this_gun->video_done = false;
-		}
 						
-		//process state changes
+		/* Process State changes */
 		state_engine(button_event,this_gun);
 		if (button_event != BUTTON_NONE) changes++;
 
-		//switch off updating the leds or i2c every other cycle, each takes about 1ms
+		/* Alternate blocking tasks to keep core at 100hz */
 		if(freq_50hz)
 			this_gun->brightness = led_update(this_gun);
 		else
 			i2c_update(this_gun);
 		
-		//send data to other gun
+		/* Send data to other gun and www output */
 		static uint32_t time_udp_send = 0;
 		if (this_gun->clock - time_udp_send > 100){
 			udp_send_state(this_gun->state_duo,this_gun->clock);
@@ -115,7 +112,7 @@ int main(void){
 			pipe_www_out(this_gun);
 		}
 		
-		//cycle end code - fps counter and stats
+		/* FPS counter */
 		static uint32_t time_fps = 0;
 		static int fps = 0;
 		fps++;
@@ -124,7 +121,7 @@ int main(void){
 			fps = 0;
 			time_delay = 0;
 			time_fps += 1000;
-			//readjust counter if we missed a cycle
+			/* readjust counter if we missed a cycle */
 			if (time_fps < millis()) time_fps = millis() + 1000;
 		}	
 	}
