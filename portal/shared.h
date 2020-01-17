@@ -1,5 +1,5 @@
-#ifndef _SHAREDMEM_H
-#define _SHAREDMEM_H
+#ifndef _SHARED_H
+#define _SHARED_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -54,13 +54,11 @@ struct gun_struct {
 
 	uint32_t other_gun_last_seen;
 	uint32_t other_gun_clock;
-
 };
 
-void shm_setup(struct gun_struct **this_gun,bool init);
+void shm_init(struct gun_struct **this_gun,bool init);
 void shm_cleanup(void);
-unsigned int millis(void);
+uint32_t millis(void);
 int piHiPri(const int pri);
-void init_gun(struct gun_struct *this_gun);
 
 #endif

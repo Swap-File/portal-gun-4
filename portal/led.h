@@ -1,11 +1,11 @@
-#ifndef _LEDCONTROL_H
-#define _LEDCONTROL_H
+#ifndef _LED_H
+#define _LED_H
 
-#include "sharedmem.h"
+#include "shared.h"
 
 uint8_t led_update(const struct gun_struct *this_gun);
-void ledcontrol_setup(void);
-void ledcontrol_wipe(void);
+void led_init(void);
+void led_wipe(void);
 
 //CRGB struct borrowed from FastLED
 //Representation of an RGB pixel (Red, Green, Blue)

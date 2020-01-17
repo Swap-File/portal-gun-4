@@ -1,4 +1,4 @@
-OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) ../sharedmem.o
+OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) ../shared.o
 DEPs := $(OBJs:%.o=%.d)
 BIN  := gstvideo
 CC  = gcc

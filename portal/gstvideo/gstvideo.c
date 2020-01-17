@@ -1,5 +1,5 @@
 #include "gstvideo.h"
-#include "../sharedmem.h"
+#include "../shared.h"
 #include <sys/resource.h>
 #include <gst/gst.h>
 #include <gst/gl/gl.h>
@@ -12,7 +12,6 @@
 #include <sys/time.h>  //gettimeofday
 #include "model_scene.h"
 #include "BitmapFont.h"
-#include "../portal.h"
 
 struct gun_struct *this_gun;
 
@@ -609,7 +608,7 @@ static gboolean idle_loop (gpointer data) {
 
 
 int main(int argc, char *argv[]){
-	shm_setup(&this_gun,false );
+	shm_init(&this_gun,false );
 
 	//set priority for the opengl engine and video output
 	

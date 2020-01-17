@@ -1,10 +1,10 @@
-#ifndef _I2CREAD_H
-#define _I2CREAD_H
+#ifndef _I2C_H
+#define _I2C_H
 
-#include "sharedmem.h"
+#include "shared.h"
 
-void i2creader_update(struct gun_struct *this_gun);
-void i2creader_setup(void);
+void i2c_update(struct gun_struct *this_gun);
+void i2c_init(void);
 
 //ACCEL STUFF
 

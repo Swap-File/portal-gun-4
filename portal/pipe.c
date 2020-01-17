@@ -1,5 +1,5 @@
-#include "pipecontrol.h"
-#include "portal.h"
+#include "pipe.h"
+#include "io.h"
 #include <sys/resource.h> //setpriority
 #include <unistd.h> //sleep
 #include <fcntl.h>  
@@ -7,25 +7,32 @@
 #include <stdlib.h> //system exit getenv
 #include <string.h> //strstr
 #include <sys/stat.h> //mkfifo  
-#include <bcm2835.h>
 
-int temp_in;
-int web_in;
+#define WEB_PRIMARY_FIRE	100
+#define WEB_ALT_FIRE		101
+#define WEB_MODE_TOGGLE		102
+#define WEB_RESET			103
 
-FILE *iw_fp;
-FILE *ifstat_wlan0_fp;
-FILE *ifstat_bnep0_fp;
-FILE *bash_fp;
-FILE *ping_fp;
+#define IFSTAT_BNEP 0
+#define IFSTAT_WLAN 1
 
-void pipecontrol_cleanup(void){
+static int temp_in;
+static int web_in;
+
+static FILE *iw_fp;
+static FILE *ifstat_wlan0_fp;
+static FILE *ifstat_bnep0_fp;
+static FILE *bash_fp;
+static FILE *ping_fp;
+
+void pipe_cleanup(void){
 	printf("KILLING OLD PROCESSES\n");
 	system("pkill gst*");
 	system("pkill mjpeg*");
 }
 
-void pipecontrol_setup(bool gordon){
-	
+void pipe_init(bool gordon)
+{	
 	//let this priority get inherited to the children
 	setpriority(PRIO_PROCESS, getpid(), -10);
 
@@ -72,38 +79,18 @@ void pipecontrol_setup(bool gordon){
 	//empty named pipe
 	char buffer[100]; 
 	while(read(web_in, buffer, sizeof(buffer)-1));
-	
-	bcm2835_gpio_fsel(PIN_FAN_PWM, BCM2835_GPIO_FSEL_ALT0); //PWM_CHANNEL 0
-	bcm2835_gpio_fsel(PIN_IR_PWM, BCM2835_GPIO_FSEL_ALT0);  //PWM_CHANNEL 1
-	
-	bcm2835_pwm_set_clock(BCM2835_PWM_CLOCK_DIVIDER_16);
-	
-	bcm2835_pwm_set_mode(FAN_PWM_CHANNEL, 1, 1); //PWM_CHANNEL 0
-	bcm2835_pwm_set_range(FAN_PWM_CHANNEL, 1024);//PWM_CHANNEL 0 Set Range to 1024
-	
-	bcm2835_pwm_set_mode(IR_PWM_CHANNEL, 1, 1);  //PWM_CHANNEL 1
-	bcm2835_pwm_set_range(IR_PWM_CHANNEL, 1024);   //PWM_CHANNEL 1 Set Range to 1024
-	
-	bcm2835_gpio_fsel(PIN_PRIMARY, BCM2835_GPIO_FSEL_INPT);
-	bcm2835_gpio_fsel(PIN_ALT, BCM2835_GPIO_FSEL_INPT);
-	bcm2835_gpio_fsel(PIN_MODE, BCM2835_GPIO_FSEL_INPT);
-	bcm2835_gpio_fsel(PIN_RESET, BCM2835_GPIO_FSEL_INPT);
-	
-	bcm2835_gpio_set_pud(PIN_PRIMARY, BCM2835_GPIO_PUD_UP);
-	bcm2835_gpio_set_pud(PIN_ALT, BCM2835_GPIO_PUD_UP);
-	bcm2835_gpio_set_pud(PIN_MODE, BCM2835_GPIO_PUD_UP);
-	bcm2835_gpio_set_pud(PIN_RESET, BCM2835_GPIO_PUD_UP);
-}	
+}
 
-void aplay(const char *filename){
+void pipe_audio(const char *filename)
+{
 	//use dmix for alsa so sounds can play over each other
 	fprintf(bash_fp, "aplay -D plug:dmix %s &\n",filename);
 	fflush(bash_fp);
 }
 
-void web_output(const struct gun_struct *this_gun ){
+void pipe_www_out(const struct gun_struct *this_gun )
+{
 	static uint8_t web_packet_counter = 0;
-	
 	FILE *webout_fp;
 	
 	//send full playlist for editing
@@ -124,7 +111,8 @@ void web_output(const struct gun_struct *this_gun ){
 	web_packet_counter++;
 }
 
-int read_web_pipe(struct gun_struct *this_gun){
+int pipe_www_in(struct gun_struct *this_gun)
+{
 	int web_button = BUTTON_NONE;
 	int count = 1;
 	char buffer[100];
@@ -147,29 +135,27 @@ int read_web_pipe(struct gun_struct *this_gun){
 				default: 				web_button = BUTTON_NONE;
 				}
 			}
-			
 			//pad out array with repeat (-1) once encountered
 			if (results == 11){
-				uint8_t filler = 0;
-				for (uint8_t i = 1; i < 11; i++){
+				int filler = 0;
+				for (int i = 1; i < 11; i++){
 					if (tv[i] == -1) filler = -1;
 					if (filler == -1) tv[i] = -1;
 				}
 			}
-			
 			//ir stuff
 			if (tv[0] == 2 && results == 2) {
 				if (tv[1] >= 0 && tv[1] <= 1024) this_gun->ir_pwm = tv[1];
 			}
 			//self playlist setting
 			else if (tv[0] == 3 && results == 11) {
-				for (uint8_t i = 0; i < 10; i++){
+				for (int i = 0; i < 10; i++) {
 					this_gun->playlist_solo[i] = tv[i+1];
 				}
 			}
 			//shared playlist setting
 			else if (tv[0] == 4 && results == 11) {
-				for (uint8_t i = 0; i < 10; i++){
+				for (int i = 0; i < 10; i++){
 					this_gun->playlist_duo[i] = tv[i+1];
 				}
 			}
@@ -179,7 +165,7 @@ int read_web_pipe(struct gun_struct *this_gun){
 	return web_button;
 }
 
-void update_ping(float * ping){
+static void pipe_update_ping(float * ping){
 	static uint32_t ping_time = 0;
 	int count = 1;
 	char buffer[100];
@@ -204,8 +190,7 @@ void update_ping(float * ping){
 	if (millis() - ping_time > 1000) *ping = 0.0;
 }
 
-
-void update_ifstat(int * kbytes,uint8_t unit){	
+static void pipe_update_ifstat(int * kbytes,uint8_t unit){	
 	static uint8_t bad_count = 0;
 	int count = 1;
 	char buffer[100];
@@ -233,7 +218,7 @@ void update_ifstat(int * kbytes,uint8_t unit){
 		*kbytes = 0;
 }
 
-void update_temp(float * temp){	
+static void pipe_update_temp(float * temp){	
 	static bool temp_first_cycle = true;
 	static uint8_t temp_index = 0;
 	static uint32_t temp_array[256];
@@ -266,7 +251,7 @@ void update_temp(float * temp){
 	lseek(temp_in,0,SEEK_SET);
 }
 
-void update_iw(int * dbm, int * tx_bitrate){
+static void pipe_update_iw(int * dbm, int * tx_bitrate){
 	static uint8_t bad_count = 0;
 	int count = 1;
 	char buffer[1000];
@@ -303,157 +288,10 @@ void update_iw(int * dbm, int * tx_bitrate){
 	}
 }
 
-int io_update(const struct gun_struct *this_gun){
-	
-	bcm2835_pwm_set_data(FAN_PWM_CHANNEL, this_gun->fan_pwm);
-	
-	if (this_gun->state_duo < 0)	bcm2835_pwm_set_data(IR_PWM_CHANNEL, this_gun->ir_pwm);
-	else							bcm2835_pwm_set_data(IR_PWM_CHANNEL, 0);
-	
-	static uint_fast8_t primary_bucket = 0;
-	static uint_fast8_t alt_bucket = 0;
-	static uint_fast8_t mode_bucket = 0;
-	static uint_fast8_t reset_bucket = 0;
-	
-	static bool primary_cleared = true;
-	static bool alt_cleared = true;
-	static bool mode_cleared = true;
-	static bool reset_cleared = true;
-	
-	#define DEBOUNCE_MAX 3
-	//basic bucket debounce
-	if(bcm2835_gpio_lev (PIN_PRIMARY) == 0) {
-		if (primary_bucket < DEBOUNCE_MAX) {
-			primary_bucket++;
-			if (primary_bucket == DEBOUNCE_MAX && primary_cleared) return BUTTON_PRIMARY_FIRE;
-		}
-	}
-	else {
-		if (primary_bucket > 0) {
-			primary_bucket--;
-			if (primary_bucket == 0) primary_cleared = true;
-		}
-	}
-	
-	if(bcm2835_gpio_lev (PIN_ALT) == 0) {
-		if (alt_bucket < DEBOUNCE_MAX) {
-			alt_bucket++;
-			if (alt_bucket == DEBOUNCE_MAX && alt_cleared) return BUTTON_ALT_FIRE;
-		}
-	}
-	else {
-		if (alt_bucket > 0) {
-			alt_bucket--;
-			if (alt_bucket == 0) alt_cleared = true;
-		}
-	}
-	
-	if(bcm2835_gpio_lev (PIN_MODE) == 0) {
-		if (mode_bucket < DEBOUNCE_MAX) {
-			mode_bucket++;
-			if (mode_bucket == DEBOUNCE_MAX && mode_cleared) return BUTTON_MODE_TOGGLE;
-		}
-	}
-	else {
-		if (mode_bucket > 0){
-			mode_bucket--;
-			if (mode_bucket == 0) mode_cleared = true;
-		}
-	}
-	
-	if(bcm2835_gpio_lev (PIN_RESET) == 0) {
-		if (reset_bucket < DEBOUNCE_MAX) {
-			reset_bucket++;
-			if (reset_bucket == DEBOUNCE_MAX && reset_cleared) return BUTTON_RESET;
-		}
-	}
-	else {
-		if (reset_bucket > 0) {
-			reset_bucket--;
-			if (reset_bucket == 0) reset_cleared = true;
-		}
-	}
-	
-	return BUTTON_NONE;	
-}
-void audio_effects(const struct gun_struct *this_gun){
-	
-	//LOCAL STATES
-	if ((this_gun->state_duo_previous != 0 || this_gun->state_solo_previous != 0) && (this_gun->state_duo == 0 && this_gun->state_solo == 0)){
-		aplay("/home/pi/assets/portalgun/portal_close1.wav");
-	}
-	//on entering state 1
-	else if ((this_gun->state_duo_previous != this_gun->state_duo) && (this_gun->state_duo == 1)){
-		aplay("/home/pi/assets/physcannon/physcannon_charge1.wav");
-	}
-	//on entering state -1
-	else if ((this_gun->state_duo_previous != -1) && (this_gun->state_duo == -1)){
-		aplay("/home/pi/assets/physcannon/physcannon_charge1.wav");			
-	}
-	//on entering state 2
-	else if ((this_gun->state_duo_previous !=2) && (this_gun->state_duo == 2)){
-		aplay("/home/pi/assets/physcannon/physcannon_charge2.wav");		
-	}
-	//on entering state -2 from -1
-	else if ((this_gun->state_duo_previous !=-2) && (this_gun->state_duo == -2)){
-		aplay("/home/pi/assets/physcannon/physcannon_charge2.wav");
-	}	
-	else if ((this_gun->state_duo_previous !=-3) && (this_gun->state_duo == -3)){
-		aplay("/home/pi/assets/physcannon/physcannon_charge3.wav");
-	}	
-	//on entering state 3 from 2
-	else if ((this_gun->state_duo_previous == 2) && (this_gun->state_duo ==3)){	
-		aplay("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
-	}
-	//on quick swap to rec
-	else if ((this_gun->state_duo_previous < 4) && (this_gun->state_duo == 4)){
-		aplay("/home/pi/assets/portalgun/portal_open2.wav");
-	}
-	//on quick swap to transmit
-	else if ((this_gun->state_duo_previous >= 4) && (this_gun->state_duo <= -4)){
-		aplay("/home/pi/assets/portalgun/portal_fizzle2.wav");
-	}	
-
-	//shared effect change close portal end sfx
-	else if (this_gun->state_duo_previous == 4 && this_gun->state_duo == 5){
-		aplay("/home/pi/assets/portalgun/portal_close1.wav");
-	}	
-	//shared effect change open portal end sfx
-	else if (this_gun->state_duo_previous == 5 && this_gun->state_duo == 4){
-		aplay("/home/pi/assets/portalgun/portal_open1.wav");
-	}	
-	
-	//SELF STATES
-	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 1 || this_gun->state_solo == -1)){
-		aplay("/home/pi/assets/physcannon/physcannon_charge1.wav");
-	}
-	//on entering state 2 or -2
-	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 2 || this_gun->state_solo == -2)){
-		aplay("/home/pi/assets/physcannon/physcannon_charge2.wav");				
-	}
-	
-	//on entering state 3 or -3 from 0
-	else if ((this_gun->state_solo_previous < 3 && this_gun->state_solo_previous > -3  ) && (this_gun->state_solo == 3 || this_gun->state_solo == -3)){
-		aplay("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
-	}
-
-	//on quick swap 
-	else if (( this_gun->state_solo_previous >= 3 && this_gun->state_solo == -3) || (this_gun->state_solo_previous <= -3 && this_gun->state_solo == 3)){
-		aplay("/home/pi/assets/portalgun/portal_open2.wav");		
-	}
-	
-	//private end sfx
-	else if ((this_gun->state_solo_previous > 3 && this_gun->state_solo == 3) || (this_gun->state_solo_previous < -3 && this_gun->state_solo == -3)){
-		aplay("/home/pi/assets/portalgun/portal_close1.wav");
-	}
-	
-	//private start sfx
-	else if ((this_gun->state_solo_previous != -4 && this_gun->state_solo == -4) || (this_gun->state_solo_previous != 4 && this_gun->state_solo == 4)){
-		aplay("/home/pi/assets/portalgun/portal_open1.wav");
-	}
-	
-	//rip from private to shared mode sfx
-	else if ((this_gun->state_solo_previous <= -3 || this_gun->state_solo_previous>=3) && this_gun->state_duo == 4){
-		aplay("/home/pi/assets/portalgun/portal_open2.wav");		
-	}
+void pipe_update(struct gun_struct *this_gun){
+	pipe_update_temp(&(this_gun->coretemp));
+	pipe_update_ping(&(this_gun->latency));
+	pipe_update_ifstat(&(this_gun->kbytes_wlan),IFSTAT_WLAN);
+	pipe_update_ifstat(&(this_gun->kbytes_bnep),IFSTAT_BNEP);
+	pipe_update_iw(&(this_gun->dbm), &(this_gun->tx_bitrate));
 }
