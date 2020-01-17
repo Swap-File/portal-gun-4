@@ -3,7 +3,7 @@ DEPs := $(OBJs:%.o=%.d)
 BIN  := portal
 CC  = gcc
 
-CFLAGS += --std=gnu99 -Wall -Werror -O2
+CFLAGS += --std=gnu18 -Wall -Werror -O2
 LDFLAGS += -lm
 
 .PHONY: all

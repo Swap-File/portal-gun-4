@@ -419,11 +419,11 @@ void init_text_background(){
 	glNewList( text_vertex_list, GL_COMPILE );
 	glBegin( GL_QUADS );
 	
-	glVertex3f( 1366/2,  768/2,0);//top left
-	glVertex3f( 1366/2,0,0);//bottom left
-	glVertex3f(  1366,0,0);//bottom right	
-	glVertex3f(  1366, 768/2,0);//top right
-	glEnd( );
+	glVertex3f( 1366/2, 768/2,0);//top left
+	glVertex3f( 1366/2,     0,0);//bottom left
+	glVertex3f(   1366,     0,0);//bottom right	
+	glVertex3f(   1366, 768/2,0);//top right
+	glEnd();
 	glEndList();
 	
 }
@@ -461,8 +461,8 @@ void print_text_overlay(){
 	glBindTexture(GL_TEXTURE_2D, 0); //no texture	
 	
 	
-	if (this_gun->state_solo < 0 ||this_gun->state_duo < 0) slide_to(0.0,0.5,0.5); 
-	else if (this_gun->state_solo > 0 ||this_gun->state_duo > 0) slide_to(0.8,0.4,0.0); 
+	if (this_gun->state_solo < 0 || this_gun->state_duo < 0) slide_to(0.0,0.5,0.5); 
+	else if (this_gun->state_solo > 0 || this_gun->state_duo > 0) slide_to(0.8,0.4,0.0); 
 	else slide_to(0.0,0.0,0.0); 
 	
 	

@@ -118,13 +118,13 @@ void i2creader_setup(void){
 	// LPen = 0 (normal mode)
 	// Zen = Yen = Xen = 1 (all axes enabled)
 	temp[0] = CTRL_REG1_A;
-	temp[1] = 0b01010111;
+	temp[1] = 0x57;
 	bcm2835_i2c_write(temp,2);
 	 
 	// FS = 10 (8 g full scale)
 	// HR = 1 (high resolution enable)
 	temp[0] = CTRL_REG4_A;
-	temp[1] = 0b00101000;
+	temp[1] = 0x28;
 	bcm2835_i2c_write(temp,2);
 }
 
