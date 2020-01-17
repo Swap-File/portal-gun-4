@@ -11,7 +11,7 @@
 #include <unistd.h>  //getpid for priority change
 #include <sys/time.h>  //gettimeofday
 #include "model_board/model_board.h"
-#include "BitmapFontClass.h"
+#include "BitmapFont.h"
 #include "../portal.h"
 
 struct gun_struct *this_gun;
@@ -407,8 +407,8 @@ void start_pipeline(){
 
 
 void print_centered(char * input,int height){
-	int offset = ((768/2) - CBitmapFontGetWidth(input) )/2;
-	CBitmapFontPrintXY(input,offset,height);
+	int offset = ((768/2) - BitmapFontGetWidth(input) )/2;
+	BitmapFontPrintXY(input,offset,height);
 }
 
 GLuint text_vertex_list;
@@ -474,8 +474,8 @@ void print_text_overlay(){
 	// Setup Texture, color and blend options
 	glEnable(GL_TEXTURE_2D);
 
-	CBitmapFontBind();
-	CBitmapFontSetBlend();
+	BitmapFontBind();
+	BitmapFontSetBlend();
 
 	char temp[200];
 
@@ -762,7 +762,7 @@ int main(int argc, char *argv[]){
 	outputpads[5] = gst_element_get_static_pad(outputselector,"src_5");
 
 
-	CBitmapFontLoad((char *)"/home/pi/portal/gstvideo/Consolas.bff");
+	BitmapFontLoad((char *)"/home/pi/portal/gstvideo/Consolas.bff");
 	init_text_background();
 	model_board_init();
 	
