@@ -49,7 +49,7 @@ int main(void){
 	ledcontrol_setup();
 	i2creader_setup();	
 	udpcontrol_setup();
-	pipecontrol_setup();
+	pipecontrol_setup(this_gun->gordon);
 	
 	bool freq_50hz = true; //toggles every other cycle, cuts 100hz to 50hz
 

@@ -24,7 +24,7 @@ void pipecontrol_cleanup(void){
 	system("pkill mjpeg*");
 }
 
-void pipecontrol_setup(){
+void pipecontrol_setup(bool gordon){
 	
 	//let this priority get inherited to the children
 	setpriority(PRIO_PROCESS, getpid(), -10);
@@ -55,15 +55,15 @@ void pipecontrol_setup(){
 		exit(-1);
 	}
 	
-	if(getenv("GORDON")) 		ping_fp = popen("ping -i 0.2 192.168.3.21", "r");
-	else if(getenv("CHELL")) 	ping_fp = popen("ping -i 0.2 192.168.3.20", "r");
+	if (gordon)	ping_fp = popen("ping -i 0.2 192.168.3.21", "r");
+	else		ping_fp = popen("ping -i 0.2 192.168.3.20", "r");
 
 	fcntl(fileno(ping_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);	
 	
-	ifstat_wlan0_fp  = popen("ifstat -i wlan0", "r");
+	ifstat_wlan0_fp = popen("ifstat -i wlan0", "r");
 	fcntl(fileno(ifstat_wlan0_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);
 	
-	ifstat_bnep0_fp  = popen("ifstat -i bnep0", "r");
+	ifstat_bnep0_fp = popen("ifstat -i bnep0", "r");
 	fcntl(fileno(ifstat_bnep0_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);
 	
 	iw_fp = popen("bash -c 'while true; do  iw dev wlan0 station dump; echo 'a'; sleep 1; done'", "r");
@@ -102,7 +102,7 @@ void aplay(const char *filename){
 }
 
 void web_output(const struct gun_struct *this_gun ){
-	uint8_t web_packet_counter = 0;
+	static uint8_t web_packet_counter = 0;
 	
 	FILE *webout_fp;
 	
@@ -201,7 +201,7 @@ void update_ping(float * ping){
 			}
 		}
 	}
-	if (millis() - ping_time > 2000) *ping = 0.0;
+	if (millis() - ping_time > 1000) *ping = 0.0;
 }
 
 
@@ -249,23 +249,17 @@ void update_temp(float * temp){
 			int result = sscanf(buffer,"%d", &number);
 			if (number > 0 && number  < 85000 && result == 1){
 				number = (number * 9/5) + 32000;
-				
 				if (temp_first_cycle){
 					//preload filters with data if empty
-					for ( int i = 0; i < 256; i++ ) temp_array[i] = number;
+					for (int i = 0; i < 256; i++) temp_array[i] = number;
 					temp_total = 256*number;
 					temp_first_cycle = false;
 				}
-				
 				temp_total -= temp_array[temp_index];
 				temp_array[temp_index] = number;
 				temp_total += temp_array[temp_index++];
-				
-				//if (temp_index>63) temp_index = 0;
-				
 				float temp_temp = ((float)(temp_total >> 8)) / (1000.0);
 				*temp = temp_temp;
-				//*temp = *temp * .5 + .5 *temp_temp;
 			}
 		}
 	}
@@ -303,7 +297,6 @@ void update_iw(int * dbm, int * tx_bitrate){
 	}else if (count == 2){ //2 means no signal, only getting the letter A
 		bad_count++;
 	}
-	
 	if (bad_count > 3) {
 		*dbm = 0;
 		*tx_bitrate = 0;
@@ -315,7 +308,7 @@ int io_update(const struct gun_struct *this_gun){
 	bcm2835_pwm_set_data(FAN_PWM_CHANNEL, this_gun->fan_pwm);
 	
 	if (this_gun->state_duo < 0)	bcm2835_pwm_set_data(IR_PWM_CHANNEL, this_gun->ir_pwm);
-	else  						bcm2835_pwm_set_data(IR_PWM_CHANNEL, 0);
+	else							bcm2835_pwm_set_data(IR_PWM_CHANNEL, 0);
 	
 	static uint_fast8_t primary_bucket = 0;
 	static uint_fast8_t alt_bucket = 0;
@@ -394,30 +387,30 @@ void audio_effects(const struct gun_struct *this_gun){
 		aplay("/home/pi/assets/physcannon/physcannon_charge1.wav");
 	}
 	//on entering state -1
-	else if ((this_gun->state_duo_previous != -1)&& (this_gun->state_duo == -1)){
+	else if ((this_gun->state_duo_previous != -1) && (this_gun->state_duo == -1)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge1.wav");			
 	}
 	//on entering state 2
-	else if ((this_gun->state_duo_previous !=2 ) &&  (this_gun->state_duo == 2)){
+	else if ((this_gun->state_duo_previous !=2) && (this_gun->state_duo == 2)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge2.wav");		
 	}
 	//on entering state -2 from -1
-	else if ((this_gun->state_duo_previous !=-2 ) &&  (this_gun->state_duo == -2)){
+	else if ((this_gun->state_duo_previous !=-2) && (this_gun->state_duo == -2)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge2.wav");
 	}	
-	else if ((this_gun->state_duo_previous !=-3 ) &&  (this_gun->state_duo == -3)){
+	else if ((this_gun->state_duo_previous !=-3) && (this_gun->state_duo == -3)){
 		aplay("/home/pi/assets/physcannon/physcannon_charge3.wav");
 	}	
 	//on entering state 3 from 2
-	else if ((this_gun->state_duo_previous == 2 ) && ( this_gun->state_duo ==3)){	
+	else if ((this_gun->state_duo_previous == 2) && (this_gun->state_duo ==3)){	
 		aplay("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
 	}
 	//on quick swap to rec
-	else if ((this_gun->state_duo_previous < 4 )&& (this_gun->state_duo == 4)){
+	else if ((this_gun->state_duo_previous < 4) && (this_gun->state_duo == 4)){
 		aplay("/home/pi/assets/portalgun/portal_open2.wav");
 	}
 	//on quick swap to transmit
-	else if ((this_gun->state_duo_previous >= 4 )&& (this_gun->state_duo <= -4)){
+	else if ((this_gun->state_duo_previous >= 4) && (this_gun->state_duo <= -4)){
 		aplay("/home/pi/assets/portalgun/portal_fizzle2.wav");
 	}	
 

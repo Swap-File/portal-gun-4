@@ -3,6 +3,8 @@
 #include "gstvideo/gstvideo.h"
 #include <stdio.h>
 
+#define GUN_EXPIRE 1000 //expire a gun in 1 second
+
 void local_state_engine(int button,struct gun_struct *this_gun){	
 
 	//check for expiration of other gun

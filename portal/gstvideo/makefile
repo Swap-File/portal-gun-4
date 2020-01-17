@@ -1,4 +1,4 @@
-OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) model_board/model_board.o model_board/png_texture.o  ../sharedmem.o
+OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) ../sharedmem.o
 DEPs := $(OBJs:%.o=%.d)
 BIN  := gstvideo
 CC  = gcc

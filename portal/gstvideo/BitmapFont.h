@@ -30,11 +30,11 @@ void BitmapFontSetScreen(int x, int y);
 void BitmapFontSetCursor(int x, int y); 
 void BitmapFontSetColor(float Red, float Green, float Blue);
 void BitmapFontReverseYAxis(bool State);
-void BitmapFontSelect();                
-void BitmapFontBind();                  
-void BitmapFontSetBlend();              
-void BitmapFontPrint(char *Text);       
-void BitmapFontPrintXY(char *Text, int x, int y); 
+void BitmapFontSelect();
+void BitmapFontBind();
+void BitmapFontSetBlend();
+void BitmapFontPrint(char *Text);
+void BitmapFontPrintXY(char *Text, int x, int y);
 void BitmapFontezPrint(char *Text, int x, int y);
 int  BitmapFontGetWidth(char *Text);
 

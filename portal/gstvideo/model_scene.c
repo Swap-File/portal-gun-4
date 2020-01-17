@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>  //sqrt
+#include <math.h> //sqrt
 #include <stdbool.h>
 #include <gst/gst.h>
 #include <gst/gl/gl.h>
 #include <GL/glx.h>
 #include <GL/glxext.h>
 #include "png_texture.h"
-#include "../gstvideo.h"
+#include "gstvideo.h"
 
 int last_acceleration[2] = {0,0};
 
