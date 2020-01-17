@@ -1,5 +1,5 @@
-#ifndef _BITMAPFONTCLASS_H
-#define _BITMAPFONTCLASS_H
+#ifndef _font_CLASS_H
+#define _font_CLASS_H
 
 #include <stdbool.h>
 
@@ -25,17 +25,17 @@ typedef struct {
   unsigned char StartPoint;
  } FontFileHeader;
 
-bool BitmapFontLoad(char *fname);
-void BitmapFontSetScreen(int x, int y); 
-void BitmapFontSetCursor(int x, int y); 
-void BitmapFontSetColor(float Red, float Green, float Blue);
-void BitmapFontReverseYAxis(bool State);
-void BitmapFontSelect();
-void BitmapFontBind();
-void BitmapFontSetBlend();
-void BitmapFontPrint(char *Text);
-void BitmapFontPrintXY(char *Text, int x, int y);
-void BitmapFontezPrint(char *Text, int x, int y);
-int  BitmapFontGetWidth(char *Text);
+bool font_Load(char *fname);
+void font_SetScreen(int x, int y); 
+void font_SetCursor(int x, int y); 
+void font_SetColor(float Red, float Green, float Blue);
+void font_ReverseYAxis(bool State);
+void font_Select();
+void font_Bind();
+void font_SetBlend();
+void font_Print(char *Text);
+void font_PrintXY(char *Text, int x, int y);
+void font_ezPrint(char *Text, int x, int y);
+int  font_GetWidth(char *Text);
 
 #endif

@@ -36,7 +36,7 @@ void pipe_init(bool gordon)
 	//let this priority get inherited to the children
 	setpriority(PRIO_PROCESS, getpid(), -10);
 
-	system("sudo -E xinit ~/portal/gstvideo/auto.sh &");
+	system("sudo -E xinit /home/pi/portal/gstvideo/launch.sh &");
 	sleep(5);
 	
 	system("LD_LIBRARY_PATH=/usr/local/lib mjpg_streamer -i 'input_file.so -f /var/www/html/tmp -n snapshot.jpg' -o 'output_http.so -w /usr/local/www' &");

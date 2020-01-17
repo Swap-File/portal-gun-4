@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <png.h>
 
-GLuint png_texture_load(const char * file_name, int * width, int * height)
+GLuint png_load(const char * file_name, int * width, int * height)
 {
 	png_byte header[8];
 

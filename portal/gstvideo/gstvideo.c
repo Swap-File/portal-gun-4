@@ -10,8 +10,8 @@
 #include <GL/glx.h>
 #include <unistd.h>  //getpid for priority change
 #include <sys/time.h>  //gettimeofday
-#include "model_scene.h"
-#include "BitmapFont.h"
+#include "scene.h"
+#include "font.h"
 
 struct gun_struct *this_gun;
 
@@ -406,8 +406,8 @@ void start_pipeline(){
 
 
 void print_centered(char * input,int height){
-	int offset = ((768/2) - BitmapFontGetWidth(input) )/2;
-	BitmapFontPrintXY(input,offset,height);
+	int offset = ((768/2) - font_GetWidth(input) )/2;
+	font_PrintXY(input,offset,height);
 }
 
 GLuint text_vertex_list;
@@ -473,8 +473,8 @@ void print_text_overlay(){
 	// Setup Texture, color and blend options
 	glEnable(GL_TEXTURE_2D);
 
-	BitmapFontBind();
-	BitmapFontSetBlend();
+	font_Bind();
+	font_SetBlend();
 
 	char temp[200];
 
@@ -573,8 +573,8 @@ static gboolean idle_loop (gpointer data) {
 		}		
 	}
 	
-	model_board_animate(accleration,portal_mode_requested);
-	model_board_redraw(gst_shared_texture,portal_mode_requested);
+	scene_animate(accleration,portal_mode_requested);
+	scene_redraw(gst_shared_texture,portal_mode_requested);
 	print_text_overlay();
 
 	glXSwapBuffers(dpy, win);
@@ -761,9 +761,9 @@ int main(int argc, char *argv[]){
 	outputpads[5] = gst_element_get_static_pad(outputselector,"src_5");
 
 
-	BitmapFontLoad("/home/pi/portal/gstvideo/Consolas.bff");
+	font_Load("/home/pi/portal/gstvideo/Consolas.bff");
 	init_text_background();
-	model_board_init();
+	scene_init();
 	
 	//start the idle and main loops
 	loop = g_main_loop_new (NULL, FALSE);

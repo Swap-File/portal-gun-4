@@ -1,35 +1,37 @@
-#include "BitmapFont.h"
+#include "font.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <GL/gl.h>
 
-int CellX,CellY,YOffset,RowPitch;
-char Base;
-char Width[256];   
-GLuint TexID;
-int CurX = 0;
-int CurY = 0;
-float RowFactor,ColFactor;
-int RenderStyle;
-float Rd = 1.0f; 
-float Gr = 1.0f;
-float Bl = 1.0f;
-bool InvertYAxis =false;
+static int CellX,CellY,YOffset,RowPitch;
+static char Base;
+static char Width[256];   
+static GLuint TexID;
+static int CurX = 0;
+static int CurY = 0;
+static float RowFactor,ColFactor;
+static int RenderStyle;
+static float Rd = 1.0f; 
+static float Gr = 1.0f;
+static float Bl = 1.0f;
+static bool InvertYAxis =false;
 
-bool BitmapFontLoad(char *fname)
+bool font_Load(char *fname)
 {
 	int fileSize;
 	char bpp;
 	int ImgX,ImgY;
 
 	FILE *f = fopen(fname, "rb");
+	if (f == NULL) printf("File Open Error\n");
 	fseek(f, 0, SEEK_END);
 	fileSize = ftell(f);
 	fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
 
 	char *dat = malloc(fileSize);
+	if (dat == NULL) printf("Malloc Error\n");
 	fread(dat, 1, fileSize, f);
 	fclose(f);
 	
@@ -128,20 +130,20 @@ bool BitmapFontLoad(char *fname)
 }
 
 // Set the position for text output, this will be updated as text is printed
-void BitmapFontSetCursor(int x, int y)
+void font_SetCursor(int x, int y)
 { 
 	CurX=x;
 	CurY=y;
 }
 
 // The texture ID is a private member, so this function performs the texture bind
-void BitmapFontBind()
+void font_Bind()
 {
 	glBindTexture(GL_TEXTURE_2D,TexID);
 }
 
 // Set the color and blending options based on the Renderstyle member
-void BitmapFontSetBlend()
+void font_SetBlend()
 {
 	glColor3f(Rd,Gr,Bl);
 
@@ -164,15 +166,15 @@ void BitmapFontSetBlend()
 }
 
 // Shortcut, Enables Texturing and performs Bind and SetBlend
-void BitmapFontSelect()
+void font_Select()
 {
 	glEnable(GL_TEXTURE_2D);
-	BitmapFontBind();
-	BitmapFontSetBlend();
+	font_Bind();
+	font_SetBlend();
 }
 
 // Set the font color NOTE this only sets the polygon color, the texture colors are fixed
-void BitmapFontSetColor(float Red, float Green, float Blue)
+void font_SetColor(float Red, float Green, float Blue)
 {
 	Rd=Red;
 	Gr=Green;
@@ -180,7 +182,7 @@ void BitmapFontSetColor(float Red, float Green, float Blue)
 }
 
 //
-void BitmapFontReverseYAxis(bool State)
+void font_ReverseYAxis(bool State)
 {
 	if(State)
 	YOffset=-CellY;
@@ -191,7 +193,7 @@ void BitmapFontReverseYAxis(bool State)
 }
 
 // Sets up an Ortho screen based on the supplied values 
-void BitmapFontSetScreen(int x, int y)
+void font_SetScreen(int x, int y)
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -204,7 +206,7 @@ void BitmapFontSetScreen(int x, int y)
 }
 
 // Prints text at the cursor position, cursor is moved to end of text
-void BitmapFontPrint(char* Text)
+void font_Print(char* Text)
 {
 	int sLen,Loop;
 	int Row,Col;
@@ -236,7 +238,7 @@ void BitmapFontPrint(char* Text)
 }
 
 // Prints text at a specifed position, again cursor is updated
-void BitmapFontPrintXY(char* Text, int x, int y)
+void font_PrintXY(char* Text, int x, int y)
 {
 	int sLen,Loop;
 	int Row,Col;
@@ -272,7 +274,7 @@ void BitmapFontPrintXY(char* Text, int x, int y)
 // Lazy way to draw text.
 // Preserves all GL attributes and does everything for you.
 // Performance could be an issue.
-void BitmapFontezPrint(char *Text, int x, int y)
+void font_ezPrint(char *Text, int x, int y)
 {
 	GLint CurMatrixMode;
 	GLint ViewPort[4];
@@ -301,10 +303,10 @@ void BitmapFontezPrint(char *Text, int x, int y)
 	// Setup Texture, color and blend options
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D,TexID);
-	BitmapFontSetBlend();
+	font_SetBlend();
 
 	// Render text
-	BitmapFontPrintXY(Text,x,y);
+	font_PrintXY(Text,x,y);
 
 	// Restore previous state
 	glPopAttrib();
@@ -318,7 +320,7 @@ void BitmapFontezPrint(char *Text, int x, int y)
 }
 
 // Returns the width in pixels of the specified text
-int BitmapFontGetWidth(char* Text)
+int font_GetWidth(char* Text)
 {
 	int Loop,sLen,Size;
 

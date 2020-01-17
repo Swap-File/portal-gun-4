@@ -6,34 +6,34 @@
 #include <gst/gl/gl.h>
 #include <GL/glx.h>
 #include <GL/glxext.h>
-#include "png_texture.h"
+#include "png.h"
 #include "gstvideo.h"
 
-int last_acceleration[2] = {0,0};
+static int last_acceleration[2] = {0,0};
 
 //textures
-GLuint orange_1,blue_n,orange_n,orange_0,blue_0,blue_1,texture_orange,texture_blue,circle64;
+static GLuint orange_1,blue_n,orange_n,orange_0,blue_0,blue_1,texture_orange,texture_blue,circle64;
 
 //vertex lists
-GLuint video_quad_vertex_list,event_horizon_vertex_list,event_horizon2_vertex_list,portal_vertex_list,shutter_vertex_list;
+static GLuint video_quad_vertex_list,event_horizon_vertex_list,event_horizon2_vertex_list,portal_vertex_list,shutter_vertex_list;
 
-float portal_spin = 0;
-float event_horizon_spin = 0;
+static float portal_spin = 0;
+static float event_horizon_spin = 0;
 
-float event_horizon_vertex_list_shimmer = 0;
-bool event_horizon_vertex_list_shimmer_direction = true;
+static float event_horizon_vertex_list_shimmer = 0;
+static bool event_horizon_vertex_list_shimmer_direction = true;
 
-float event_horizon_transparency_level = 0;
+static float event_horizon_transparency_level = 0;
 
-float global_zoom = 0;
+static float global_zoom = 0;
 
-float torus_offset[360];
-float running_magnitude;
-float angle_target;
-float angle_target_delayed;
+static float torus_offset[360];
+static float running_magnitude;
+static float angle_target;
+static float angle_target_delayed;
 
 //texture scrolling
-GLfloat donut_texture_scrolling = 0.0;
+static GLfloat donut_texture_scrolling = 0.0;
 
 /* Borrowed from glut, adapted */
 void draw_torus_vbo(){
@@ -119,7 +119,7 @@ static GLfloat point_vertexes[TRAIL_QTY * 3 * TRAIL_LENGTH];
 static GLfloat point_colors[TRAIL_QTY * 4 * TRAIL_LENGTH];
 static int head_offset = 0;
 
-void draw_point_sprite_vertexes(void){
+static void draw_point_sprite_vertexes(void){
 	
 	//first decay ALL trail points, alpha is stored in 4th positions of color array
 	for (int i = 3; i < TRAIL_QTY * 4 * TRAIL_LENGTH; i += 4) point_colors[i] *= 0.9;
@@ -173,7 +173,7 @@ void draw_point_sprite_vertexes(void){
 
 
 	
-void model_board_animate(int acceleration[], int frame){
+void scene_animate(int acceleration[], int frame){
 	
 	static int frame_previous = -1;
 	static int running_acceleration[2] = {0,0};
@@ -285,7 +285,7 @@ void model_board_animate(int acceleration[], int frame){
 	last_acceleration[1] = acceleration[1];
 }
 
-void model_board_init(void)
+void scene_init(void)
 {
 	//set all points to be white, let the texture through
 	for (uint16_t i = 0; i < (sizeof(point_colors)/sizeof(point_colors[0])); i++) point_colors[i] = 1.0;
@@ -293,26 +293,26 @@ void model_board_init(void)
 	//initial fill to snap back
 	for (int i = 0; i < 360; i ++)	torus_offset[i] = 3;
 	
-	orange_n = png_texture_load( "/home/pi/portal/gstvideo/assets/orange_n.png", NULL, NULL);
+	orange_n = png_load("/home/pi/portal/gstvideo/assets/orange_n.png", NULL, NULL);
 	//override default of clamp
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	
-	blue_n = png_texture_load( "/home/pi/portal/gstvideo/assets/blue_n.png", NULL, NULL);
+	blue_n = png_load("/home/pi/portal/gstvideo/assets/blue_n.png", NULL, NULL);
 	//override default of clamp
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	
-	orange_0 = png_texture_load( "/home/pi/portal/gstvideo/assets/orange_0.png", NULL, NULL);
-	orange_1 = png_texture_load( "/home/pi/portal/gstvideo/assets/orange_1.png", NULL, NULL);
+	orange_0 = png_load("/home/pi/portal/gstvideo/assets/orange_0.png", NULL, NULL);
+	orange_1 = png_load("/home/pi/portal/gstvideo/assets/orange_1.png", NULL, NULL);
 
-	blue_0 = png_texture_load( "/home/pi/portal/gstvideo/assets/blue_0.png", NULL, NULL);
-	blue_1 = png_texture_load( "/home/pi/portal/gstvideo/assets/blue_1.png", NULL, NULL);
+	blue_0 = png_load("/home/pi/portal/gstvideo/assets/blue_0.png", NULL, NULL);
+	blue_1 = png_load("/home/pi/portal/gstvideo/assets/blue_1.png", NULL, NULL);
 	
-	texture_orange = png_texture_load( "/home/pi/portal/gstvideo/assets/orange_portal.png", NULL, NULL);
-	texture_blue   = png_texture_load( "/home/pi/portal/gstvideo/assets/blue_portal.png",   NULL, NULL);
+	texture_orange = png_load("/home/pi/portal/gstvideo/assets/orange_portal.png", NULL, NULL);
+	texture_blue   = png_load("/home/pi/portal/gstvideo/assets/blue_portal.png",   NULL, NULL);
 	
-	circle64 = png_texture_load( "/home/pi/portal/gstvideo/assets/circle64.png", NULL, NULL);
+	circle64 = png_load("/home/pi/portal/gstvideo/assets/circle64.png", NULL, NULL);
 	
 	if (orange_n == 0 || blue_n == 0 || texture_orange == 0 || texture_blue == 0 || orange_0 == 0 || orange_1 == 0 || blue_0 == 0 || blue_1 == 0 || circle64 == 0)
 	{
@@ -406,7 +406,7 @@ void model_board_init(void)
 	
 }
 
-void model_board_redraw(GLuint video_texture, int frame){	
+void scene_redraw(GLuint video_texture, int frame){	
 
 	//RESTART - CHECK IF I NEED TO SET ALL OF THESE EACH CYCLE!
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
