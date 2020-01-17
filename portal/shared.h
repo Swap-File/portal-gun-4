@@ -56,8 +56,8 @@ struct gun_struct {
 	uint32_t other_gun_clock;
 };
 
-void shm_init(struct gun_struct **this_gun,bool init);
-void shm_cleanup(void);
+void shared_init(struct gun_struct **this_gun,bool init);
+void shared_cleanup(void);
 uint32_t millis(void);
 int piHiPri(const int pri);
 

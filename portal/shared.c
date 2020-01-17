@@ -10,7 +10,7 @@
 static int shmid;	
 static struct gun_struct *cleanup_pointer;
 
-static void init_gun(struct gun_struct *this_gun)
+static void shared_init_gun(struct gun_struct *this_gun)
 {
     memset(this_gun,0,sizeof(struct gun_struct));
 	
@@ -48,7 +48,7 @@ static void init_gun(struct gun_struct *this_gun)
 	this_gun->effect_duo = GST_NORMAL;
 }
 
-void shm_init(struct gun_struct **this_gun,bool init)
+void shared_init(struct gun_struct **this_gun,bool init)
 {	
 	key_t key;
 	
@@ -72,7 +72,7 @@ void shm_init(struct gun_struct **this_gun,bool init)
     }
 	
     /* optionally copy init values into shared memory: */	
-	if (init) init_gun(*this_gun);
+	if (init) shared_init_gun(*this_gun);
 	
 	/* save the pointer for later: */
     cleanup_pointer = *this_gun;
@@ -86,7 +86,7 @@ void shm_init(struct gun_struct **this_gun,bool init)
 	}
 }
 
-void shm_cleanup()
+void shared_cleanup(void)
 {
 	/* detatch from the segment: */
 	if (shmdt(cleanup_pointer) == -1) {

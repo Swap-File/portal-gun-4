@@ -607,11 +607,11 @@ static gboolean idle_loop (gpointer data) {
 }
 
 
-int main(int argc, char *argv[]){
-	shm_init(&this_gun,false );
-
-	//set priority for the opengl engine and video output
+int main(int argc, char *argv[])
+{
+	shared_init(&this_gun,false );
 	
+	//set priority for the opengl engine and video output
 	setpriority(PRIO_PROCESS, getpid(), -10);
 	
 	/* Initialize X11 */

@@ -15,11 +15,12 @@ void INThandler(int dummy) {
 	printf("\nCleaning up...\n");
 	led_wipe();
 	pipe_cleanup();
+	shared_cleanup();
 	exit(1);
 }
 
-int main(void){
-	
+int main(void)
+{
 	if (getuid()) {
 		printf("Run as root!\n");
 		exit(1);
@@ -29,7 +30,7 @@ int main(void){
 	pipe_cleanup();
 	
 	struct gun_struct *this_gun;
-	shm_init(&this_gun,true);
+	shared_init(&this_gun,true);
 	
 	/* catch broken pipes */
 	signal(SIGPIPE, SIG_IGN);
@@ -37,7 +38,7 @@ int main(void){
 	signal(SIGINT, INThandler);
 	
 	/* setup libraries */
-	pipe_www_out(this_gun);
+	pipe_www_out(this_gun); //output initial data now to let website load during gun init
 	bcm2835_init();
 	led_init();
 	io_init();
@@ -54,7 +55,7 @@ int main(void){
 	uint32_t time_delay = 0;
 	int changes = 0;
 	
-	while(1){
+	while (1) {
 		/* Cycle Delay */
 		time_start += 10;
 		uint32_t predicted_delay = time_start - millis(); //calc predicted delay
@@ -87,7 +88,7 @@ int main(void){
 		//read other gun's data, only if no button events are happening this cycle
 
 		/* Otherwise Read Other Gun */
-		while (button_event == BUTTON_NONE){
+		while (button_event == BUTTON_NONE) {
 			int result = udp_receive_state(&(this_gun->other_gun_state),&(this_gun->other_gun_clock));
 			if (result <= 0) break;  //read until buffer empty
 			else this_gun->other_gun_last_seen = this_gun->clock;  //update time data was seen
@@ -106,7 +107,7 @@ int main(void){
 		
 		/* Send data to other gun and www output */
 		static uint32_t time_udp_send = 0;
-		if (this_gun->clock - time_udp_send > 100){
+		if (this_gun->clock - time_udp_send > 100) {
 			udp_send_state(this_gun->state_duo,this_gun->clock);
 			time_udp_send = this_gun->clock;
 			pipe_www_out(this_gun);
@@ -116,7 +117,7 @@ int main(void){
 		static uint32_t time_fps = 0;
 		static int fps = 0;
 		fps++;
-		if (time_fps < millis()){		
+		if (time_fps < millis()) {		
 			printf("MAIN FPS:%d mis:%d idle:%d%% changes:%d \n",fps,missed,time_delay/10,changes);
 			fps = 0;
 			time_delay = 0;
