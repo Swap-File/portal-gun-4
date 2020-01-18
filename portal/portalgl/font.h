@@ -1,5 +1,5 @@
-#ifndef _font_CLASS_H
-#define _font_CLASS_H
+#ifndef _FONT_H
+#define _FONT_H
 
 #include <stdbool.h>
 
@@ -12,18 +12,6 @@
 
 #define WIDTH_DATA_OFFSET  20 // Offset to width data with BFF file
 #define MAP_DATA_OFFSET   276 // Offset to texture image data with BFF file
-
-// This definition is missing from some GL libs
-#ifndef GL_CLAMP_TO_EDGE 
-#define GL_CLAMP_TO_EDGE 0x812F 
-#endif
-
-typedef struct {
-  unsigned char ID1,ID2;
-  unsigned char BPP;
-  int ImageWidth,ImageHeight,CellWidth,CellHeight;
-  unsigned char StartPoint;
- } FontFileHeader;
 
 bool font_Load(char *fname);
 void font_SetScreen(int x, int y); 

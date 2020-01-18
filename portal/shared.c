@@ -1,5 +1,5 @@
 #include "shared.h"
-#include "gstvideo/gstvideo.h"
+#include "portalgl/portalgl.h"
 #include <string.h> // memcpy
 #include <sys/shm.h>  
 #include <stdlib.h> //exit

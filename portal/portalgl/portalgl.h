@@ -1,5 +1,5 @@
-#ifndef _GSTVIDEO_H 
-#define _GSTVIDEO_H
+#ifndef _PORTALGL_H 
+#define _PORTALGL_H
 
 #include <stdint.h>
 
@@ -8,6 +8,8 @@
 #define PORTAL_OPEN_ORANGE 14
 #define PORTAL_CLOSED_BLUE 9
 #define PORTAL_CLOSED_ORANGE 15
+
+#define GST_FIRST 0
 
 #define GST_BLANK 0
 #define GST_VIDEOTESTSRC 1 
@@ -66,6 +68,8 @@
 #define GST_MOVIE11 60
 #define GST_MOVIE12 61
 #define GST_MOVIE_LAST 61
+
+#define GST_LAST 61
 
 //these are the magic numbers for start times, in nanoseconds
 // 11000000000 is 11 seconds

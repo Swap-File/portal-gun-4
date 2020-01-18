@@ -14,8 +14,8 @@ portal:	$(OBJs) -lbcm2835
 .PHONY: clean
 clean:
 	@rm -fv portal $(OBJs) $(DEPs) *.o
-	$(MAKE) -C gstvideo clean
+	$(MAKE) -C portalgl clean
 
 .PHONY: subprocesses
 subprocesses:
-	$(MAKE) -C gstvideo
+	$(MAKE) -C portalgl

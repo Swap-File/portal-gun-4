@@ -1,6 +1,6 @@
 OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) ../shared.o
 DEPs := $(OBJs:%.o=%.d)
-BIN  := gstvideo
+BIN  := portalgl
 CC  = gcc
 
 #Gstreamer stuff

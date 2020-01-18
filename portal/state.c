@@ -1,7 +1,7 @@
 #include "state.h"
 #include "io.h"
 #include "pipe.h"
-#include "gstvideo/gstvideo.h"
+#include "portalgl/portalgl.h"
 #include <stdio.h>
 
 #define GUN_EXPIRE 1000 //expire a gun if not seen for 1 second

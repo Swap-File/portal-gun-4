@@ -1,347 +1,46 @@
-#include "gstvideo.h"
 #include "../shared.h"
-#include <sys/resource.h>
+#include "portalgst.h"
+#include "portalgl.h"
 #include <gst/gst.h>
+#include <stdio.h>
+#include <GL/glx.h>
 #include <gst/gl/gl.h>
 #include <gst/gl/x11/gstgldisplay_x11.h>
-#include <math.h> //M_PI
-#include <stdio.h>
-#include <X11/Xlib.h>
-#include <GL/glx.h>
 #include <unistd.h>  //getpid for priority change
-#include <sys/time.h>  //gettimeofday
+#include <sys/resource.h> //setpriority
 #include "scene.h"
-#include "font.h"
+#include "ui.h"
 
 struct gun_struct *this_gun;
+extern Display *dpy;
+extern Window win;
+extern GLXContext ctx;
 
-Display *dpy;
-Window win;
-GLXContext ctx;
+static GstPad *outputpads[6];	
+static GstElement *outputselector;
+static GstPipeline *pipeline[GST_LAST+1],*pipeline_active;
+static GstContext *x11context;
+static GstContext *ctxcontext;
 
-GstPad *outputpads[6];	
-GstElement *outputselector;
-GstPipeline *pipeline[75],*pipeline_active;
-GstContext *x11context;
-GstContext *ctxcontext;
+static volatile GLuint gst_shared_texture;
 
-GLuint normal_texture;
-volatile GLuint gst_shared_texture;
-
-GMainLoop *loop;
-
-#ifndef GLX_MESA_swap_control
-#define GLX_MESA_swap_control 1
-typedef int (*PFNGLXGETSWAPINTERVALMESAPROC)(void);
-#endif
-
-/* return current time (in seconds) */
-static double current_time(void) {
-	struct timeval tv;
-	struct timezone tz;
-	(void) gettimeofday(&tv, &tz);
-	return (double) tv.tv_sec + tv.tv_usec / 1000000.0;
-}
-
-/* new window size or exposure */
-static void reshape(int screen_width, int screen_height)
-{
-	float nearp = 1, farp = 100.0f, hht, hwd;
-
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
-	glViewport(0, 0, (GLsizei)screen_width, (GLsizei)screen_height);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
-	hht = nearp * tan(45.0 / 2.0 / 180.0 * M_PI);
-	hwd = hht * screen_width / screen_height;
-
-	glFrustum(-hwd, hwd, -hht, hht, nearp, farp);
-}
-
-void video_ended(){
-	this_gun->video_done = true;
-}
-
-static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data){
-	GMainLoop *loop = (GMainLoop*)data;
-
-	switch (GST_MESSAGE_TYPE (msg))
-	{
-	case GST_MESSAGE_EOS:
-		g_print ("End-of-stream\n");
-		video_ended();
-		break;	
-	case GST_MESSAGE_ERROR: //normal debug callback
-		{
-			gchar *debug = NULL;
-			GError *err = NULL;
-
-			gst_message_parse_error (msg, &err, &debug);
-
-			g_print ("Error: %s\n", err->message);
-			g_error_free (err);
-
-			if (debug)
-			{
-				g_print ("Debug deails: %s\n", debug);
-				g_free (debug);
-			}
-
-			g_main_loop_quit (loop);
-			break;
-		}
-	case GST_MESSAGE_NEED_CONTEXT:  //THIS IS THE IMPORTANT PART
-		{
-			const gchar *context_type;
-			gst_message_parse_context_type (msg, &context_type);
-			if (g_strcmp0 (context_type, "gst.gl.app_context") == 0) 
-			{
-				g_print("OpenGL Context Request Intercepted! %s\n", context_type);	
-				gst_element_set_context (GST_ELEMENT (msg->src), ctxcontext);  			
-			}
-			if (g_strcmp0 (context_type, GST_GL_DISPLAY_CONTEXT_TYPE) == 0) 
-			{
-				g_print("X11 Display Request Intercepted! %s\n", context_type);			
-				gst_element_set_context (GST_ELEMENT (msg->src), x11context);			
-			}
-
-			break;
-		}
-	case GST_MESSAGE_HAVE_CONTEXT:
-		{
-			g_print("This should never happen! Don't let the elements set their own context!\n");
-			
-		}
-	default:
-		break;
-	}
-
-	return TRUE;
-}
-
-
-/*
-* Create an RGB, double-buffered window.
-* Return the window and context handles.
-*/
-static void make_window( Display *dpy, const char *name,int x, int y, int width, int height,Window *winRet, GLXContext *ctxRet, VisualID *visRet) {
-	int attribs[64];
-	int i = 0;
-
-	int scrnum;
-	XSetWindowAttributes attr;
-	unsigned long mask;
-	Window root;
-	Window win;
-
-	XVisualInfo *visinfo;
-
-	/* Singleton attributes. */
-	attribs[i++] = GLX_RGBA;
-	attribs[i++] = GLX_DOUBLEBUFFER;
-
-	/* Key/value attributes. */
-	attribs[i++] = GLX_RED_SIZE;
-	attribs[i++] = 1;
-	attribs[i++] = GLX_GREEN_SIZE;
-	attribs[i++] = 1;
-	attribs[i++] = GLX_BLUE_SIZE;
-	attribs[i++] = 1;
-	attribs[i++] = GLX_DEPTH_SIZE;
-	attribs[i++] = 1;
-
-	attribs[i++] = None;
-
-	scrnum = DefaultScreen( dpy );
-	root = RootWindow( dpy, scrnum );
-
-	visinfo = glXChooseVisual(dpy, scrnum, attribs);
-	if (!visinfo) {
-		printf("Error: couldn't get an RGB, Double-buffered");
-		exit(1);
-	}
-
-	/* window attributes */
-	attr.background_pixel = 0;
-	attr.border_pixel = 0;
-	attr.colormap = XCreateColormap( dpy, root, visinfo->visual, AllocNone);
-	attr.event_mask = StructureNotifyMask | ExposureMask | KeyPressMask;
-	/* XXX this is a bad way to get a borderless window! */
-	mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
-
-	win = XCreateWindow( dpy, root, x, y, width, height,0, visinfo->depth, InputOutput,	visinfo->visual, mask, &attr );
-
-	/* set hints and properties */
-	{
-		XSizeHints sizehints;
-		sizehints.x = x;
-		sizehints.y = y;
-		sizehints.width  = width;
-		sizehints.height = height;
-		sizehints.flags = USSize | USPosition;
-		XSetNormalHints(dpy, win, &sizehints);
-		XSetStandardProperties(dpy, win, name, name,
-		None, (char **)NULL, 0, &sizehints);
-	}
-
-	ctx = glXCreateContext( dpy, visinfo, NULL, True );
-	if (!ctx) {
-		printf("Error: glXCreateContext failed\n");
-		exit(1);
-	}
-
-	*winRet = win;
-	*ctxRet = ctx;
-	*visRet = visinfo->visualid;
-
-	XFree(visinfo);
-}
-
-/**
-* Determine whether or not a GLX extension is supported.
-*/
-static int is_glx_extension_supported(Display *dpy, const char *query)
-{
-	const int scrnum = DefaultScreen(dpy);
-	const char *glx_extensions = NULL;
-	const size_t len = strlen(query);
-	const char *ptr;
-
-	if (glx_extensions == NULL) {
-		glx_extensions = glXQueryExtensionsString(dpy, scrnum);
-	}
-
-	ptr = strstr(glx_extensions, query);
-	return ((ptr != NULL) && ((ptr[len] == ' ') || (ptr[len] == '\0')));
-}
-
-/**
-* Attempt to determine whether or not the display is synched to vblank.
-*/
-static void query_vsync(Display *dpy, GLXDrawable drawable)
-{
-	int interval = 0;
-
-#if defined(GLX_EXT_swap_control)
-	if (is_glx_extension_supported(dpy, "GLX_EXT_swap_control")) {
-		unsigned int tmp = -1;
-		glXQueryDrawable(dpy, drawable, GLX_SWAP_INTERVAL_EXT, &tmp);
-		interval = tmp;
-	} else
-#endif
-	if (is_glx_extension_supported(dpy, "GLX_MESA_swap_control")) {
-		PFNGLXGETSWAPINTERVALMESAPROC pglXGetSwapIntervalMESA =
-		(PFNGLXGETSWAPINTERVALMESAPROC)
-		glXGetProcAddressARB((const GLubyte *) "glXGetSwapIntervalMESA");
-
-		interval = (*pglXGetSwapIntervalMESA)();
-	} else if (is_glx_extension_supported(dpy, "GLX_SGI_swap_control")) {
-		/* The default swap interval with this extension is 1.  Assume that it
-	* is set to the default.
-	*
-	* Many Mesa-based drivers default to 0, but all of these drivers also
-	* export GLX_MESA_swap_control.  In that case, this branch will never
-	* be taken, and the correct result should be reported.
-	*/
-		interval = 1;
-	}
-
-
-	if (interval > 0) {
-		printf("Running synchronized to the vertical refresh.  The framerate should be\n");
-		if (interval == 1) {
-			printf("approximately the same as the monitor refresh rate.\n");
-		} else if (interval > 1) {
-			printf("approximately 1/%d the monitor refresh rate.\n",
-			interval);
-		}
-	}
-}
-
-static void seek_to_time ( gint64 time_nanoseconds){
-	if (!gst_element_seek ( GST_ELEMENT(pipeline[GST_MOVIE_FIRST]), 1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH, GST_SEEK_TYPE_SET, time_nanoseconds, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
-		g_print ("Seek failed!\n");
-	}
-}
-/*
-waiting for X server to shut down (II) Server terminated successfully (0). Closing log file.
-*/
-gint64 get_position(){
-	gint64 pos;
-	bool result = gst_element_query_position ( GST_ELEMENT(pipeline[GST_MOVIE_FIRST]), GST_FORMAT_TIME, &pos);
-	if (!result) pos = -1;
-	return pos;
-}
-
-//grabs the texture via the glfilterapp element
-gboolean drawCallback (GstElement* object, guint id , guint width ,guint height, gpointer user_data){
-
-	static GTimeVal current_time;
-	static glong last_sec = 0;
-	static gint nbFrames = 0;
-	
-	//printf("Texture #:%d  X:%d  Y:%d!\n",id,width,height);
-	//snapshot(normal_texture);
-	
-	gst_shared_texture = id;
-	g_get_current_time (&current_time);
-	nbFrames++;
-
-	if ((current_time.tv_sec - last_sec) >= 1)
-	{
-		get_position();
-		printf("GSTREAMER FPS = %d\n",nbFrames);
-		nbFrames = 0;
-		last_sec = current_time.tv_sec;
-	}
-	
-	return true;  //not sure why?
-}
-
-void load_pipeline(int i, char * text){
-	
-	printf("Loading pipeline %d\n",i);
-	
-	pipeline[i] = GST_PIPELINE (gst_parse_launch(text, NULL));
-
-	//set the bus watcher for error handling and to pass the x11 display and opengl context when the elements request it
-	//must be BEFORE setting the client-draw callback
-	GstBus *bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline[i]));
-	gst_bus_add_watch (bus, bus_call, loop);
-	gst_object_unref (bus);
-	
-	//set the glfilterapp callback that will capture the textures
-	//do this AFTER attaching the bus handler so context can be set
-	//if (i != GST_RPICAMSRC){  //the camera bus has no texture output  //NOT ANY MORE!
-	GstElement *grabtexture = gst_bin_get_by_name (GST_BIN (pipeline[i]), "grabtexture");
-	g_signal_connect (grabtexture, "client-draw",  G_CALLBACK (drawCallback), NULL);
-	gst_object_unref (grabtexture);	
-	//}
-	
-	//warm up all of the pipelines that stay around
-	if ( i == GST_RPICAMSRC ){
-		gst_element_set_state (GST_ELEMENT (pipeline[i]), GST_STATE_READY);
-	}else if (i == GST_MOVIE_FIRST || i == GST_LIBVISUAL_FIRST ){
-		//special warmup to preload the video stream so seeking always
-		//context must be assigned before going paused 
-		gst_element_set_context (GST_ELEMENT (pipeline[i]), ctxcontext);  			
-		gst_element_set_context (GST_ELEMENT (pipeline[i]), x11context);
-		gst_element_set_state (GST_ELEMENT (pipeline[i]), GST_STATE_PAUSED);
-	}
-}
+static GMainLoop *loop;
 
 static int video_mode_requested = 0;
 static int video_mode_current = -1;
 static int portal_mode_requested = 9;
-
 static bool movieisplaying = false;
 
-void start_pipeline(){
-	
-	double start_time = current_time();
+static void seek_to_time (gint64 time_nanoseconds)
+{
+	if (!gst_element_seek ( GST_ELEMENT(pipeline[GST_MOVIE_FIRST]), 1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH, GST_SEEK_TYPE_SET, time_nanoseconds, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
+		g_print ("Seek failed!\n");
+	}
+}
+
+static void start_pipeline()
+{	
+	uint32_t start_time = millis();
 	
 	//stop the old pipeline
 	if (GST_IS_ELEMENT(pipeline_active) || video_mode_current == GST_RPICAMSRC) {
@@ -387,7 +86,7 @@ void start_pipeline(){
 	else if (video_mode_requested >= GST_LIBVISUAL_FIRST && video_mode_requested <= GST_LIBVISUAL_LAST){
 		g_object_set (outputselector, "active-pad",  outputpads[video_mode_requested - GST_LIBVISUAL_FIRST], NULL);
 		pipeline_active = pipeline[GST_LIBVISUAL_FIRST]; 
-	}else{
+	} else {
 		pipeline_active = pipeline[video_mode_requested]; 
 	}
 	
@@ -401,171 +100,36 @@ void start_pipeline(){
 
 	video_mode_current = video_mode_requested;
 	
-	printf("Pipeline %d changed to in %f seconds!\n",video_mode_current,current_time() - start_time);
+	printf("Pipeline %d changed to in %d milliseconds!\n",video_mode_current,millis() - start_time);
 }
 
-
-void print_centered(char * input,int height){
-	int offset = ((768/2) - font_GetWidth(input) )/2;
-	font_PrintXY(input,offset,height);
-}
-
-GLuint text_vertex_list;
-
-void init_text_background(){
-
-	text_vertex_list = glGenLists( 1 );
-	glNewList( text_vertex_list, GL_COMPILE );
-	glBegin( GL_QUADS );
-	
-	glVertex3f( 1366/2, 768/2,0);//top left
-	glVertex3f( 1366/2,     0,0);//bottom left
-	glVertex3f(   1366,     0,0);//bottom right	
-	glVertex3f(   1366, 768/2,0);//top right
-	glEnd();
-	glEndList();
-	
-}
-
-
-void slide_to(float r, float g, float b){
-	static float r_target,g_target,b_target;
-	if (r_target < r) r_target += .02;
-	if (r_target > r) r_target -= .02;
-	if (g_target < g) g_target += .02;
-	if (g_target > g) g_target -= .02;
-	if (b_target < b) b_target += .02;
-	if (b_target > b) b_target -= .02;
-	glColor4f(r_target,g_target,b_target,1.0); 
-}
-
-void print_text_overlay(){
-	
-	
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(false);
-
-	// Setup projection
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	// Setup Modelview
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	//set size here
-	glOrtho(0,1366,0,768/2,-1,1);
-
-	glBindTexture(GL_TEXTURE_2D, 0); //no texture	
-	
-	
-	if (this_gun->state_solo < 0 || this_gun->state_duo < 0) slide_to(0.0,0.5,0.5); 
-	else if (this_gun->state_solo > 0 || this_gun->state_duo > 0) slide_to(0.8,0.4,0.0); 
-	else slide_to(0.0,0.0,0.0); 
-	
-	
-	glCallList(text_vertex_list);
-	glTranslatef(1366 , 0, 0);
-	//angle here
-	glRotatef(90.0, 0.0, 0.0, 1.0);
-	
-	// Setup Texture, color and blend options
-	glEnable(GL_TEXTURE_2D);
-
-	font_Bind();
-	font_SetBlend();
-
-	char temp[200];
-
-	if (this_gun->gordon)   sprintf(temp,"Gordon");	
-	else  sprintf(temp,"Chell");	
-	print_centered(temp,64* 9.25);
-	
-	sprintf(temp,"%.0f/%.0f\260F",this_gun->temperature_pretty ,this_gun->coretemp);	
-	print_centered(temp,64* 8);
-	
-	
-	if (this_gun->connected) sprintf(temp,"Synced");	
-	else  sprintf(temp,"Sync Err");	
-	print_centered(temp,64* 7);
-	
-	sprintf(temp,"Idle");
-	if (this_gun->state_solo > 0 ||this_gun->state_solo < 0 || this_gun->state_duo > 1 )  sprintf(temp,"Emitting");	//collecting or countdown
-	if (this_gun->state_duo < 0)  sprintf(temp,"Capturing");
-	print_centered(temp,64* 6);
-	
-	int kbits = this_gun->kbytes_wlan;
-	if (this_gun->kbytes_bnep > 0)  kbits += this_gun->kbytes_bnep;
-	sprintf(temp,"%dKb/s",kbits);	
-	print_centered(temp,64* 5);
-	
-	sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
-	print_centered(temp,64* 4);
-	
-	if (this_gun->latency > 99) sprintf(temp,"%.1fV %.0fms",this_gun->battery_level_pretty,this_gun->latency );	
-	else if (this_gun->latency > 9) sprintf(temp,"%.1fV %.1fms",this_gun->battery_level_pretty,this_gun->latency );
-	else  sprintf(temp,"%.1fV %.2fms",this_gun->battery_level_pretty,this_gun->latency );
-	print_centered(temp, 64* 3);
-	
-	if (this_gun->mode == 2) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
-	else					sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
-	print_centered(temp,64* 2);
-	
-	uint_fast32_t current_time;	
-	if (this_gun->mode == 2)  {
-		sprintf(temp,"Duo Mode");	
-		if (this_gun->connected) current_time = (millis() + this_gun->other_gun_clock)/2;
-		else current_time = millis();  
-	}
-	else   {  
-		sprintf(temp,"Solo Mode");	
-		current_time = millis();
-	}
-	print_centered(temp,64);
-
-	uint_fast32_t milliseconds = (current_time % 1000);
-	uint_fast32_t seconds      = (current_time / 1000) % 60;
-	uint_fast32_t minutes      =((current_time / (1000*60)) % 60);
-	uint_fast32_t hours        =((current_time / (1000*60*60)) % 24);
-	sprintf(temp,"%.2d:%.2d:%.2d.%.3d",hours,minutes ,seconds,milliseconds);	
-	print_centered(temp,0);
-	
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthMask(true);
-	glEnable(GL_BLEND); 
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
+static gint64 get_position(void)
+{
+	gint64 pos;
+	bool result = gst_element_query_position(GST_ELEMENT(pipeline[GST_MOVIE_FIRST]), GST_FORMAT_TIME, &pos);
+	if (!result) pos = -1;
+	return pos;
 }
 
 static gboolean idle_loop (gpointer data) {
 	
 	static int accleration[3];
 	
-	//opengl rendering update
-	static int frames = 0;
-	static double tRate0 = -1.0;
-	double t = current_time();
-
 	portal_mode_requested = this_gun->portal_state;
 	video_mode_requested  = this_gun->gst_state;
-	//printf("\ncycle..\n");
+
 	if (movieisplaying){
 		if (video_mode_current >= GST_MOVIE_FIRST && video_mode_current <= GST_MOVIE_LAST ){
 			int index = video_mode_current - GST_MOVIE_FIRST;
 			if (get_position() > movie_end_times[index]){
 				printf("End of Chapter!\n");
-				video_ended();
+				this_gun->video_done = true;
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 				movieisplaying = false;
 			}
 			if (portal_mode_requested != PORTAL_OPEN_ORANGE &&portal_mode_requested != PORTAL_OPEN_BLUE ) {
 				printf("End EARLY!\n");
-				video_ended();
+				this_gun->video_done = true;
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 				movieisplaying = false;
 			}
@@ -575,21 +139,18 @@ static gboolean idle_loop (gpointer data) {
 	
 	scene_animate(accleration,portal_mode_requested);
 	scene_redraw(gst_shared_texture,portal_mode_requested);
-	print_text_overlay();
+	ui_redraw();
 
 	glXSwapBuffers(dpy, win);
 	
-	frames++;
-
-	if (tRate0 < 0.0)
-	tRate0 = t;
-	if (t - tRate0 >= 5.0) {
-		GLfloat seconds = t - tRate0;
-		GLfloat fps = frames / seconds;
-		printf("Rendering %d frames in %3.1f seconds = %6.3f FPS\n", frames, seconds,fps);
-		fflush(stdout);
-		tRate0 = t;
-		frames = 0;
+	/* FPS counter */
+	static uint32_t time_fps = 0;
+	static int fps = 0;
+	fps++;
+	if (time_fps < millis()) {		
+		printf("GSTVIDEO OPENGL FPS: %d \n",fps);
+		fps = 0;
+		time_fps += 1000;
 	}
 	
 	if (video_mode_requested != video_mode_current)	{
@@ -607,51 +168,112 @@ static gboolean idle_loop (gpointer data) {
 }
 
 
-int main(int argc, char *argv[])
-{
-	shared_init(&this_gun,false );
+
+
+//grabs the texture via the glfilterapp element
+static gboolean drawCallback (GstElement* object, guint id , guint width ,guint height, gpointer user_data){
+		
+	gst_shared_texture = id;
+
+	/* FPS counter */
+	static uint32_t time_fps = 0;
+	static int fps = 0;
+	fps++;
+	if (time_fps < millis()) {		
+		printf("GSTVIDEO FPS: %d \n",fps);
+		fps = 0;
+		time_fps += 1000;
+	}
+
+	return true;  //not sure why?
+}
+
+static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data){
+	GMainLoop *loop = (GMainLoop*)data;
+
+	switch (GST_MESSAGE_TYPE (msg))
+	{
+	case GST_MESSAGE_EOS:
+		g_print ("End-of-stream\n");
+		this_gun->video_done = true;
+		break;	
+	case GST_MESSAGE_ERROR: //normal debug callback
+		{
+			gchar *debug = NULL;
+			GError *err = NULL;
+			gst_message_parse_error (msg, &err, &debug);
+			g_print ("Error: %s\n", err->message);
+			g_error_free (err);
+			if (debug) {
+				g_print ("Debug deails: %s\n", debug);
+				g_free (debug);
+			}
+			g_main_loop_quit (loop);
+			break;
+		}
+	case GST_MESSAGE_NEED_CONTEXT:  //THIS IS THE IMPORTANT PART
+		{
+			const gchar *context_type;
+			gst_message_parse_context_type (msg, &context_type);
+			if (g_strcmp0 (context_type, "gst.gl.app_context") == 0) {
+				g_print("OpenGL Context Request Intercepted! %s\n", context_type);	
+				gst_element_set_context (GST_ELEMENT (msg->src), ctxcontext);  			
+			}
+			if (g_strcmp0 (context_type, GST_GL_DISPLAY_CONTEXT_TYPE) == 0) {
+				g_print("X11 Display Request Intercepted! %s\n", context_type);			
+				gst_element_set_context (GST_ELEMENT (msg->src), x11context);			
+			}
+			break;
+		}
+	case GST_MESSAGE_HAVE_CONTEXT:
+		g_print("This should never happen! Don't let the elements set their own context!\n");
+	default:
+		break;
+	}
+
+	return TRUE;
+}
+
+static void load_pipeline(int i, char * text){
 	
+	printf("Loading pipeline %d\n",i);
+	
+	pipeline[i] = GST_PIPELINE (gst_parse_launch(text, NULL));
+
+	//set the bus watcher for error handling and to pass the x11 display and opengl context when the elements request it
+	//must be BEFORE setting the client-draw callback
+	GstBus *bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline[i]));
+	gst_bus_add_watch (bus, bus_call, loop);
+	gst_object_unref (bus);
+	
+	//set the glfilterapp callback that will capture the textures
+	//do this AFTER attaching the bus handler so context can be set
+	//if (i != GST_RPICAMSRC){  //the camera bus has no texture output  //NOT ANY MORE!
+	GstElement *grabtexture = gst_bin_get_by_name (GST_BIN (pipeline[i]), "grabtexture");
+	g_signal_connect (grabtexture, "client-draw",  G_CALLBACK (drawCallback), NULL);
+	gst_object_unref (grabtexture);	
+	//}
+	
+	//warm up all of the pipelines that stay around
+	if ( i == GST_RPICAMSRC ){
+		gst_element_set_state (GST_ELEMENT (pipeline[i]), GST_STATE_READY);
+	}else if (i == GST_MOVIE_FIRST || i == GST_LIBVISUAL_FIRST ){
+		//special warmup to preload the video stream so seeking always
+		//context must be assigned before going paused 
+		gst_element_set_context (GST_ELEMENT (pipeline[i]), ctxcontext);  			
+		gst_element_set_context (GST_ELEMENT (pipeline[i]), x11context);
+		gst_element_set_state (GST_ELEMENT (pipeline[i]), GST_STATE_PAUSED);
+	}
+}
+
+void portalgst_init(void)
+{
 	//set priority for the opengl engine and video output
 	setpriority(PRIO_PROCESS, getpid(), -10);
 	
-	/* Initialize X11 */
-	//unsigned int winWidth = 720, winHeight = 480;
-	unsigned int winWidth = 1366 * 2, winHeight = 768;
-	
-	int x = 0, y = 0;
-
-	char *dpyName = NULL;
-	GLboolean printInfo = GL_FALSE;
-	VisualID visId;
-	
-	dpy = XOpenDisplay(dpyName);
-	if (!dpy) {
-		printf("Error: couldn't open display %s\n",
-		dpyName ? dpyName : getenv("DISPLAY"));
-		return -1;
-	}
-
-	make_window(dpy, "gstvideo", x, y, winWidth, winHeight, &win, &ctx, &visId);
-	XMapWindow(dpy, win);
-	glXMakeCurrent(dpy, win, ctx);
-	query_vsync(dpy, win);
-
-	/* Inspect the texture */
-	//snapshot(normal_texture);
-	
-	if (printInfo) {
-		printf("GL_RENDERER   = %s\n", glGetString(GL_RENDERER));
-		printf("GL_VERSION    = %s\n", glGetString(GL_VERSION));
-		printf("GL_VENDOR     = %s\n", glGetString(GL_VENDOR));
-		printf("GL_EXTENSIONS = %s\n", glGetString(GL_EXTENSIONS));
-		printf("VisualID %d, 0x%x\n", (int) visId, (int) visId);
-	}
-
-	/* Set initial projection/viewing transformation.
-	* We can't be sure we'll get a ConfigureNotify event when the window
-	* first appears.
-	*/
-	reshape(winWidth, winHeight);
+	shared_init(&this_gun,false);
+	ui_init();
+	scene_init();
 	
 	/* Initialize GStreamer */
 	static char *arg1_gst[]  = {"gstvideo"}; 
@@ -759,11 +381,6 @@ int main(int argc, char *argv[])
 	outputpads[3] = gst_element_get_static_pad(outputselector,"src_3");
 	outputpads[4] = gst_element_get_static_pad(outputselector,"src_4");
 	outputpads[5] = gst_element_get_static_pad(outputselector,"src_5");
-
-
-	font_Load("/home/pi/portal/gstvideo/Consolas.bff");
-	init_text_background();
-	scene_init();
 	
 	//start the idle and main loops
 	loop = g_main_loop_new (NULL, FALSE);
@@ -773,10 +390,4 @@ int main(int argc, char *argv[])
 	g_timeout_add_full ( G_PRIORITY_HIGH,6,idle_loop ,pipeline,NULL); 
 	g_main_loop_run (loop); //let gstreamer's GLib event loop take over
 	
-	glXMakeCurrent(dpy, None, NULL);
-	glXDestroyContext(dpy, ctx);
-	XDestroyWindow(dpy, win);
-	XCloseDisplay(dpy);
-	
-	return 0;
 }
