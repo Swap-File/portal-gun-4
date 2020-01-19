@@ -30,6 +30,7 @@ static GMainLoop *loop;
 static int video_mode_requested = 0;
 static int video_mode_current = -1;
 static int portal_mode_requested = 9;
+static int  ui_mode_requested = UI_ADVANCED;
 static bool movieisplaying = false;
 
 static void seek_to_time(gint64 time_nanoseconds)
@@ -46,7 +47,7 @@ static void start_pipeline(void)
 	//stop the old pipeline
 	if (GST_IS_ELEMENT(pipeline_active) || video_mode_current == GST_RPICAMSRC) {
 		
-		//if we are leaving a audio effect mode 
+		//leaving a audio effect mode 
 		if (video_mode_current >= GST_LIBVISUAL_FIRST && video_mode_current <= GST_LIBVISUAL_LAST){
 			//only pause  if we are going to a non audio mode from a audio mode, otherwise switch it live
 			if (video_mode_requested < GST_LIBVISUAL_FIRST || video_mode_requested > GST_LIBVISUAL_LAST){
@@ -56,7 +57,7 @@ static void start_pipeline(void)
 				printf("alsa HOT SWAP!\n\n");
 			}
 		}		
-		//if its a video stream, unload it completely
+		//leaving a movie mode 
 		else if (video_mode_current >= GST_MOVIE_FIRST && video_mode_current <= GST_MOVIE_LAST){
 			if (video_mode_requested < GST_MOVIE_FIRST || video_mode_requested > GST_MOVIE_LAST){
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
@@ -117,6 +118,7 @@ static gboolean idle_loop(gpointer data)
 	
 	portal_mode_requested = this_gun->portal_state;
 	video_mode_requested  = this_gun->gst_state;
+	ui_mode_requested = this_gun->ui_mode;
 
 	if (movieisplaying){
 		if (video_mode_current >= GST_MOVIE_FIRST && video_mode_current <= GST_MOVIE_LAST ){
@@ -127,7 +129,7 @@ static gboolean idle_loop(gpointer data)
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 				movieisplaying = false;
 			}
-			if (portal_mode_requested != PORTAL_OPEN_ORANGE &&portal_mode_requested != PORTAL_OPEN_BLUE ) {
+			if (portal_mode_requested != PORTAL_OPEN_ORANGE && portal_mode_requested != PORTAL_OPEN_BLUE ) {
 				printf("End EARLY!\n");
 				this_gun->video_done = true;
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
@@ -137,8 +139,15 @@ static gboolean idle_loop(gpointer data)
 	}
 	
 	scene_animate(accleration,portal_mode_requested);
-	scene_redraw(gst_shared_texture,portal_mode_requested);
-	//ui_redraw();
+	
+	if (ui_mode_requested == UI_HIDDEN_ADVANCED || ui_mode_requested == UI_HIDDEN_SIMPLE) {
+	   scene_redraw(gst_shared_texture,portal_mode_requested,true);
+	} else {
+	   scene_redraw(gst_shared_texture,portal_mode_requested,false);
+	   if (ui_mode_requested == UI_SIMPLE)   ui_redraw(true);
+	   else  					   			 ui_redraw(false);
+	}
+	
 	glXSwapBuffers(dpy, win);
 	
 	/* FPS counter */
@@ -222,7 +231,7 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
 			break;
 		}
 	case GST_MESSAGE_HAVE_CONTEXT:
-		g_print("This should never happen! Don't let the elements set their own context!\n");
+		g_print("This should never happen! Don't let the elements request their own context!\n");
 	default:
 		break;
 	}
@@ -234,31 +243,25 @@ static void load_pipeline(int i, char * text)
 {
 	printf("Loading pipeline %d\n",i);
 	
-	pipeline[i] = GST_PIPELINE (gst_parse_launch(text, NULL));
+	pipeline[i] = GST_PIPELINE(gst_parse_launch(text, NULL));
 
 	//set the bus watcher for error handling and to pass the x11 display and opengl context when the elements request it
 	//must be BEFORE setting the client-draw callback
-	GstBus *bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline[i]));
-	gst_bus_add_watch (bus, bus_call, loop);
-	gst_object_unref (bus);
+	GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE (pipeline[i]));
+	gst_bus_add_watch(bus, bus_call, loop);
+	gst_object_unref(bus);
 	
 	//set the glfilterapp callback that will capture the textures
 	//do this AFTER attaching the bus handler so context can be set
-	//if (i != GST_RPICAMSRC){  //the camera bus has no texture output  //NOT ANY MORE!
-	GstElement *grabtexture = gst_bin_get_by_name (GST_BIN (pipeline[i]), "grabtexture");
-	g_signal_connect (grabtexture, "client-draw",  G_CALLBACK (drawCallback), NULL);
-	gst_object_unref (grabtexture);	
-	//}
+	GstElement *grabtexture = gst_bin_get_by_name(GST_BIN (pipeline[i]), "grabtexture");
+	g_signal_connect(grabtexture, "client-draw",  G_CALLBACK (drawCallback), NULL);
+	gst_object_unref(grabtexture);	
 	
-	//warm up all of the pipelines that stay around
-	if ( i == GST_RPICAMSRC ){
-		gst_element_set_state (GST_ELEMENT (pipeline[i]), GST_STATE_READY);
-	}else if (i == GST_MOVIE_FIRST || i == GST_LIBVISUAL_FIRST ){
-		//special warmup to preload the video stream so seeking always
-		//context must be assigned before going paused 
-		gst_element_set_context (GST_ELEMENT (pipeline[i]), ctxcontext);  			
-		gst_element_set_context (GST_ELEMENT (pipeline[i]), x11context);
-		gst_element_set_state (GST_ELEMENT (pipeline[i]), GST_STATE_PAUSED);
+	gst_element_set_context(GST_ELEMENT (pipeline[i]), ctxcontext);  			
+	gst_element_set_context(GST_ELEMENT (pipeline[i]), x11context);
+
+	if (i == GST_MOVIE_FIRST || i == GST_LIBVISUAL_FIRST || i == GST_RPICAMSRC) {
+		gst_element_set_state(GST_ELEMENT (pipeline[i]), GST_STATE_PAUSED);
 	}
 }
 
@@ -268,13 +271,13 @@ void portalgst_init(void)
 	setpriority(PRIO_PROCESS, getpid(), -10);
 	
 	shared_init(&this_gun,false);
-	ui_init();
+	ui_init();	
 	scene_init();
 	
 	/* Initialize GStreamer */
 	static char *arg1_gst[]  = {"gstvideo"}; 
 	static char *arg2_gst[]  = {"--gst-disable-registry-update"};  //dont rescan the registry to load faster.
-	static char *arg3_gst[]  = {"--gst-debug-level=2"};  //dont show debug messages
+	static char *arg3_gst[]  = {"--gst-debug-level=1"};  //dont show debug messages
 	static char **argv_gst[] = {arg1_gst,arg2_gst,arg3_gst};
 	int argc_gst = sizeof(argv_gst)/sizeof(char *);
 	gst_init (&argc_gst, argv_gst);
@@ -368,7 +371,7 @@ void portalgst_init(void)
 
 	//save the output pads from the visualization pipelines
 	//get the output-selector element
-	outputselector = gst_bin_get_by_name (GST_BIN (pipeline[GST_LIBVISUAL_FIRST]), "audioin");
+	outputselector = gst_bin_get_by_name(GST_BIN (pipeline[GST_LIBVISUAL_FIRST]), "audioin");
 	
 	//save each output pad for later
 	outputpads[0] = gst_element_get_static_pad(outputselector,"src_0");

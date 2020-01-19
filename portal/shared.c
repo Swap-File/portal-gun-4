@@ -14,10 +14,8 @@ static void shared_init_gun(struct gun_struct *this_gun)
 {
     memset(this_gun,0,sizeof(struct gun_struct));
 	
-	this_gun->mode = MODE_DUO;
 	this_gun->ir_pwm = 1024;
 	this_gun->fan_pwm = 1024;
-	this_gun->connected = false; 
 	
 	this_gun->playlist_solo[0]=GST_LIBVISUAL_INFINITE;
 	this_gun->playlist_solo[1]=GST_LIBVISUAL_JESS;

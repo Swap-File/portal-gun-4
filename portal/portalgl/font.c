@@ -36,8 +36,7 @@ bool font_Load(char *fname)
 	fclose(f);
 	
 	// Check ID is 'BFF2'
-	if((unsigned char)dat[0]!=0xBF || (unsigned char)dat[1]!=0xF2)
-	{
+	if((unsigned char)dat[0]!=0xBF || (unsigned char)dat[1]!=0xF2) {
 		free(dat);
 		return false;
 	}
@@ -51,8 +50,8 @@ bool font_Load(char *fname)
 	Base=dat[19];
 
 	// Check filesize
-	if (fileSize != ((MAP_DATA_OFFSET)+((ImgX*ImgY)*(bpp/8))) )
-	return false;
+	if (fileSize != ((MAP_DATA_OFFSET)+((ImgX*ImgY)*(bpp/8))))
+		return false;
 
 	// Calculate font params
 	RowPitch=ImgX/CellX;
@@ -61,20 +60,16 @@ bool font_Load(char *fname)
 	YOffset=CellY;
 
 	// Determine blending options based on BPP
-	switch(bpp)
-	{
+	switch(bpp){
 	case 8: // Greyscale
 		RenderStyle=BFG_RS_ALPHA;
 		break;
-
 	case 24: // RGB
 		RenderStyle=BFG_RS_RGB;
 		break;
-
 	case 32: // RGBA
 		RenderStyle=BFG_RS_RGBA;
 		break;
-
 	default: // Unsupported BPP
 		free(dat);
 		return false;
@@ -84,8 +79,7 @@ bool font_Load(char *fname)
 	// Allocate space for image
 	char * img=malloc((ImgX*ImgY)*(bpp/8));
 
-	if(!img)
-	{
+	if (!img) {
 		free(dat);
 		return false;
 	}
@@ -107,16 +101,13 @@ bool font_Load(char *fname)
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 
 	// Tex creation params are dependent on BPP
-	switch(RenderStyle)
-	{
+	switch(RenderStyle)	{
 	case BFG_RS_ALPHA:
 		glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,ImgX,ImgY,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,img);
 		break;
-
 	case BFG_RS_RGB:
 		glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,ImgX,ImgY,0,GL_RGB,GL_UNSIGNED_BYTE,img);
 		break;
-
 	case BFG_RS_RGBA:
 		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,ImgX,ImgY,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
 		break;
@@ -147,17 +138,14 @@ void font_SetBlend()
 {
 	glColor3f(Rd,Gr,Bl);
 
-	switch(RenderStyle)
-	{
+	switch(RenderStyle)	{
 	case BFG_RS_ALPHA: // 8Bit
 		glBlendFunc(GL_SRC_ALPHA,GL_SRC_ALPHA);
 		glEnable(GL_BLEND);
 		break;
-
 	case BFG_RS_RGB:   // 24Bit
 		glDisable(GL_BLEND);
 		break;
-
 	case BFG_RS_RGBA:  // 32Bit
 		glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
@@ -184,10 +172,8 @@ void font_SetColor(float Red, float Green, float Blue)
 //
 void font_ReverseYAxis(bool State)
 {
-	if(State)
-	YOffset=-CellY;
-	else
-	YOffset=CellY;
+	if(State)	YOffset = -CellY;
+	else		YOffset =  CellY;
 
 	InvertYAxis=State;
 }
@@ -197,10 +183,8 @@ void font_SetScreen(int x, int y)
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	if(InvertYAxis)
-	glOrtho(0,x,y,0,-1,1);
-	else
-	glOrtho(0,x,0,y,-1,1);
+	if(InvertYAxis)	glOrtho(0,x,y,0,-1,1);
+	else			glOrtho(0,x,0,y,-1,1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -216,8 +200,7 @@ void font_Print(char* Text)
 
 	glBegin(GL_QUADS);
 
-	for(Loop=0;Loop!=sLen;++Loop)
-	{
+	for(Loop=0;Loop!=sLen;++Loop) {
 		Row=(Text[Loop]-Base)/RowPitch;
 		Col=(Text[Loop]-Base)-Row*RowPitch;
 
@@ -234,7 +217,6 @@ void font_Print(char* Text)
 		CurX+=Width[(int)Text[Loop]];
 	}
 	glEnd();
-
 }
 
 // Prints text at a specifed position, again cursor is updated
@@ -251,8 +233,7 @@ void font_PrintXY(char* Text, int x, int y)
 
 	glBegin(GL_QUADS);
 
-	for(Loop=0;Loop!=sLen;++Loop)
-	{
+	for(Loop=0;Loop!=sLen;++Loop) {
 		Row=(Text[Loop]-Base)/RowPitch;
 		Col=(Text[Loop]-Base)-Row*RowPitch;
 
@@ -288,10 +269,8 @@ void font_ezPrint(char *Text, int x, int y)
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	if(InvertYAxis)
-	glOrtho(0,ViewPort[2],ViewPort[3],0,-1,1);
-	else
-	glOrtho(0,ViewPort[2],0,ViewPort[3],-1,1);
+	if(InvertYAxis)	glOrtho(0,ViewPort[2],ViewPort[3],0,-1,1);
+	else			glOrtho(0,ViewPort[2],0,ViewPort[3],-1,1);
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(false);
 
@@ -329,9 +308,7 @@ int font_GetWidth(char* Text)
 
 	// Add up all width values
 	for(Loop=0,Size=0;Loop!=sLen;++Loop)
-	{
 		Size+=Width[(int)Text[Loop]];
-	}
 
 	return Size;
 }

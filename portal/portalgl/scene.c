@@ -1,3 +1,4 @@
+#define GL_GLEXT_PROTOTYPES
 #include "../shared.h"
 #include "portalgl.h"
 #include <stdio.h>
@@ -121,7 +122,7 @@ static GLfloat point_vertexes[TRAIL_QTY * 3 * TRAIL_LENGTH];
 static GLfloat point_colors[TRAIL_QTY * 4 * TRAIL_LENGTH];
 static int head_offset = 0;
 
-static void draw_point_sprite_vertexes(void){
+void draw_point_sprite_vertexes(void){
 	
 	//first decay ALL trail points, alpha is stored in 4th positions of color array
 	for (int i = 3; i < TRAIL_QTY * 4 * TRAIL_LENGTH; i += 4) point_colors[i] *= 0.9;
@@ -173,8 +174,6 @@ static void draw_point_sprite_vertexes(void){
 	glDrawArrays(GL_POINTS,0,TRAIL_LENGTH * TRAIL_QTY);	
 }
 
-
-	
 void scene_animate(int acceleration[], int frame){
 	
 	static int frame_previous = -1;
@@ -210,13 +209,12 @@ void scene_animate(int acceleration[], int frame){
 
 	//scale magnitude to 0 to 1
 	running_magnitude *= .95;
-	float temp_mag = sqrt( running_acceleration[0]  * running_acceleration[0]  + running_acceleration[1] * running_acceleration[1]);
-	if (temp_mag > running_magnitude){
+	float temp_mag = sqrt(running_acceleration[0]  * running_acceleration[0]  + running_acceleration[1] * running_acceleration[1]);
+	if (temp_mag > running_magnitude) {
 		running_magnitude = running_magnitude * .5 + .5 *temp_mag;
-		
 	}
 	
-	angle_target =  atan2(-running_acceleration[1],-running_acceleration[0] ) ;
+	angle_target = atan2(-running_acceleration[1],-running_acceleration[0]) ;
 
 	angle_target_delayed = angle_target_delayed * .5 + angle_target * .5;
 	
@@ -236,38 +234,36 @@ void scene_animate(int acceleration[], int frame){
 	if (event_horizon_vertex_list_shimmer_direction)	event_horizon_vertex_list_shimmer += .01;
 	else												event_horizon_vertex_list_shimmer -= .01;
 
-	if (frame == PORTAL_OPEN_BLUE || frame == PORTAL_CLOSED_BLUE){
-		if (frame_previous != PORTAL_OPEN_BLUE && frame_previous != PORTAL_CLOSED_BLUE ){
+	if (frame == PORTAL_OPEN_BLUE || frame == PORTAL_CLOSED_BLUE ){
+		if (frame_previous != PORTAL_OPEN_BLUE && frame_previous != PORTAL_CLOSED_BLUE) {
 			global_zoom = 0.0;
 			event_horizon_transparency_level = 1.0; //close portal for a moment on rapid color change
 		} 
-	}else if (frame == PORTAL_OPEN_ORANGE || frame == PORTAL_CLOSED_ORANGE){
-		if (frame_previous != PORTAL_OPEN_ORANGE  && frame_previous != PORTAL_CLOSED_ORANGE ){
+	} else if (frame == PORTAL_OPEN_ORANGE || frame == PORTAL_CLOSED_ORANGE) {
+		if (frame_previous != PORTAL_OPEN_ORANGE  && frame_previous != PORTAL_CLOSED_ORANGE) {
 			global_zoom = 0.0;
 			event_horizon_transparency_level = 1.0;  //close portal for a moment on rapid color change
 		} 
 	}
 
 	//this controls global zoom (0 is blanked)
-	if (frame == PORTAL_CLOSED){
-		//turn off display
-		global_zoom = 0.0;
-	}else{
+	if (frame == PORTAL_CLOSED) {
+		global_zoom = 0.0; //turn off display
+	} else {
 		//turn on display
-		if (global_zoom == 0.0){
+		if (global_zoom == 0.0)
 			global_zoom = 0.01; //bump global_zoom from it's safe spot
-		}
 	}
 	
 	frame_previous = frame;
 	//let blank fader fall to normal size
-	if( global_zoom  > 0 && global_zoom < 1.0){
+	if (global_zoom  > 0 && global_zoom < 1.0) {
 		global_zoom += 0.05 ;
-		if ( global_zoom > 1.0 ) global_zoom = 1.0;
+		if (global_zoom > 1.0) global_zoom = 1.0;
 	}
 	
 	//this controls making the portal fade into the backgroud video
-	if (frame == PORTAL_CLOSED_ORANGE || frame == PORTAL_CLOSED_BLUE){
+	if (frame == PORTAL_CLOSED_ORANGE || frame == PORTAL_CLOSED_BLUE) {
 		event_horizon_transparency_level = 1.0;
 	}else{
 		//wait for zoom to finish before fading to background
@@ -277,12 +273,11 @@ void scene_animate(int acceleration[], int frame){
 	}
 	
 	//let transparency fall to maximum
-	if (event_horizon_transparency_level > 0.0 && event_horizon_transparency_level < 1.0 ){
+	if (event_horizon_transparency_level > 0.0 && event_horizon_transparency_level < 1.0 ) {
 		event_horizon_transparency_level = event_horizon_transparency_level - 0.01;
 		if (event_horizon_transparency_level < 0) event_horizon_transparency_level = 0;
 	}
 	
-
 	last_acceleration[0] = acceleration[0];
 	last_acceleration[1] = acceleration[1];
 }
@@ -333,13 +328,12 @@ void scene_init(void)
 	
 	//setup point sprites
 
-	
 	//check min and max point size	
-	//GLfloat sizes[2];
-	//glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, sizes);
-	//glPointParameterfARB( GL_POINT_SIZE_MAX_ARB, sizes[1]);
-	//glPointParameterfARB( GL_POINT_SIZE_MIN_ARB, sizes[0]);
-	//printf("Min point size: %f  Max Point size:  %f \n ",sizes[0] ,sizes[1] );
+	GLfloat sizes[2];
+	glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, sizes);
+	glPointParameterfARB( GL_POINT_SIZE_MAX_ARB, sizes[1]);
+	glPointParameterfARB( GL_POINT_SIZE_MIN_ARB, sizes[0]);
+	printf("Min point size: %f  Max Point size:  %f \n",sizes[0] ,sizes[1] );
 
 	//setup automatic point size changing based on Z distance(not used currently)
 	//float quadratic[] = { 1.0f, 0.0f, 0.01f };
@@ -408,7 +402,7 @@ void scene_init(void)
 	
 }
 
-void scene_redraw(GLuint video_texture, int frame){	
+void scene_redraw(GLuint video_texture, int frame,bool preview){	
 
 	//RESTART - CHECK IF I NEED TO SET ALL OF THESE EACH CYCLE!
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -418,8 +412,8 @@ void scene_redraw(GLuint video_texture, int frame){
 	
 
 	glPushMatrix();
-	
-	glTranslatef(-22.13, 0, -30);
+	if (preview)	  glTranslatef(22.13, 0, -30);
+	else        glTranslatef(-22.13, 0, -30);
 	
 	//global scale
 	glScalef(global_zoom,global_zoom,1.0);   //maybe use a Z zoom?
@@ -465,7 +459,6 @@ void scene_redraw(GLuint video_texture, int frame){
 
 	//POINT SPRITES
 	glDisable(GL_DEPTH_TEST);  //manual depth check
-	
 	glBindTexture(GL_TEXTURE_2D, circle64);
 	glPointSize(20.0f);
 	glEnable(GL_POINT_SPRITE_ARB);

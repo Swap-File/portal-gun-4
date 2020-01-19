@@ -9,6 +9,8 @@
 #define PORTAL_CLOSED_BLUE 9
 #define PORTAL_CLOSED_ORANGE 15
 
+#define GST_REPEAT -1
+
 #define GST_FIRST 0
 
 #define GST_BLANK 0

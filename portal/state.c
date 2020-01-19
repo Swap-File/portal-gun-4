@@ -32,7 +32,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 	
 	/* button event transitions     */
 	/* TODO: add LONG PRESS from V2 */
-	if (button == BUTTON_RESET) {
+	if (button == BUTTON_RESET) {	
 		this_gun->state_solo = 0; //reset self state
 		this_gun->state_duo = 0; //reset local state
 		this_gun->skip_states = false; 
@@ -43,6 +43,16 @@ void state_engine(int button,struct gun_struct *this_gun)
 				this_gun->mode = MODE_SOLO;
 			}else if (this_gun->mode == MODE_SOLO) {
 				this_gun->mode = MODE_DUO;
+			}
+		} else {  //when not idle, control preview modes
+			if (this_gun->ui_mode == UI_ADVANCED) {
+				this_gun->ui_mode = UI_SIMPLE;
+			} else if (this_gun->ui_mode == UI_SIMPLE) {
+				this_gun->ui_mode = UI_ADVANCED;
+			} else if (this_gun->ui_mode == UI_HIDDEN_SIMPLE) {
+				this_gun->ui_mode = UI_SIMPLE;
+			} else if (this_gun->ui_mode == UI_HIDDEN_ADVANCED) {
+				this_gun->ui_mode = UI_ADVANCED;
 			}
 		}
 	} else if (button == BUTTON_PRIMARY_FIRE) {
@@ -172,13 +182,21 @@ void state_engine(int button,struct gun_struct *this_gun)
 	else if (this_gun->state_solo != 0)	this_gun->gst_state = this_gun->effect_solo;
 	else								this_gun->gst_state = GST_BLANK;
 	
+	//Auto change UI to aiming preview
+	if (this_gun->state_duo < -2 && this_gun->state_duo_previous >= -2){ 
+		if(this_gun->ui_mode == UI_SIMPLE) this_gun->ui_mode = UI_HIDDEN_SIMPLE;
+		else if(this_gun->ui_mode == UI_ADVANCED) this_gun->ui_mode = UI_HIDDEN_ADVANCED;
+	}
+	
 	/* PORTALGL ARPETURE */
 	/* Reminder: These variables are shared and may be read at ANY time */
 	/* for networked modes */
 	if (this_gun->state_solo == 0) {
 		if      (this_gun->state_duo == 3)   this_gun->portal_state = PORTAL_CLOSED_ORANGE;
-		else if (this_gun->state_duo == 4)   this_gun->portal_state = PORTAL_OPEN_ORANGE;		
+		else if (this_gun->state_duo == 4)   this_gun->portal_state = PORTAL_OPEN_ORANGE;	
+		else if (this_gun->state_duo < -2 && (this_gun->ui_mode == UI_HIDDEN_SIMPLE || this_gun->ui_mode == UI_HIDDEN_ADVANCED))  this_gun->portal_state = PORTAL_OPEN_BLUE;  //this is redirected to the preview display
 		else if (this_gun->state_duo == 5)	 this_gun->portal_state = PORTAL_CLOSED_ORANGE; //blink shut on effect change
+		else								 this_gun->portal_state = PORTAL_CLOSED; 
 	}
 	/* for self modes */
 	else if (this_gun->state_duo == 0) {
@@ -186,9 +204,20 @@ void state_engine(int button,struct gun_struct *this_gun)
 		else if (this_gun->state_solo == -3) this_gun->portal_state = PORTAL_CLOSED_BLUE;
 		else if (this_gun->state_solo <= -4) this_gun->portal_state = PORTAL_OPEN_BLUE;
 		else if (this_gun->state_solo >=  4) this_gun->portal_state = PORTAL_OPEN_ORANGE;
+		else								 this_gun->portal_state = PORTAL_CLOSED; 
 	} else {
-											 this_gun->portal_state = PORTAL_CLOSED; 
+											 this_gun->portal_state = PORTAL_CLOSED; 											 
 	}
+	
+	//Restore UI on portal closing
+	if (this_gun->portal_state == PORTAL_CLOSED){
+		if (this_gun->ui_mode == UI_HIDDEN_SIMPLE) {
+			this_gun->ui_mode = UI_SIMPLE;
+		} else if (this_gun->ui_mode == UI_HIDDEN_ADVANCED) {
+			this_gun->ui_mode = UI_ADVANCED;
+		}
+	}
+	
 	/* SOUND - LOCAL STATES */
 	if ((this_gun->state_duo_previous != 0 || this_gun->state_solo_previous != 0) && (this_gun->state_duo == 0 && this_gun->state_solo == 0))
 		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");

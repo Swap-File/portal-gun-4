@@ -4,8 +4,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MODE_DUO 2
+#define MODE_DUO 0
 #define MODE_SOLO 1
+
+#define UI_ADVANCED 0
+#define UI_SIMPLE   1
+#define UI_HIDDEN_ADVANCED	2
+#define UI_HIDDEN_SIMPLE	3
 
 #define PLAYLIST_SIZE 10
 
@@ -37,7 +42,9 @@ struct gun_struct {
 	int tx_bitrate;
 	int kbytes_wlan;
 	int kbytes_bnep;
-
+	
+	int ui_mode;
+	
 	int accel[3];
 	int adc[4];
 

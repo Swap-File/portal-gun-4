@@ -24,6 +24,6 @@ void font_SetBlend();
 void font_Print(char *Text);
 void font_PrintXY(char *Text, int x, int y);
 void font_ezPrint(char *Text, int x, int y);
-int  font_GetWidth(char *Text);
+int font_GetWidth(char *Text);
 
 #endif

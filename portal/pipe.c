@@ -7,6 +7,7 @@
 #include <stdlib.h> //system exit getenv
 #include <string.h> //strstr
 #include <sys/stat.h> //mkfifo  
+#include "portalgl/portalgl.h"
 
 #define WEB_PRIMARY_FIRE	100
 #define WEB_ALT_FIRE		101
@@ -128,41 +129,37 @@ int pipe_www_in(struct gun_struct *this_gun)
 			printf("MAIN Web Command: '%s'\n",buffer);
 			int results = sscanf(buffer,"%d %d %d %d %d %d %d %d %d %d %d",\
 			&tv[0],&tv[1],&tv[2],&tv[3],&tv[4],&tv[5],&tv[6],&tv[7],&tv[8],&tv[9],&tv[10]);
-			//button stuff
-			if (tv[0] == 1 && results == 2) {
-				switch (tv[1]){
-				case WEB_PRIMARY_FIRE:	web_button = BUTTON_PRIMARY_FIRE;  	break;
-				case WEB_ALT_FIRE:		web_button = BUTTON_ALT_FIRE;    	break;
-				case WEB_MODE_TOGGLE:	web_button = BUTTON_MODE_TOGGLE; 	break; 
-				case WEB_RESET:     	web_button = BUTTON_RESET; 			break; 
-				default: 				web_button = BUTTON_NONE;
+			if (results == 2) {
+				//button stuff
+				if (tv[0] == 1) {
+					switch (tv[1]){
+					case WEB_PRIMARY_FIRE:	web_button = BUTTON_PRIMARY_FIRE;  	break;
+					case WEB_ALT_FIRE:		web_button = BUTTON_ALT_FIRE;    	break;
+					case WEB_MODE_TOGGLE:	web_button = BUTTON_MODE_TOGGLE; 	break; 
+					case WEB_RESET:     	web_button = BUTTON_RESET; 			break; 
+					default: 				web_button = BUTTON_NONE;
+					}
+				}
+				//ir stuff
+				else if (tv[0] == 2 ) {
+					if (tv[1] >= 0 && tv[1] <= 1024) this_gun->ir_pwm = tv[1];
+				}
+			} else if (results == 11) {
+				//pad out playlist with repeat (-1)
+				for (int i = 1; i < PLAYLIST_SIZE+1; i++) {
+					if (tv[i] == GST_REPEAT) tv[i] = GST_REPEAT;
+				}
+				
+				if (tv[0] == 3) { //set solo playlist
+					for (int i = 0; i < PLAYLIST_SIZE; i++) {
+						this_gun->playlist_solo[i] = tv[i+1];
+					}
+				} else if (tv[0] == 4) { //set duo playlist
+					for (int i = 0; i < PLAYLIST_SIZE; i++) {
+						this_gun->playlist_duo[i] = tv[i+1];
+					}
 				}
 			}
-			//pad out array with repeat (-1) once encountered
-			if (results == 11){
-				int filler = 0;
-				for (int i = 1; i < 11; i++){
-					if (tv[i] == -1) filler = -1;
-					if (filler == -1) tv[i] = -1;
-				}
-			}
-			//ir stuff
-			if (tv[0] == 2 && results == 2) {
-				if (tv[1] >= 0 && tv[1] <= 1024) this_gun->ir_pwm = tv[1];
-			}
-			//self playlist setting
-			else if (tv[0] == 3 && results == 11) {
-				for (int i = 0; i < 10; i++) {
-					this_gun->playlist_solo[i] = tv[i+1];
-				}
-			}
-			//shared playlist setting
-			else if (tv[0] == 4 && results == 11) {
-				for (int i = 0; i < 10; i++){
-					this_gun->playlist_duo[i] = tv[i+1];
-				}
-			}
-			
 		}
 	}
 	return web_button;
@@ -218,7 +215,7 @@ static void update_ifstat(int * kbytes,uint8_t unit){
 		}
 	}
 	if (bad_count > 3)
-		*kbytes = 0;
+	*kbytes = 0;
 }
 
 static void update_temp(float * temp){	

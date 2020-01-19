@@ -25,7 +25,7 @@ static void slide_to(float r, float g, float b)
 	glColor4f(r_target,g_target,b_target,1.0); 
 }
 
-void ui_redraw(void)
+void ui_redraw(bool simple)
 {	
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(false);
@@ -41,7 +41,6 @@ void ui_redraw(void)
 
 	//set size here
 	glOrtho(0,1366,0,768/2,-1,1);
-
 	glBindTexture(GL_TEXTURE_2D, 0); //no texture	
 	
 	
@@ -67,38 +66,54 @@ void ui_redraw(void)
 	else  sprintf(temp,"Chell");	
 	print_centered(temp,64* 9.25);
 	
-	sprintf(temp,"%.0f/%.0f\260F",this_gun->temperature_pretty ,this_gun->coretemp);	
-	print_centered(temp,64* 8);
+	if (simple){
 	
-	
-	if (this_gun->connected) sprintf(temp,"Synced");	
-	else  sprintf(temp,"Sync Err");	
-	print_centered(temp,64* 7);
-	
-	sprintf(temp,"Idle");
-	if (this_gun->state_solo > 0 ||this_gun->state_solo < 0 || this_gun->state_duo > 1 )  sprintf(temp,"Emitting");	//collecting or countdown
-	if (this_gun->state_duo < 0)  sprintf(temp,"Capturing");
-	print_centered(temp,64* 6);
-	
-	int kbits = this_gun->kbytes_wlan;
-	if (this_gun->kbytes_bnep > 0)  kbits += this_gun->kbytes_bnep;
-	sprintf(temp,"%dKb/s",kbits);	
-	print_centered(temp,64* 5);
-	
-	sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
-	print_centered(temp,64* 4);
-	
-	if (this_gun->latency > 99) sprintf(temp,"%.1fV %.0fms",this_gun->battery_level_pretty,this_gun->latency );	
-	else if (this_gun->latency > 9) sprintf(temp,"%.1fV %.1fms",this_gun->battery_level_pretty,this_gun->latency );
-	else  sprintf(temp,"%.1fV %.2fms",this_gun->battery_level_pretty,this_gun->latency );
-	print_centered(temp, 64* 3);
-	
-	if (this_gun->mode == 2) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
-	else					sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
-	print_centered(temp,64* 2);
+		sprintf(temp,"TRAINER");	
+		print_centered(temp,64* 8);
+		
+		sprintf(temp,"GUI");	
+		print_centered(temp,64* 7);
+			
+		sprintf(temp,"PLACE");	
+		print_centered(temp,64* 6);
+		
+		sprintf(temp,"HOLDER");	
+		print_centered(temp,64* 5);
+		
+	}else{
+		sprintf(temp,"%.0f/%.0f\260F",this_gun->temperature_pretty ,this_gun->coretemp);	
+		print_centered(temp,64* 8);
+		
+		
+		if (this_gun->connected) sprintf(temp,"Synced");	
+		else  sprintf(temp,"Sync Err");	
+		print_centered(temp,64* 7);
+		
+		sprintf(temp,"Idle");
+		if (this_gun->state_solo > 0 ||this_gun->state_solo < 0 || this_gun->state_duo > 1 )  sprintf(temp,"Emitting");	//collecting or countdown
+		if (this_gun->state_duo < 0)  sprintf(temp,"Capturing");
+		print_centered(temp,64* 6);
+		
+		int kbits = this_gun->kbytes_wlan;
+		if (this_gun->kbytes_bnep > 0)  kbits += this_gun->kbytes_bnep;
+		sprintf(temp,"%dKb/s",kbits);	
+		print_centered(temp,64* 5);
+		
+		sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
+		print_centered(temp,64* 4);
+		
+		if (this_gun->latency > 99) sprintf(temp,"%.1fV %.0fms",this_gun->battery_level_pretty,this_gun->latency );	
+		else if (this_gun->latency > 9) sprintf(temp,"%.1fV %.1fms",this_gun->battery_level_pretty,this_gun->latency );
+		else  sprintf(temp,"%.1fV %.2fms",this_gun->battery_level_pretty,this_gun->latency );
+		print_centered(temp, 64* 3);
+		
+		if (this_gun->mode == MODE_DUO) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
+		else					sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
+		print_centered(temp,64* 2);
+	}
 	
 	uint32_t current_time;	
-	if (this_gun->mode == 2)  {
+	if (this_gun->mode == MODE_DUO)  {
 		sprintf(temp,"Duo Mode");	
 		if (this_gun->connected) current_time = (millis() + this_gun->other_gun_clock)/2;
 		else current_time = millis();  
@@ -108,7 +123,7 @@ void ui_redraw(void)
 		current_time = millis();
 	}
 	print_centered(temp,64);
-
+	
 	int milliseconds = (current_time % 1000);
 	int seconds      = (current_time / 1000) % 60;
 	int minutes      = (current_time / (1000*60)) % 60;
