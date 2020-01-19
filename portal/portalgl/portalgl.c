@@ -18,17 +18,12 @@ typedef int (*PFNGLXGETSWAPINTERVALMESAPROC)(void);
 static void reshape(int screen_width, int screen_height)
 {
 	float nearp = 1, farp = 100.0f, hht, hwd;
-
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
 	glViewport(0, 0, (GLsizei)screen_width, (GLsizei)screen_height);
-
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-
 	hht = nearp * tan(45.0 / 2.0 / 180.0 * M_PI);
 	hwd = hht * screen_width / screen_height;
-
 	glFrustum(-hwd, hwd, -hht, hht, nearp, farp);
 }
 
@@ -40,13 +35,11 @@ static void make_window( Display *dpy, const char *name,int x, int y, int width,
 {
 	int attribs[64];
 	int i = 0;
-
 	int scrnum;
 	XSetWindowAttributes attr;
 	unsigned long mask;
 	Window root;
 	Window win;
-
 	XVisualInfo *visinfo;
 
 	/* Singleton attributes. */
@@ -62,7 +55,6 @@ static void make_window( Display *dpy, const char *name,int x, int y, int width,
 	attribs[i++] = 1;
 	attribs[i++] = GLX_DEPTH_SIZE;
 	attribs[i++] = 1;
-
 	attribs[i++] = None;
 
 	scrnum = DefaultScreen( dpy );
@@ -81,21 +73,18 @@ static void make_window( Display *dpy, const char *name,int x, int y, int width,
 	attr.event_mask = StructureNotifyMask | ExposureMask | KeyPressMask;
 	/* XXX this is a bad way to get a borderless window! */
 	mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
-
 	win = XCreateWindow( dpy, root, x, y, width, height,0, visinfo->depth, InputOutput,	visinfo->visual, mask, &attr );
 
 	/* set hints and properties */
-	{
-		XSizeHints sizehints;
-		sizehints.x = x;
-		sizehints.y = y;
-		sizehints.width  = width;
-		sizehints.height = height;
-		sizehints.flags = USSize | USPosition;
-		XSetNormalHints(dpy, win, &sizehints);
-		XSetStandardProperties(dpy, win, name, name,
-		None, (char **)NULL, 0, &sizehints);
-	}
+	XSizeHints sizehints;
+	sizehints.x = x;
+	sizehints.y = y;
+	sizehints.width  = width;
+	sizehints.height = height;
+	sizehints.flags = USSize | USPosition;
+	XSetNormalHints(dpy, win, &sizehints);
+	XSetStandardProperties(dpy, win, name, name,
+	None, (char **)NULL, 0, &sizehints);
 
 	ctx = glXCreateContext( dpy, visinfo, NULL, True );
 	if (!ctx) {
@@ -149,7 +138,7 @@ static void query_vsync(Display *dpy, GLXDrawable drawable)
 
 		interval = (*pglXGetSwapIntervalMESA)();
 	} else if (is_glx_extension_supported(dpy, "GLX_SGI_swap_control")) {
-	/* The default swap interval with this extension is 1.  Assume that it
+		/* The default swap interval with this extension is 1.  Assume that it
 	* is set to the default.
 	*
 	* Many Mesa-based drivers default to 0, but all of these drivers also
@@ -170,18 +159,12 @@ static void query_vsync(Display *dpy, GLXDrawable drawable)
 	}
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
-
-	
 	/* Initialize X11 */
-	unsigned int winWidth = 1366 * 2, winHeight = 768;
-	
+	const unsigned int winWidth = 1366 * 2, winHeight = 768;
 	char *dpyName = NULL;
-
 	VisualID visId;
-	
-	static Display *dpy;
 	
 	dpy = XOpenDisplay(dpyName);
 	if (!dpy) {
@@ -190,7 +173,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	make_window(dpy, "gstvideo", 0, 0, winWidth, winHeight, &win, &ctx, &visId);
+	make_window(dpy, "portalgl", 0, 0, winWidth, winHeight, &win, &ctx, &visId);
 	XMapWindow(dpy, win);
 	glXMakeCurrent(dpy, win, ctx);
 	query_vsync(dpy, win);
@@ -203,7 +186,7 @@ int main(int argc, char *argv[])
 
 	portalgst_init();
 	
-	//cleanup code
+	//cleanup
 	glXMakeCurrent(dpy, None, NULL);
 	glXDestroyContext(dpy, ctx);
 	XDestroyWindow(dpy, win);

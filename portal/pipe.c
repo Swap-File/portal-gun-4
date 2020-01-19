@@ -25,9 +25,11 @@ static FILE *ifstat_bnep0_fp;
 static FILE *bash_fp;
 static FILE *ping_fp;
 
-void pipe_cleanup(void){
+void pipe_cleanup(void)
+{
 	printf("KILLING OLD PROCESSES\n");
 	system("pkill gst*");
+	system("pkill portalgl");
 	system("pkill mjpeg*");
 }
 
@@ -36,7 +38,7 @@ void pipe_init(bool gordon)
 	//let this priority get inherited to the children
 	setpriority(PRIO_PROCESS, getpid(), -10);
 
-	system("sudo -E xinit /home/pi/portal/gstvideo/launch.sh &");
+	system("sudo -E xinit /home/pi/portal/portalgl/launch.sh &");
 	sleep(5);
 	
 	system("LD_LIBRARY_PATH=/usr/local/lib mjpg_streamer -i 'input_file.so -f /var/www/html/tmp -n snapshot.jpg' -o 'output_http.so -w /usr/local/www' &");
@@ -107,7 +109,7 @@ void pipe_www_out(const struct gun_struct *this_gun )
 	this_gun->latency,web_packet_counter,this_gun->mode);
 	fclose(webout_fp);
 	rename("/var/www/html/tmp/temp.txt","/var/www/html/tmp/portal.txt");
-	
+
 	web_packet_counter++;
 }
 
@@ -124,7 +126,8 @@ int pipe_www_in(struct gun_struct *this_gun)
 			//keep most recent line
 			int tv[11];
 			printf("MAIN Web Command: '%s'\n",buffer);
-			int results = sscanf(buffer,"%d %d %d %d %d %d %d %d %d %d %d", &tv[0],&tv[1],&tv[2],&tv[3],&tv[4],&tv[5],&tv[6],&tv[7],&tv[8],&tv[9],&tv[10]);
+			int results = sscanf(buffer,"%d %d %d %d %d %d %d %d %d %d %d",\
+			&tv[0],&tv[1],&tv[2],&tv[3],&tv[4],&tv[5],&tv[6],&tv[7],&tv[8],&tv[9],&tv[10]);
 			//button stuff
 			if (tv[0] == 1 && results == 2) {
 				switch (tv[1]){
@@ -165,7 +168,7 @@ int pipe_www_in(struct gun_struct *this_gun)
 	return web_button;
 }
 
-static void pipe_update_ping(float * ping){
+static void update_ping(float * ping){
 	static uint32_t ping_time = 0;
 	int count = 1;
 	char buffer[100];
@@ -190,7 +193,7 @@ static void pipe_update_ping(float * ping){
 	if (millis() - ping_time > 1000) *ping = 0.0;
 }
 
-static void pipe_update_ifstat(int * kbytes,uint8_t unit){	
+static void update_ifstat(int * kbytes,uint8_t unit){	
 	static uint8_t bad_count = 0;
 	int count = 1;
 	char buffer[100];
@@ -218,7 +221,7 @@ static void pipe_update_ifstat(int * kbytes,uint8_t unit){
 		*kbytes = 0;
 }
 
-static void pipe_update_temp(float * temp){	
+static void update_temp(float * temp){	
 	static bool temp_first_cycle = true;
 	static uint8_t temp_index = 0;
 	static uint32_t temp_array[256];
@@ -251,7 +254,7 @@ static void pipe_update_temp(float * temp){
 	lseek(temp_in,0,SEEK_SET);
 }
 
-static void pipe_update_iw(int * dbm, int * tx_bitrate){
+static void update_iw(int * dbm, int * tx_bitrate){
 	static uint8_t bad_count = 0;
 	int count = 1;
 	char buffer[1000];
@@ -289,9 +292,9 @@ static void pipe_update_iw(int * dbm, int * tx_bitrate){
 }
 
 void pipe_update(struct gun_struct *this_gun){
-	pipe_update_temp(&(this_gun->coretemp));
-	pipe_update_ping(&(this_gun->latency));
-	pipe_update_ifstat(&(this_gun->kbytes_wlan),IFSTAT_WLAN);
-	pipe_update_ifstat(&(this_gun->kbytes_bnep),IFSTAT_BNEP);
-	pipe_update_iw(&(this_gun->dbm), &(this_gun->tx_bitrate));
+	update_temp(&(this_gun->coretemp));
+	update_ping(&(this_gun->latency));
+	update_ifstat(&(this_gun->kbytes_wlan),IFSTAT_WLAN);
+	update_ifstat(&(this_gun->kbytes_bnep),IFSTAT_BNEP);
+	update_iw(&(this_gun->dbm), &(this_gun->tx_bitrate));
 }

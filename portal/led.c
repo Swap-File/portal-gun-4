@@ -11,8 +11,6 @@
 #define EFFECT_RESOLUTION 400
 #define BREATHING_RATE 2000
 
-#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
-
 static struct CRGB main_buffer_step1[EFFECT_LENGTH];
 static struct CRGB main_buffer_step2[EFFECT_LENGTH];
 static int timearray[EFFECT_LENGTH];
@@ -43,7 +41,7 @@ static int ticks_since_overlay_enable = 0; //disabled overlay on bootup
 static int width_update_speed_last_update = 0;
 static uint8_t brightnesslookup[256][EFFECT_RESOLUTION];
 
-float led_update_internal(int width_temp,int width_update_speed_temp,int overlay_temp, int  total_offset )
+float led_update_internal(int width_temp,int width_update_speed_temp,int overlay_temp,int total_offset)
 {
 	//int start_time = micros();
 
@@ -254,8 +252,8 @@ uint8_t led_update(const struct gun_struct *this_gun){
 
 	//set width
 	int width_request = 20; //default is full fill
-	
-	if(this_gun->state_duo == 1 || this_gun->state_solo == -1 || this_gun->state_solo == 1 || this_gun->state_duo == -3 ){
+
+	if (this_gun->state_duo == 1 || this_gun->state_solo == -1 || this_gun->state_solo == 1 || this_gun->state_duo == -3 ) {
 		width_request = 10;
 	}
 	else if(this_gun->state_duo == -1)	width_request = 1;	

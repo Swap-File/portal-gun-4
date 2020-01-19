@@ -126,4 +126,5 @@ int main(void)
 			if (time_fps < millis()) time_fps = millis() + 1000;
 		}	
 	}
+	return 0;
 }

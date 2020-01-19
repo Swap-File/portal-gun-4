@@ -1,9 +1,9 @@
 #include "udp.h"
-#include <stdio.h>
-#include <string.h> //strcpy
 #include <arpa/inet.h> //inet_aton
-#include <sys/fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h> //strcpy
+#include <sys/fcntl.h>
 
 #define BUFLEN 512
 #define PORT 5005
@@ -84,21 +84,20 @@ int udp_receive_state(int * state, uint32_t * offset)
 {
 	char buf[BUFLEN];
 	int n = recvfrom(receiver_sockfd, buf, BUFLEN, 0, (struct sockaddr*)&incoming_addr, &slen);
-	if (n > 0){
+	if (n > 0) {
 		//check source of message
-		if ( strcmp (inet_ntoa(incoming_addr.sin_addr) , dest_ip) == 0){
-			
+		if (strcmp(inet_ntoa(incoming_addr.sin_addr),dest_ip) == 0) {			
 			buf[n] = '\0'; //make sure null terminator is installed
 			//int ipbytes[4];
 			//sscanf( inet_ntoa(incoming_addr.sin_addr), "%3u.%3u.%3u.%3u", &ipbytes[3], &ipbytes[2], &ipbytes[1], &ipbytes[0]);
 			//printf("%d %d %d %d\n", ipbytes[0] , ipbytes[1] , ipbytes[2], ipbytes[3]);
 			int temp_offset;
 			int temp_state;
-			sscanf( buf, "%d %d",&temp_state,&temp_offset);
-			if (temp_offset > *offset){
+			sscanf(buf, "%d %d",&temp_state,&temp_offset);
+			if (temp_offset > *offset) {
 				*offset = temp_offset;
 				*state = temp_state;
-			}else{
+			} else {
 				printf("Going back in time?\n");
 				return -1;
 			}

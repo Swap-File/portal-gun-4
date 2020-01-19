@@ -1,8 +1,8 @@
 #ifndef _SHARED_H
 #define _SHARED_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define MODE_DUO 2
 #define MODE_SOLO 1

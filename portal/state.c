@@ -68,7 +68,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 				this_gun->state_duo = -3;//wait at -3 for the other gun
 			}
 		} else if (this_gun->mode == MODE_SOLO) {
-			if (this_gun->state_solo >= 0 && this_gun->state_solo < 4){
+			if (this_gun->state_solo >= 0 && this_gun->state_solo < 4) {
 				this_gun->state_solo++;
 			} else if (this_gun->state_solo == 4) {
 				this_gun->state_solo = 3; //possibly move this to alt fire for consistency?  But then solo color change needs to be moved
@@ -88,7 +88,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 			} else if(this_gun->state_duo == -4) { //quick swap function
 				this_gun->state_duo = 4;
 			}
-		} else if (this_gun->mode == MODE_SOLO){
+		} else if (this_gun->mode == MODE_SOLO) {
 			if (this_gun->state_solo == 0) { //blue solo portal open
 				this_gun->state_solo = -1;
 			} else if(this_gun->state_solo == 3 || this_gun->state_solo == 4) {//solo portal color change
@@ -162,31 +162,33 @@ void state_engine(int button,struct gun_struct *this_gun)
 		if (this_gun->playlist_solo_index >= PLAYLIST_SIZE) this_gun->playlist_solo_index = 0;
 	}
 	
-	/* gstreamer state stuff, blank it if shared state and private state are 0 */
-	this_gun->gst_state = GST_BLANK;
+	/* PORTALGL GSTREAMER */
+	/* Reminder: These variables are shared and may be read at ANY time */
 	/* camera preload */
-	if (this_gun->state_duo <= -1) this_gun->gst_state = GST_RPICAMSRC;
+	if (this_gun->state_duo <= -1)		this_gun->gst_state = GST_RPICAMSRC;
 	/* project shared preload */
-	else if (this_gun->state_duo >= 1) this_gun->gst_state = this_gun->effect_duo;		
+	else if (this_gun->state_duo >= 1)	this_gun->gst_state = this_gun->effect_duo;		
 	/* project private preload */
-	else if (this_gun->state_solo != 0) this_gun->gst_state = this_gun->effect_solo;	
+	else if (this_gun->state_solo != 0)	this_gun->gst_state = this_gun->effect_solo;
+	else								this_gun->gst_state = GST_BLANK;
 	
-	/* ahrs effects */
-	this_gun->portal_state = PORTAL_CLOSED; 
+	/* PORTALGL ARPETURE */
+	/* Reminder: These variables are shared and may be read at ANY time */
 	/* for networked modes */
 	if (this_gun->state_solo == 0) {
-		if      (this_gun->state_duo == 3) this_gun->portal_state = PORTAL_CLOSED_ORANGE;
-		else if (this_gun->state_duo == 4) this_gun->portal_state = PORTAL_OPEN_ORANGE;		
-		else if (this_gun->state_duo == 5) this_gun->portal_state = PORTAL_CLOSED_ORANGE; //blink shut on effect change
+		if      (this_gun->state_duo == 3)   this_gun->portal_state = PORTAL_CLOSED_ORANGE;
+		else if (this_gun->state_duo == 4)   this_gun->portal_state = PORTAL_OPEN_ORANGE;		
+		else if (this_gun->state_duo == 5)	 this_gun->portal_state = PORTAL_CLOSED_ORANGE; //blink shut on effect change
 	}
 	/* for self modes */
-	if (this_gun->state_duo == 0) {
+	else if (this_gun->state_duo == 0) {
 		if      (this_gun->state_solo ==  3) this_gun->portal_state = PORTAL_CLOSED_ORANGE;
 		else if (this_gun->state_solo == -3) this_gun->portal_state = PORTAL_CLOSED_BLUE;
 		else if (this_gun->state_solo <= -4) this_gun->portal_state = PORTAL_OPEN_BLUE;
 		else if (this_gun->state_solo >=  4) this_gun->portal_state = PORTAL_OPEN_ORANGE;
-	} 
-	
+	} else {
+											 this_gun->portal_state = PORTAL_CLOSED; 
+	}
 	/* SOUND - LOCAL STATES */
 	if ((this_gun->state_duo_previous != 0 || this_gun->state_solo_previous != 0) && (this_gun->state_duo == 0 && this_gun->state_solo == 0))
 		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");

@@ -1,6 +1,4 @@
 #include "../shared.h"
-#include "portalgst.h"
-#include "portalgl.h"
 #include <gst/gst.h>
 #include <stdio.h>
 #include <GL/glx.h>
@@ -8,10 +6,13 @@
 #include <gst/gl/x11/gstgldisplay_x11.h>
 #include <unistd.h>  //getpid for priority change
 #include <sys/resource.h> //setpriority
-#include "scene.h"
+#include "portalgst.h"
+#include "portalgl.h"
 #include "ui.h"
+#include "scene.h"
 
 struct gun_struct *this_gun;
+
 extern Display *dpy;
 extern Window win;
 extern GLXContext ctx;
@@ -31,14 +32,14 @@ static int video_mode_current = -1;
 static int portal_mode_requested = 9;
 static bool movieisplaying = false;
 
-static void seek_to_time (gint64 time_nanoseconds)
+static void seek_to_time(gint64 time_nanoseconds)
 {
 	if (!gst_element_seek ( GST_ELEMENT(pipeline[GST_MOVIE_FIRST]), 1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH, GST_SEEK_TYPE_SET, time_nanoseconds, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
-		g_print ("Seek failed!\n");
+		g_print("Seek failed!\n");
 	}
 }
 
-static void start_pipeline()
+static void start_pipeline(void)
 {	
 	uint32_t start_time = millis();
 	
@@ -51,7 +52,7 @@ static void start_pipeline()
 			if (video_mode_requested < GST_LIBVISUAL_FIRST || video_mode_requested > GST_LIBVISUAL_LAST){
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 				printf("STOPPED alsa!\n\n");		
-			}else{
+			} else {
 				printf("alsa HOT SWAP!\n\n");
 			}
 		}		
@@ -64,11 +65,10 @@ static void start_pipeline()
 				printf("video HOT SWAP!\n\n");
 			}	
 			movieisplaying = false;
-		}
-		else if (video_mode_current == GST_RPICAMSRC ) {
+		} else if (video_mode_current == GST_RPICAMSRC) {
 			gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 			printf("PAUSE RPICAM!\n\n");
-		}else{//null everything else	
+		} else {//null everything else	
 			printf("NULL THE REST!\n\n");
 			gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_NULL);
 		}
@@ -111,8 +111,8 @@ static gint64 get_position(void)
 	return pos;
 }
 
-static gboolean idle_loop (gpointer data) {
-	
+static gboolean idle_loop(gpointer data)
+{
 	static int accleration[3];
 	
 	portal_mode_requested = this_gun->portal_state;
@@ -133,14 +133,12 @@ static gboolean idle_loop (gpointer data) {
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 				movieisplaying = false;
 			}
-			
 		}		
 	}
 	
 	scene_animate(accleration,portal_mode_requested);
 	scene_redraw(gst_shared_texture,portal_mode_requested);
-	ui_redraw();
-
+	//ui_redraw();
 	glXSwapBuffers(dpy, win);
 	
 	/* FPS counter */
@@ -148,9 +146,10 @@ static gboolean idle_loop (gpointer data) {
 	static int fps = 0;
 	fps++;
 	if (time_fps < millis()) {		
-		printf("GSTVIDEO OPENGL FPS: %d \n",fps);
+		printf("OPENGL FPS: %d \n",fps);
 		fps = 0;
 		time_fps += 1000;
+		if (time_fps < millis()) time_fps = millis() + 1000;
 	}
 	
 	if (video_mode_requested != video_mode_current)	{
@@ -158,8 +157,7 @@ static gboolean idle_loop (gpointer data) {
 			if (portal_mode_requested == PORTAL_OPEN_ORANGE || portal_mode_requested == PORTAL_OPEN_BLUE ) { //wait until portal is opening to start video
 				start_pipeline();
 			}
-		}
-		else{ //immediately change for all other pipelines to allow as much preloading as possible
+		} else { //immediately change for all other pipelines to allow as much preloading as possible
 			start_pipeline();
 		}
 	}
@@ -167,12 +165,9 @@ static gboolean idle_loop (gpointer data) {
 	return true;
 }
 
-
-
-
 //grabs the texture via the glfilterapp element
-static gboolean drawCallback (GstElement* object, guint id , guint width ,guint height, gpointer user_data){
-		
+static gboolean drawCallback(GstElement* object, guint id , guint width ,guint height, gpointer user_data){
+	
 	gst_shared_texture = id;
 
 	/* FPS counter */
@@ -180,19 +175,20 @@ static gboolean drawCallback (GstElement* object, guint id , guint width ,guint 
 	static int fps = 0;
 	fps++;
 	if (time_fps < millis()) {		
-		printf("GSTVIDEO FPS: %d \n",fps);
+		printf("GSTREAMER FPS: %d \n",fps);
 		fps = 0;
 		time_fps += 1000;
+		if (time_fps < millis()) time_fps = millis() + 1000;
 	}
 
 	return true;  //not sure why?
 }
 
-static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data){
+static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
+{
 	GMainLoop *loop = (GMainLoop*)data;
 
-	switch (GST_MESSAGE_TYPE (msg))
-	{
+	switch (GST_MESSAGE_TYPE (msg))	{
 	case GST_MESSAGE_EOS:
 		g_print ("End-of-stream\n");
 		this_gun->video_done = true;
@@ -234,8 +230,8 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data){
 	return TRUE;
 }
 
-static void load_pipeline(int i, char * text){
-	
+static void load_pipeline(int i, char * text)
+{
 	printf("Loading pipeline %d\n",i);
 	
 	pipeline[i] = GST_PIPELINE (gst_parse_launch(text, NULL));
@@ -286,7 +282,7 @@ void portalgst_init(void)
 	//get x11context ready for handing off to elements in the callback
 	GstGLDisplay * gl_display = GST_GL_DISPLAY (gst_gl_display_x11_new_with_display (dpy));//dpy is the glx OpenGL display			
 	x11context = gst_context_new (GST_GL_DISPLAY_CONTEXT_TYPE, TRUE);
-	gst_context_set_gl_display (x11context, gl_display);
+	gst_context_set_gl_display(x11context, gl_display);
 	
 	//get ctxcontext ready for handing off to elements in the callback
 	GstGLContext *gl_context = gst_gl_context_new_wrapped ( gl_display, (guintptr) ctx,GST_GL_PLATFORM_GLX,GST_GL_API_OPENGL); //ctx is the glx OpenGL context
@@ -389,5 +385,4 @@ void portalgst_init(void)
 	//g_timeout_add (10,idle_loop ,pipeline); 
 	g_timeout_add_full ( G_PRIORITY_HIGH,6,idle_loop ,pipeline,NULL); 
 	g_main_loop_run (loop); //let gstreamer's GLib event loop take over
-	
 }

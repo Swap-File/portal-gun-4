@@ -1,8 +1,8 @@
 #include "../shared.h"
 #include "portalgl.h"
+#include "font.h"
 #include <GL/glx.h>
 #include <stdio.h>
-#include "font.h"
 
 static GLuint text_vertex_list;
 extern struct gun_struct *this_gun;
@@ -129,7 +129,7 @@ void ui_redraw(void)
 
 void ui_init(void)
 {
-	font_Load("/home/pi/portal/gstvideo/consolas.bff");
+	font_Load("/home/pi/portal/portalgl/consolas.bff");
 	
 	text_vertex_list = glGenLists( 1 );
 	glNewList( text_vertex_list, GL_COMPILE );
