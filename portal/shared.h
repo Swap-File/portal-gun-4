@@ -14,6 +14,8 @@
 
 #define PLAYLIST_SIZE 10
 
+#define LASER_WARMUP_MS 5000
+
 struct gun_struct {
 	bool gordon;
 	uint8_t mode;
@@ -44,6 +46,7 @@ struct gun_struct {
 	int kbytes_bnep;
 	
 	int ui_mode;
+	uint32_t laser_countdown;
 	
 	int accel[3];
 	int adc[4];

@@ -3,6 +3,7 @@
 #include "font.h"
 #include <GL/glx.h>
 #include <stdio.h>
+#include <stdlib.h> //abs
 
 static GLuint text_vertex_list;
 extern struct gun_struct *this_gun;
@@ -67,13 +68,13 @@ void ui_redraw(bool simple)
 	print_centered(temp,64* 9.25);
 	
 	if (simple){
-	
+		
 		sprintf(temp,"TRAINER");	
 		print_centered(temp,64* 8);
 		
 		sprintf(temp,"GUI");	
 		print_centered(temp,64* 7);
-			
+		
 		sprintf(temp,"PLACE");	
 		print_centered(temp,64* 6);
 		
@@ -88,10 +89,33 @@ void ui_redraw(bool simple)
 		if (this_gun->connected) sprintf(temp,"Synced");	
 		else  sprintf(temp,"Sync Err");	
 		print_centered(temp,64* 7);
-		
-		sprintf(temp,"Idle");
-		if (this_gun->state_solo > 0 ||this_gun->state_solo < 0 || this_gun->state_duo > 1 )  sprintf(temp,"Emitting");	//collecting or countdown
-		if (this_gun->state_duo < 0)  sprintf(temp,"Capturing");
+
+		if ( abs(this_gun->state_solo) > 2 || this_gun->state_duo > 2 ) {
+			sprintf(temp,"Emitting");
+		}
+		else if ( abs(this_gun->state_solo) == 2 || this_gun->state_duo == 2 ) {
+			static uint32_t last_update = 0;
+			static uint32_t animation = 0;
+			
+			int milliseconds = (this_gun->laser_countdown % 1000);
+			int seconds      = (this_gun->laser_countdown / 1000) % 60;
+			
+			if (millis() - last_update > 50){
+				animation++;
+				if (animation > 3) animation = 0;
+				last_update = millis();
+			}
+			
+			if (animation ==0) sprintf(temp,">  -%02d:%03d  <", seconds,milliseconds);
+			if (animation ==1) sprintf(temp," > -%02d:%03d < ", seconds,milliseconds);
+			if (animation ==2) sprintf(temp,"  >-%02d:%03d<  ", seconds,milliseconds);
+			if (animation ==3) sprintf(temp,"   -%02d:%03d   ", seconds,milliseconds);
+			
+		}else if (this_gun->state_duo < -1) {
+			sprintf(temp,"Capturing");
+		}else{
+			sprintf(temp,"Idle");
+		}
 		print_centered(temp,64* 6);
 		
 		int kbits = this_gun->kbytes_wlan;

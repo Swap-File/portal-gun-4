@@ -91,6 +91,33 @@ void pipe_audio(const char *filename)
 	fflush(bash_fp);
 }
 
+uint32_t pipe_laser_pwr(bool pwr)  //returns a countdown. 0 means request is complete.
+{
+	static bool current_power_state = false;
+	static uint32_t event_complete_time = 0;
+	
+	if(pwr == true && current_power_state == false){
+		printf("                                            Starting Laser Warmup...\n");
+		fprintf(bash_fp, "vcgencmd display_power 1 2 &\n");
+		fflush(bash_fp);
+		current_power_state = true;
+		event_complete_time = millis() + LASER_WARMUP_MS; //5 second laser warmup
+	}
+	
+	if(pwr == false && current_power_state == true ){ 
+	printf("                                            Laser Powerdown...\n");
+		fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
+		fflush(bash_fp);
+		current_power_state = false;
+		return 0;
+	}
+	
+	uint32_t current_time = millis();
+	if (event_complete_time < current_time) return 0;
+	return event_complete_time - current_time;
+}
+
+
 void pipe_www_out(const struct gun_struct *this_gun )
 {
 	static uint8_t web_packet_counter = 0;

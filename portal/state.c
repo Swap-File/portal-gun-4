@@ -3,6 +3,7 @@
 #include "pipe.h"
 #include "portalgl/portalgl.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #define GUN_EXPIRE 1000 //expire a gun if not seen for 1 second
 
@@ -62,12 +63,12 @@ void state_engine(int button,struct gun_struct *this_gun)
 				this_gun->state_duo = 1;
 			} else if (this_gun->state_duo == 1) {
 				this_gun->state_duo = 2;
-			} else if ((this_gun->state_duo == 2 || this_gun->state_duo == 3) && (this_gun->other_gun_state <= -3 || this_gun->skip_states)) { 	
-			    this_gun->state_duo = 4; //answer an incoming call immediately and open portal on button press
+			//} else if ((this_gun->state_duo == 2 || this_gun->state_duo == 3) && (this_gun->other_gun_state <= -3 || this_gun->skip_states)) { 	
+		    //   this_gun->state_duo = 4; //answer an incoming call immediately and open portal on button press
 			} else if (this_gun->state_duo == 5) { //playlist advance with closed portal
 				this_gun->state_duo = 4; //open the portal
-			} else if (this_gun->state_duo == 2 && this_gun->other_gun_state > -3) { 
-				this_gun->state_duo = 3; //wait at  mode 3 for other gun
+			//} else if (this_gun->state_duo == 2 && this_gun->other_gun_state > -3) { 
+			//	this_gun->state_duo = 3; //wait at  mode 3 for other gun
 			}
 			/* camera modes */
 			else if (this_gun->state_duo == -1) {
@@ -78,15 +79,21 @@ void state_engine(int button,struct gun_struct *this_gun)
 				this_gun->state_duo = -3;//wait at -3 for the other gun
 			}
 		} else if (this_gun->mode == MODE_SOLO) {
-			if (this_gun->state_solo >= 0 && this_gun->state_solo < 4) {
-				this_gun->state_solo++;
+			if (this_gun->state_solo == 0) {
+				this_gun->state_solo = 1;
+			} else if (this_gun->state_solo == 1) {
+				this_gun->state_solo = 2;  //stop at -2 for laser powerup and auto switch to 3
+			} else if (this_gun->state_solo == 3) {
+				this_gun->state_solo = 4; 
 			} else if (this_gun->state_solo == 4) {
-				this_gun->state_solo = 3; //possibly move this to alt fire for consistency?  But then solo color change needs to be moved
-			} else if (this_gun->state_solo < 0 && this_gun->state_solo > -4) {
-				this_gun->state_solo--;
+				this_gun->state_solo = 3; 
+			} else if (this_gun->state_solo == -1) {
+				this_gun->state_solo = -2;  //stop at -2 for laser powerup and auto switch to -3
+			} else if (this_gun->state_solo == -3) {
+				this_gun->state_solo = -4; 
 			} else if (this_gun->state_solo == -4) {
-				this_gun->state_solo = -3; //possibly move this to alt fire for consistency? But then solo color change needs to be moved
-			}		
+				this_gun->state_solo = -3; 	
+			}
 		}
 	}
 	else if (button == BUTTON_ALT_FIRE) {
@@ -115,8 +122,8 @@ void state_engine(int button,struct gun_struct *this_gun)
 			if (this_gun->other_gun_state == 0) {
 				this_gun->state_duo = 0;
 				this_gun->skip_states = false; 
-			} else if ((this_gun->other_gun_state == -2 || this_gun->other_gun_state == -3) && this_gun->state_duo < 2) {
-				this_gun->state_duo = 2;
+			} else if ((this_gun->other_gun_state == -2 || this_gun->other_gun_state == -3) && this_gun->state_duo < 1) {
+				this_gun->state_duo = 1;
 				this_gun->skip_states = true; 
 			} else if ((this_gun->other_gun_state == 2 || this_gun->other_gun_state == 3) && this_gun->state_duo > -2) {
 				this_gun->state_duo = -2;
@@ -130,13 +137,34 @@ void state_engine(int button,struct gun_struct *this_gun)
 				if (this_gun->state_solo <= -3 || this_gun->state_solo >= 3) {
 					this_gun->state_duo = 4;  //if a portal is open, go direct to projecting
 				} else {
-					this_gun->state_duo = 2; //if a portal is closed, don't blind anyone and just go to duo mode 2
+					this_gun->state_duo = 1; //if a portal is closed, don't blind anyone and just go to duo mode 2
 				}			
 				this_gun->mode = MODE_DUO;
 				this_gun->state_solo = 0;
 			}
 		}
 	}
+	
+	//laser powerup for duo orange
+	if (this_gun->state_duo == 2){
+	   this_gun->laser_countdown = pipe_laser_pwr(true);
+	   if (this_gun->laser_countdown == 0)	this_gun->state_duo = 3;
+	}
+	//laser powerup for duo  orange
+	if (this_gun->state_solo == -2){
+	   this_gun->laser_countdown = pipe_laser_pwr(true);
+	   if (this_gun->laser_countdown == 0) this_gun->state_solo = -3;
+
+	}
+	
+	//laser powerup for solo orange
+	if (this_gun->state_solo == 2){
+	   this_gun->laser_countdown = pipe_laser_pwr(true);
+	   if (this_gun->laser_countdown == 0) this_gun->state_solo = 3;
+	}
+	
+	//laser shutdown
+	if (abs(this_gun->state_solo) < 2 && abs(this_gun->state_duo) < 2) pipe_laser_pwr(false);
 	
 	/* reset playlists to the start */
 	/* continually reload playlist if in state 0 to catch updates */
@@ -175,7 +203,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 	/* PORTALGL GSTREAMER */
 	/* Reminder: These variables are shared and may be read at ANY time */
 	/* camera preload */
-	if (this_gun->state_duo <= -1)		this_gun->gst_state = GST_RPICAMSRC;
+	if (this_gun->state_duo <= -2)		this_gun->gst_state = GST_RPICAMSRC;
 	/* project shared preload */
 	else if (this_gun->state_duo >= 1)	this_gun->gst_state = this_gun->effect_duo;		
 	/* project private preload */

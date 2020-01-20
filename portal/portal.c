@@ -13,6 +13,7 @@
 
 void INThandler(int dummy) {
 	printf("\nCleaning up...\n");
+	pipe_laser_pwr(true);
 	led_wipe();
 	pipe_cleanup();
 	shared_cleanup();
