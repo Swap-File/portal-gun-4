@@ -1,4 +1,4 @@
-OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) 
+OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) common/memory.o
 DEPs := $(OBJs:%.o=%.d)
 BIN  := portal
 CC  = gcc
@@ -14,8 +14,10 @@ portal:	$(OBJs) -lbcm2835
 .PHONY: clean
 clean:
 	@rm -fv portal $(OBJs) $(DEPs) *.o
-	$(MAKE) -C portalgl clean
+	$(MAKE) -C console clean
+	$(MAKE) -C projector clean
 
 .PHONY: subprocesses
 subprocesses:
-	$(MAKE) -C portalgl
+	$(MAKE) -C console
+	$(MAKE) -C projector

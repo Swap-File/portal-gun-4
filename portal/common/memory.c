@@ -1,5 +1,5 @@
-#include "shared.h"
-#include "portalgl/portalgl.h"
+#include "memory.h"
+#include "../projector/projector.h"
 #include <string.h> // memcpy
 #include <sys/shm.h>  
 #include <stdlib.h> //exit
@@ -51,7 +51,7 @@ void shared_init(struct gun_struct **this_gun,bool init)
 	key_t key;
 	
 	/* make the key: */
-    if ((key = ftok("/home/pi/portal", 'R')) == -1) {
+    if ((key = ftok("/home/pi/por", 'R')) == -1) {
         perror("ftok");
         exit(1);
     }

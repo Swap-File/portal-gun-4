@@ -7,7 +7,7 @@
 #include <stdlib.h> //system exit getenv
 #include <string.h> //strstr
 #include <sys/stat.h> //mkfifo  
-#include "portalgl/portalgl.h"
+#include "projector/projector.h"
 
 #define WEB_PRIMARY_FIRE	100
 #define WEB_ALT_FIRE		101

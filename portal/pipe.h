@@ -1,7 +1,7 @@
 #ifndef _PIPE_H 
 #define _PIPE_H
 
-#include "shared.h"
+#include "common/memory.h"
 
 void pipe_init(bool gordon);
 void pipe_cleanup(void);

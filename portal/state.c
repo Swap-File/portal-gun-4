@@ -1,7 +1,7 @@
 #include "state.h"
 #include "io.h"
 #include "pipe.h"
-#include "portalgl/portalgl.h"
+#include "projector/projector.h"
 #include <stdio.h>
 #include <stdlib.h>
 

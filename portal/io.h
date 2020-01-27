@@ -1,7 +1,7 @@
 #ifndef _IO_H 
 #define _IO_H
 
-#include "shared.h"
+#include "common/memory.h"
 
 #define PIN_FAN_PWM		12 //physical pin
 #define FAN_PWM_CHANNEL	0  //cpu channel

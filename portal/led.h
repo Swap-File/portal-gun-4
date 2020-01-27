@@ -1,7 +1,7 @@
 #ifndef _LED_H
 #define _LED_H
 
-#include "shared.h"
+#include "common/memory.h"
 
 uint8_t led_update(const struct gun_struct *this_gun);
 void led_init(void);

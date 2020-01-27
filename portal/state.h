@@ -1,7 +1,7 @@
 #ifndef _STATE_H
 #define _STATE_H
 
-#include "shared.h"
+#include "common/memory.h"
 
 void state_engine(int button,struct gun_struct *this_gun);
 
