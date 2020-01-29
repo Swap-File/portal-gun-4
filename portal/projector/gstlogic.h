@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 
-void cam_init(void);  
-void cam_state(bool state);
+void gstlogic_init(void);
 
 #endif

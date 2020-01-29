@@ -1,36 +1,41 @@
+//
+// This file handles setting up the shared gstreamer context and loading pipelines into it
+//
 #include <stdio.h>
+#include <stdbool.h>
 #include <gst/gst.h>
 #include <gst/gl/gl.h>
 #include <gst/gl/egl/gstgldisplay_egl.h>
-#include "memory.h"
-#include "../common/common.h"
+#include <EGL/egl.h>   //EGLDisplay & EGLContext
+#include <GLES3/gl3.h> //GLint
 
-extern struct egl *egl; //needed to access egl context and display
-extern struct gun_struct *this_gun;  //needed only to report in finished videos
-extern GstPipeline *pipeline[];  //this lets the gstreamer file define how many pipelines we will have
+static GMainLoop *loop;
 
 static GstContext *egl_context;
 static GstContext *gst_context;
-static GMainLoop *loop;
 
-volatile GLuint gstcontext_texture_id;   //used by opengl
-volatile bool gstcontext_texture_fresh = false;
+//outgoing flag
+static volatile bool *video_done_flag = NULL;  //points to shared struct (if set)
+
+//incoming
+volatile GLint *texture_id = 0;  //technically a GLint
+volatile bool  *texture_fresh = false;
 
 //grabs the texture via the glfilterapp element
 static gboolean drawCallback(GstElement* object, guint id , guint width ,guint height, gpointer user_data){
-	gstcontext_texture_id = id;
-	gstcontext_texture_fresh = true;
+	*texture_id = id;
+	*texture_fresh = true;
 	return true;
 }
 
-gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
+static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
 {
 	GMainLoop *loop = (GMainLoop*)data;
 
 	switch (GST_MESSAGE_TYPE (msg))	{
 	case GST_MESSAGE_EOS:
 		g_print ("End-of-stream\n");  //pausing or nulling a stream wont trigger this.
-		this_gun->video_done = true;
+		if (video_done_flag != NULL) *video_done_flag = true;
 		break;	
 	case GST_MESSAGE_ERROR: //normal debug callback
 		{
@@ -69,32 +74,36 @@ gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
 	return TRUE;
 }
 
-void load_pipeline(int i, char * text)
+void gstcontext_load_pipeline(GstPipeline *pipeline, char * text)
 {
-	printf("Loading pipeline %d\n",i);
+	printf("Loading pipeline...\n");
 	
-	pipeline[i] = GST_PIPELINE(gst_parse_launch(text, NULL));
+	pipeline = GST_PIPELINE(gst_parse_launch(text, NULL));
 
-	//set the bus watcher for error handling and to pass the x11 display and opengl context when the elements request it
+	//set the bus watcher for error handling and to pass the egl display and gles context when the elements request it
 	//must be BEFORE setting the client-draw callback
-	GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE (pipeline[i]));
+	GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE (pipeline));
 	gst_bus_add_watch(bus, bus_call, loop);
 	gst_object_unref(bus);
 	
 	//set the glfilterapp callback that will capture the textures
 	//do this AFTER attaching the bus handler so context can be set
-	GstElement *grabtexture = gst_bin_get_by_name(GST_BIN (pipeline[i]), "grabtexture");
+	GstElement *grabtexture = gst_bin_get_by_name(GST_BIN (pipeline), "grabtexture");
 	g_signal_connect(grabtexture, "client-draw",  G_CALLBACK (drawCallback), NULL);
 	gst_object_unref(grabtexture);	
 	
-	gst_element_set_context(GST_ELEMENT (pipeline[i]), gst_context);  			
-	gst_element_set_context(GST_ELEMENT (pipeline[i]), egl_context);
+	gst_element_set_context(GST_ELEMENT (pipeline), gst_context);  			
+	gst_element_set_context(GST_ELEMENT (pipeline), egl_context);
 
-    gst_element_set_state (GST_ELEMENT (pipeline[i]), GST_STATE_PLAYING);
-	gst_element_set_state (GST_ELEMENT (pipeline[i]), GST_STATE_PAUSED);  //init this differently?  do all plugins like being left paused?
+    gst_element_set_state (GST_ELEMENT (pipeline), GST_STATE_PLAYING);
+	gst_element_set_state (GST_ELEMENT (pipeline), GST_STATE_PAUSED);  //do all plugins like being left paused?
 }
 
-void gstshared_init(void){
+void gstcontext_init(EGLDisplay display, EGLContext context,volatile GLint *texture_id_p ,volatile bool *texture_fresh_p ,volatile bool *video_done_flag_p){
+	video_done_flag = video_done_flag_p;
+	texture_id = texture_id_p;
+	texture_fresh = texture_fresh_p;
+	
 	/* Initialize GStreamer */
 	static char *arg1_gst[]  = {"hud"}; 
 	static char *arg2_gst[]  = {"--gst-disable-registry-update"};  //dont rescan the registry to load faster.
@@ -104,12 +113,12 @@ void gstshared_init(void){
 	gst_init (&argc_gst, argv_gst);
 	
 	//get context ready for handing off to elements in the callback
-	GstGLDisplay * gl_display = GST_GL_DISPLAY (gst_gl_display_egl_new_with_egl_display (egl->display));	
+	GstGLDisplay * gl_display = GST_GL_DISPLAY (gst_gl_display_egl_new_with_egl_display (display));	
 	egl_context = gst_context_new (GST_GL_DISPLAY_CONTEXT_TYPE, TRUE);
 	gst_context_set_gl_display(egl_context, gl_display);
 	
 	//get gst_context ready for handing off to elements in the callback
-	GstGLContext *gl_context = gst_gl_context_new_wrapped ( gl_display, (guintptr) egl->context ,GST_GL_PLATFORM_EGL ,GST_GL_API_GLES2);
+	GstGLContext *gl_context = gst_gl_context_new_wrapped ( gl_display, (guintptr) context ,GST_GL_PLATFORM_EGL ,GST_GL_API_GLES2);
 	gst_context = gst_context_new ("gst.gl.app_context", TRUE);
 	gst_structure_set (gst_context_writable_structure (gst_context), "context", GST_TYPE_GL_CONTEXT, gl_context, NULL);
 

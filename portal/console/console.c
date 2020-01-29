@@ -6,9 +6,8 @@
 #include <sys/select.h>
 #include "../common/common.h"
 #include "glscene.h"
-#include "gstlogic.h"
 
-const struct egl *egl;
+static const struct egl *egl;
 static const struct gbm *gbm;
 static const struct drm *drm;
 
@@ -21,7 +20,7 @@ int main()
 	int samples = 0;
 	unsigned int vrefresh = 0;
 
-	drm = init_drm_legacy(device, mode_str, vrefresh,1); //1 is second monitor
+	drm = init_drm_legacy(device, mode_str, vrefresh,1);
 	if (!drm ) {
 		printf("failed to initialize DRM\n");
 		return -1;
@@ -39,9 +38,5 @@ int main()
 		return -1;
 	}
 	
-	//fire up gstreamer 
-	cam_init();
-	
 	return drm->run(gbm, egl);
-	
 }

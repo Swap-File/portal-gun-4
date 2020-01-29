@@ -4,8 +4,8 @@ BIN  := console
 CC  = gcc
 
 #Gstreamer stuff
-LDFLAGS = -lgbm -ldrm -lGLESv2 -lEGL -lm -lGL -lpng -pthread -lglib-2.0 -lgstgl-1.0 -lgstreamer-1.0 -lgobject-2.0
-CFLAGS = -I/usr/include/libdrm -I/usr/include/gstreamer-1.0 -I/usr/lib/arm-linux-gnueabihf/gstreamer-1.0/include -I/usr/include/glib-2.0 -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include
+LDFLAGS = -lgbm -ldrm -lfreetype -lGLESv2 -lEGL -lm -lGL -lpng -pthread -lglib-2.0 -lgstgl-1.0 -lgstreamer-1.0 -lgobject-2.0
+CFLAGS = -I/usr/include/freetype2 -I/usr/include/libdrm -I/usr/include/gstreamer-1.0 -I/usr/lib/arm-linux-gnueabihf/gstreamer-1.0/include -I/usr/include/glib-2.0 -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include
 
 CFLAGS += --std=gnu18 -Wall -O2
 

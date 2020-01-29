@@ -11,8 +11,9 @@
 #include "../common/gstcontext.h"
 
 struct gun_struct *this_gun; 
-extern volatile GLuint gstcontext_texture_id;
-extern volatile bool gstcontext_texture_fresh;
+volatile GLint gstcontext_texture_id; //in gstcontext
+volatile bool gstcontext_texture_fresh; //in gstcontext
+
 
 struct {
 	struct egl egl;
@@ -23,10 +24,10 @@ struct {
 	GLuint program;
 	/* uniform handles: */
 	GLint modelviewmatrix, modelviewprojectionmatrix, normalmatrix;
-	GLint texture, textureuv;
+	GLint texture;
 	GLuint vbo;
 	GLuint positionsoffset, texcoordsoffset, normalsoffset;
-	GLuint tex[2];
+
 } gl;
 
 const struct egl *egl = &gl.egl;
@@ -131,53 +132,53 @@ static const GLfloat vNormals[] = {
 };
 
 static const char *vertex_shader_source =
-		"uniform mat4 modelviewMatrix;      \n"
-		"uniform mat4 modelviewprojectionMatrix;\n"
-		"uniform mat3 normalMatrix;         \n"
-		"                                   \n"
-		"attribute vec4 in_position;        \n"
-		"attribute vec3 in_normal;          \n"
-		"attribute vec2 in_TexCoord;        \n"
-		"                                   \n"
-		"vec4 lightSource = vec4(2.0, 2.0, 20.0, 0.0);\n"
-		"                                   \n"
-		"varying vec4 vVaryingColor;        \n"
-		"varying vec2 vTexCoord;            \n"
-		"                                   \n"
-		"void main()                        \n"
-		"{                                  \n"
-		"    gl_Position = modelviewprojectionMatrix * in_position;\n"
-		"    vec3 vEyeNormal = normalMatrix * in_normal;\n"
-		"    vec4 vPosition4 = modelviewMatrix * in_position;\n"
-		"    vec3 vPosition3 = vPosition4.xyz / vPosition4.w;\n"
-		"    vec3 vLightDir = normalize(lightSource.xyz - vPosition3);\n"
-		"    float diff = max(0.0, dot(vEyeNormal, vLightDir));\n"
-		"    vVaryingColor = vec4(diff * vec3(1.0, 1.0, 1.0), 1.0);\n"
-		"    vTexCoord = in_TexCoord; \n"
-		"}                            \n";
+		"uniform mat4 modelviewMatrix;                                 \n"
+		"uniform mat4 modelviewprojectionMatrix;                       \n"
+		"uniform mat3 normalMatrix;                                    \n"
+		"                                                              \n"
+		"attribute vec4 in_position;                                   \n"
+		"attribute vec3 in_normal;                                     \n"
+		"attribute vec2 in_TexCoord;                                   \n"
+		"                                                              \n"
+		"vec4 lightSource = vec4(2.0, 2.0, 20.0, 0.0);                 \n"
+		"                                                              \n"
+		"varying vec4 vVaryingColor;                                   \n"
+		"varying vec2 vTexCoord;                                       \n"
+		"                                                              \n"
+		"void main()                                                   \n"
+		"{                                                             \n"
+		"    gl_Position = modelviewprojectionMatrix * in_position;    \n"
+		"    vec3 vEyeNormal = normalMatrix * in_normal;               \n"
+		"    vec4 vPosition4 = modelviewMatrix * in_position;          \n"
+		"    vec3 vPosition3 = vPosition4.xyz / vPosition4.w;          \n"
+		"    vec3 vLightDir = normalize(lightSource.xyz - vPosition3); \n"
+		"    float diff = max(0.0, dot(vEyeNormal, vLightDir));        \n"
+		"    vVaryingColor = vec4(diff * vec3(1.0, 1.0, 1.0), 1.0);    \n"
+		"    vTexCoord = in_TexCoord;                                  \n"
+		"}                                                             \n";
 
 static const char *fragment_shader_source =
       "precision mediump float;                            \n"
-      "varying vec2 vTexCoord;                            \n"
+      "varying vec2 vTexCoord;                             \n"
       "uniform sampler2D s_texture;                        \n"
       "void main()                                         \n"
       "{                                                   \n"
-      "  gl_FragColor = texture2D( s_texture, vTexCoord );\n"
+      "  gl_FragColor = texture2D( s_texture, vTexCoord ); \n"
       "}                                                   \n";
 
 
-WEAK uint64_t
-gbm_bo_get_modifier(struct gbm_bo *bo);
+
 
 static void draw_scene(unsigned i)
 {
-	if (i > 500) cam_state(true);
+	glClearColor(0.3, 0.3, 0.3, 0.3);
+	glClear(GL_COLOR_BUFFER_BIT);
+	// Enable blending, necessary for our alpha texture
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	ESMatrix modelview;
 
-	/* clear the color buffer */
-	glClearColor(0.3, 0.3, 0.3, 0.0);
-	glClear(GL_COLOR_BUFFER_BIT);
 
 	esMatrixLoadIdentity(&modelview);
 	esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
@@ -203,32 +204,42 @@ static void draw_scene(unsigned i)
 	normal[6] = modelview.m[2][0];
 	normal[7] = modelview.m[2][1];
 	normal[8] = modelview.m[2][2];
+		
 
-	 glActiveTexture(GL_TEXTURE0);
+	
+	glUseProgram(gl.program);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture( GL_TEXTURE_2D, gstcontext_texture_id);
-
-
+	glBindBuffer(GL_ARRAY_BUFFER, gl.vbo);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)gl.positionsoffset);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)gl.normalsoffset);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)gl.texcoordsoffset);
+	glEnableVertexAttribArray(2);
 	glUniformMatrix4fv(gl.modelviewmatrix, 1, GL_FALSE, &modelview.m[0][0]);
 	glUniformMatrix4fv(gl.modelviewprojectionmatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
 	glUniformMatrix3fv(gl.normalmatrix, 1, GL_FALSE, normal);
-	glUniform1i(gl.texture, 0); /* '0' refers to texture unit 0. */
-
+	//glUniform1i(gl.texture, 0); /* '0' refers to texture unit 0. */
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	
 }
+
 
 const struct egl * init_scene(const struct gbm *gbm, int samples)
 {
 	
 	shared_init(&this_gun,false);
 	
-	int ret;
-
-	ret = init_egl(&gl.egl, gbm, samples);
+	int ret = init_egl(&gl.egl, gbm, samples);
 	if (ret)
 		return NULL;
 
@@ -236,54 +247,44 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 	    egl_check(&gl.egl, glEGLImageTargetTexture2DOES) ||
 	    egl_check(&gl.egl, eglDestroyImageKHR))
 		return NULL;
-
+	
 	gl.aspect = (GLfloat)(gbm->height) / (GLfloat)(gbm->width);
 
 	gl.gbm = gbm;
 
-	ret = create_program(vertex_shader_source, fragment_shader_source);
-	if (ret < 0)
-		return NULL;
-
-	gl.program = ret;
+	gl.program = create_program(vertex_shader_source, fragment_shader_source);
 
 	glBindAttribLocation(gl.program, 0, "in_position");
 	glBindAttribLocation(gl.program, 1, "in_normal");
 	glBindAttribLocation(gl.program, 2, "in_color");
 
-	ret = link_program(gl.program);
-	if (ret)
-		return NULL;
-
-	glUseProgram(gl.program);
+	link_program(gl.program);
 
 	gl.modelviewmatrix = glGetUniformLocation(gl.program, "modelviewMatrix");
 	gl.modelviewprojectionmatrix = glGetUniformLocation(gl.program, "modelviewprojectionMatrix");
 	gl.normalmatrix = glGetUniformLocation(gl.program, "normalMatrix");
-	gl.texture   = glGetUniformLocation(gl.program, "s_texture");
-
-	glViewport(0, 0, gbm->width, gbm->height);
+	gl.texture   = glGetUniformLocation(gl.program, "uTex");
+	
+	//glViewport(0, 0, gbm->width, gbm->height);
 	//glEnable(GL_CULL_FACE);
 
 	gl.positionsoffset = 0;
 	gl.texcoordsoffset = sizeof(vVertices);
 	gl.normalsoffset = sizeof(vVertices) + sizeof(vTexCoords);
 
+	//upload data
 	glGenBuffers(1, &gl.vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, gl.vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices) + sizeof(vTexCoords) + sizeof(vNormals), 0, GL_STATIC_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, gl.positionsoffset, sizeof(vVertices), &vVertices[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, gl.texcoordsoffset, sizeof(vTexCoords), &vTexCoords[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, gl.normalsoffset, sizeof(vNormals), &vNormals[0]);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)gl.positionsoffset);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)gl.normalsoffset);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)gl.texcoordsoffset);
-	glEnableVertexAttribArray(2);
-
+	
+	
+	//fire up gstreamer 
+	gstcontext_init(gl.egl.display, gl.egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, NULL);
+	gstlogic_init();
 
 	gl.egl.draw = draw_scene;
-
 	return &gl.egl;
 }

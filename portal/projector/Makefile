@@ -1,6 +1,6 @@
 OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) $(patsubst ../common/%.c, ../common/%.o, $(wildcard ../common/*.c))
 DEPs := $(OBJs:%.o=%.d)
-BIN  := console
+BIN  := projector
 CC  = gcc
 
 #Gstreamer stuff
