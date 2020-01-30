@@ -1,4 +1,3 @@
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,18 +6,18 @@
 #include "../common/memory.h"
 #include "../common/common.h"
 #include "../common/esUtil.h"
-#include "gstlogic.h"
-#include "glscene.h"
+#include "projector_logic.h"
+#include "projector_scene.h"
 #include "../common/gstcontext.h"
-#include "font.h"
+#include "png.h"
 
 struct gun_struct *this_gun; 
-volatile GLint gstcontext_texture_id; //in gstcontext
-volatile bool gstcontext_texture_fresh; //in gstcontext
+static volatile GLint gstcontext_texture_id; //in gstcontext
+static volatile bool gstcontext_texture_fresh; //in gstcontext
 
-struct atlas a48;
-struct atlas a24;
-struct atlas a12;
+//textures
+static GLuint orange_1,blue_n,orange_n,orange_0,blue_0,blue_1,texture_orange,texture_blue,circle64;
+
 
 struct {
 	struct egl egl;
@@ -174,8 +173,14 @@ static const char *fragment_shader_source =
 
 
 
-static void draw_scene(unsigned i)
+static void scene_draw(unsigned i)
 {
+
+ 
+	while (gstcontext_texture_fresh == false){
+ usleep(100);
+}
+
 	glClearColor(0.3, 0.3, 0.3, 0.3);
 	glClear(GL_COLOR_BUFFER_BIT);
 	// Enable blending, necessary for our alpha texture
@@ -227,7 +232,8 @@ static void draw_scene(unsigned i)
 	glUniformMatrix3fv(gl.normalmatrix, 1, GL_FALSE, normal);
 	//glUniform1i(gl.texture, 0); /* '0' refers to texture unit 0. */
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	//glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+	glBindTexture(GL_TEXTURE_2D, orange_0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
@@ -236,21 +242,13 @@ static void draw_scene(unsigned i)
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(2);
 	
-	float sx = 2.0 / 640;
-	float sy = 2.0 / 480;
 
-	//GLfloat black[4] = { 0, 0, 0, 1 };
-	//GLfloat red[4] = { 1, 0, 0, 1 };
-	GLfloat transparent_green[4] = { 0, 1, 0, 0.5 };
-	
-  
-	text_color(transparent_green);  //also use program
-	render_text("The Small Texture Scaled Fox Jumps Over The Lazy Dog", &a48, -1 + 8 * sx, 1 - 175 * sy, sx * 0.5, sy * 0.5);
-	render_text("The Small Font Sized Fox Jumps Over The Lazy Dog", &a24, -1 + 8 * sx, 1 - 200 * sy, sx, sy);
+gstcontext_texture_fresh = false;
+
 }
 
 
-const struct egl * init_scene(const struct gbm *gbm, int samples)
+const struct egl * scene_init(const struct gbm *gbm, int samples)
 {
 	
 	shared_init(&this_gun,false);
@@ -299,13 +297,37 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 	
 	//fire up gstreamer 
 	gstcontext_init(gl.egl.display, gl.egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, NULL);
-	gstlogic_init();
-	
-	font_init("FreeSans.ttf");
-	font_atlas_init(12,&a12);
-	font_atlas_init(24,&a24);
-	font_atlas_init(64,&a48);
+	logic_init();
 
-	gl.egl.draw = draw_scene;
+	//load textures
+	
+	orange_n = png_load("/home/pi/assets/orange_n.png", NULL, NULL);
+	//override default of clamp
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	
+	blue_n = png_load("/home/pi/assets/blue_n.png", NULL, NULL);
+	//override default of clamp
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	
+	orange_0 = png_load("/home/pi/assets/orange_0.png", NULL, NULL);
+	orange_1 = png_load("/home/pi/assets/orange_1.png", NULL, NULL);
+
+	blue_0 = png_load("/home/pi/assets/blue_0.png", NULL, NULL);
+	blue_1 = png_load("/home/pi/assets/blue_1.png", NULL, NULL);
+	
+	texture_orange = png_load("/home/pi/assets/orange_portal.png", NULL, NULL);
+	texture_blue   = png_load("/home/pi/assets/blue_portal.png",   NULL, NULL);
+	
+	circle64 = png_load("/home/pi/assets/circle64.png", NULL, NULL);
+	
+	if (orange_n == 0 || blue_n == 0 || texture_orange == 0 || texture_blue == 0 || orange_0 == 0 || orange_1 == 0 || blue_0 == 0 || blue_1 == 0 || circle64 == 0)
+	{
+		printf("Loading textures failed.\n");
+		exit(1);
+	}
+	
+	gl.egl.draw = scene_draw;
 	return &gl.egl;
 }

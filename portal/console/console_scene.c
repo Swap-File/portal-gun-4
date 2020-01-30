@@ -6,14 +6,17 @@
 #include "../common/memory.h"
 #include "../common/common.h"
 #include "../common/esUtil.h"
-#include "gstlogic.h"
-#include "glscene.h"
+#include "console_logic.h"
+#include "console_scene.h"
 #include "../common/gstcontext.h"
+#include "font.h"
 
 struct gun_struct *this_gun; 
-volatile GLint gstcontext_texture_id; //in gstcontext
-volatile bool gstcontext_texture_fresh; //in gstcontext
+static volatile GLint gstcontext_texture_id; //in gstcontext
+static volatile bool gstcontext_texture_fresh; //in gstcontext
 
+static struct atlas a128;
+static struct atlas a128b;
 
 struct {
 	struct egl egl;
@@ -171,6 +174,7 @@ static const char *fragment_shader_source =
 
 static void draw_scene(unsigned i)
 {
+
 	glClearColor(0.3, 0.3, 0.3, 0.3);
 	glClear(GL_COLOR_BUFFER_BIT);
 	// Enable blending, necessary for our alpha texture
@@ -231,6 +235,19 @@ static void draw_scene(unsigned i)
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(2);
 	
+	float sx = 2.0 / 640;
+	float sy = 2.0 / 480;
+
+	//GLfloat black[4] = { 0, 0, 0, 1 };
+	//GLfloat red[4] = { 1, 0, 0, 1 };
+	GLfloat transparent_green[4] = { 0, 1, 0, 0.5 };
+  
+	text_color(transparent_green);  //also use program
+	font_render("The Small Texture Scaled Fox Jumps Over The Lazy Dog", &a128, -1 + 8 * sx, 1 - 150 * sy, sx , sy);
+	font_render("The Small Font Sized Fox Jumps Over The Lazy Dog", &a128b, -1 + 8 * sx, 1 - 400 * sy, sx , sy);
+
+	gstcontext_texture_fresh = false;
+
 }
 
 
@@ -284,7 +301,12 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 	//fire up gstreamer 
 	gstcontext_init(gl.egl.display, gl.egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, NULL);
 	gstlogic_init();
-
+	
+	font_init("/home/pi/assets/consola.ttf");
+	font_atlas_init(128,&a128);
+	font_init("/home/pi/assets/consolab.ttf");
+	font_atlas_init(128,&a128b); 
+	
 	gl.egl.draw = draw_scene;
 	return &gl.egl;
 }

@@ -59,7 +59,7 @@ drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 void drm_wait_master(int fd){
 	while (drmSetMaster(fd) != 0){
 		printf("Sleep\n");
-		usleep(1000);  //manually tuned so one sleep is enough
+		usleep(100);  //manually tuned so one sleep is enough
 	}
 }
 

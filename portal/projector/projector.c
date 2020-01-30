@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <sys/select.h>
 #include "../common/common.h"
-#include "glscene.h"
+#include "projector_scene.h"
 
 static const struct egl *egl;
 static const struct gbm *gbm;
@@ -32,7 +32,7 @@ int main()
 		return -1;
 	}
 
-	egl = init_scene(gbm, samples);
+	egl = scene_init(gbm, samples);
 	if (!egl) {
 		printf("failed to initialize EGL\n");
 		return -1;

@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <sys/select.h>
 #include "../common/common.h"
-#include "glscene.h"
+#include "console_scene.h"
 
 static const struct egl *egl;
 static const struct gbm *gbm;

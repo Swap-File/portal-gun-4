@@ -4,6 +4,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include "../common/esUtil.h"
+
 /**
  * The atlas struct holds a texture that contains the visible US-ASCII characters
  * of a certain font rendered with a certain character height.
@@ -33,10 +34,9 @@
 	}c[128];
 };
 
-
-void render_text(const char *text, struct atlas * a, float x, float y, float sx, float sy);
 int font_init(char *fontfilename);
-void font_atlas_init( int height,struct atlas *input);
+void text_color(GLfloat color[4]);
+void font_atlas_init(int height,struct atlas *input);
+void font_render(const char *text,struct atlas *a, float x, float y, float sx, float sy);
 
-void text_color(GLfloat color[4] );
 #endif

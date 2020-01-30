@@ -1,5 +1,5 @@
-#ifndef _GSTLOGIC_H
-#define _GSTLOGIC_H
+#ifndef _CONSOLE_LOGIC_H
+#define _CONSOLE_LOGIC_H
 
 #include <stdbool.h>
 

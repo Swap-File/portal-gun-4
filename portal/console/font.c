@@ -28,7 +28,7 @@ static const char *font_vertex_shader_source =
 "varying vec2 texpos;                  \n"
 "void main(void) {                     \n"
 "  gl_Position = vec4(coord.xy, 0, 1); \n"
-"texpos = coord.zw;                    \n"
+"  texpos = coord.zw;                  \n"
 "}                                     \n";
 
 static const char *font_fragment_shader_source =
@@ -40,12 +40,14 @@ static const char *font_fragment_shader_source =
 "  gl_FragColor = vec4(1, 1, 1, texture2D(tex, texpos).a) * color; \n"
 "}                                                                 \n";
 
-void text_color(GLfloat color[4]){
+void text_color(GLfloat color[4])
+{
    glUseProgram(text_program);
    glUniform4fv(text_uniform_color, 1, color);
 }
 
-void render_text(const char *text, struct atlas * a, float x, float y, float sx, float sy) {
+void font_render(const char *text, struct atlas * a, float x, float y, float sx, float sy)
+{
 	const uint8_t *p;
 
 	/* Use the texture containing the atlas */
@@ -98,7 +100,8 @@ void render_text(const char *text, struct atlas * a, float x, float y, float sx,
 }
 
 
-void font_atlas_init(int height,struct atlas *input) {
+void font_atlas_init(int height,struct atlas *input)
+{
 	FT_Set_Pixel_Sizes(face, 0, height);
 	FT_GlyphSlot g = face->glyph;
 	unsigned int roww = 0;
