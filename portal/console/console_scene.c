@@ -18,22 +18,16 @@ static volatile bool gstcontext_texture_fresh; //in gstcontext
 static struct atlas a128;
 static struct atlas a128b;
 
-struct {
-	struct egl egl;
+static struct egl egl;
 
-	GLfloat aspect;
-	const struct gbm *gbm;
-
-	GLuint program;
-	/* uniform handles: */
-	GLint modelviewmatrix, modelviewprojectionmatrix, normalmatrix;
-	GLint texture;
-	GLuint vbo;
-	GLuint positionsoffset, texcoordsoffset, normalsoffset;
-
-} gl;
-
-const struct egl *egl = &gl.egl;
+static GLfloat aspect;
+static GLuint program;
+	
+/* uniform handles: */
+static GLint modelviewmatrix, modelviewprojectionmatrix, normalmatrix;
+static GLint texture;
+static GLuint vbo;
+static GLuint positionsoffset, texcoordsoffset, normalsoffset;
 
 static const GLfloat vVertices[] = {
 		// front
@@ -192,7 +186,7 @@ static void draw_scene(unsigned i)
 
 	ESMatrix projection;
 	esMatrixLoadIdentity(&projection);
-	esFrustum(&projection, -2.8f, +2.8f, -2.8f * gl.aspect, +2.8f * gl.aspect, 6.0f, 10.0f);
+	esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
 
 	ESMatrix modelviewprojection;
 	esMatrixLoadIdentity(&modelviewprojection);
@@ -211,19 +205,19 @@ static void draw_scene(unsigned i)
 		
 
 	
-	glUseProgram(gl.program);
+	glUseProgram(program);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture( GL_TEXTURE_2D, gstcontext_texture_id);
-	glBindBuffer(GL_ARRAY_BUFFER, gl.vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)gl.positionsoffset);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)gl.normalsoffset);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)normalsoffset);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)gl.texcoordsoffset);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);
 	glEnableVertexAttribArray(2);
-	glUniformMatrix4fv(gl.modelviewmatrix, 1, GL_FALSE, &modelview.m[0][0]);
-	glUniformMatrix4fv(gl.modelviewprojectionmatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
-	glUniformMatrix3fv(gl.normalmatrix, 1, GL_FALSE, normal);
+	glUniformMatrix4fv(modelviewmatrix, 1, GL_FALSE, &modelview.m[0][0]);
+	glUniformMatrix4fv(modelviewprojectionmatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
+	glUniformMatrix3fv(normalmatrix, 1, GL_FALSE, normal);
 	//glUniform1i(gl.texture, 0); /* '0' refers to texture unit 0. */
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
@@ -256,50 +250,50 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 	
 	shared_init(&this_gun,false);
 	
-	int ret = init_egl(&gl.egl, gbm, samples);
+	int ret = init_egl(&egl, gbm, samples);
 	if (ret)
 		return NULL;
 
-	if (egl_check(&gl.egl, eglCreateImageKHR) ||
-	    egl_check(&gl.egl, glEGLImageTargetTexture2DOES) ||
-	    egl_check(&gl.egl, eglDestroyImageKHR))
+	if (egl_check(&egl, eglCreateImageKHR) ||
+	    egl_check(&egl, glEGLImageTargetTexture2DOES) ||
+	    egl_check(&egl, eglDestroyImageKHR))
 		return NULL;
 	
-	gl.aspect = (GLfloat)(gbm->height) / (GLfloat)(gbm->width);
+	aspect = (GLfloat)(gbm->height) / (GLfloat)(gbm->width);
 
-	gl.gbm = gbm;
+	gbm = gbm;
 
-	gl.program = create_program(vertex_shader_source, fragment_shader_source);
+	program = create_program(vertex_shader_source, fragment_shader_source);
 
-	glBindAttribLocation(gl.program, 0, "in_position");
-	glBindAttribLocation(gl.program, 1, "in_normal");
-	glBindAttribLocation(gl.program, 2, "in_color");
+	glBindAttribLocation(program, 0, "in_position");
+	glBindAttribLocation(program, 1, "in_normal");
+	glBindAttribLocation(program, 2, "in_color");
 
-	link_program(gl.program);
+	link_program(program);
 
-	gl.modelviewmatrix = glGetUniformLocation(gl.program, "modelviewMatrix");
-	gl.modelviewprojectionmatrix = glGetUniformLocation(gl.program, "modelviewprojectionMatrix");
-	gl.normalmatrix = glGetUniformLocation(gl.program, "normalMatrix");
-	gl.texture   = glGetUniformLocation(gl.program, "uTex");
+	modelviewmatrix = glGetUniformLocation(program, "modelviewMatrix");
+	modelviewprojectionmatrix = glGetUniformLocation(program, "modelviewprojectionMatrix");
+	normalmatrix = glGetUniformLocation(program, "normalMatrix");
+	texture   = glGetUniformLocation(program, "uTex");
 	
 	//glViewport(0, 0, gbm->width, gbm->height);
 	//glEnable(GL_CULL_FACE);
 
-	gl.positionsoffset = 0;
-	gl.texcoordsoffset = sizeof(vVertices);
-	gl.normalsoffset = sizeof(vVertices) + sizeof(vTexCoords);
+	positionsoffset = 0;
+	texcoordsoffset = sizeof(vVertices);
+	normalsoffset = sizeof(vVertices) + sizeof(vTexCoords);
 
 	//upload data
-	glGenBuffers(1, &gl.vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, gl.vbo);
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices) + sizeof(vTexCoords) + sizeof(vNormals), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, gl.positionsoffset, sizeof(vVertices), &vVertices[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, gl.texcoordsoffset, sizeof(vTexCoords), &vTexCoords[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, gl.normalsoffset, sizeof(vNormals), &vNormals[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, positionsoffset, sizeof(vVertices), &vVertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, texcoordsoffset, sizeof(vTexCoords), &vTexCoords[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, normalsoffset, sizeof(vNormals), &vNormals[0]);
 	
 	
 	//fire up gstreamer 
-	gstcontext_init(gl.egl.display, gl.egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, NULL);
+	gstcontext_init(egl.display, egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, NULL);
 	gstlogic_init();
 	
 	font_init("/home/pi/assets/consola.ttf");
@@ -307,6 +301,6 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 	font_init("/home/pi/assets/consolab.ttf");
 	font_atlas_init(128,&a128b); 
 	
-	gl.egl.draw = draw_scene;
-	return &gl.egl;
+	egl.draw = draw_scene;
+	return &egl;
 }
