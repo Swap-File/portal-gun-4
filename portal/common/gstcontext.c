@@ -74,7 +74,7 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
 	return TRUE;
 }
 
-void gstcontext_load_pipeline(GstPipeline *pipeline, char * text)
+void gstcontext_load_pipeline(GstPipeline *pipeline, GstState state, char * text)
 {
 	printf("Loading pipeline...\n");
 	
@@ -96,7 +96,7 @@ void gstcontext_load_pipeline(GstPipeline *pipeline, char * text)
 	gst_element_set_context(GST_ELEMENT (pipeline), egl_context);
 
     gst_element_set_state (GST_ELEMENT (pipeline), GST_STATE_PLAYING);
-	gst_element_set_state (GST_ELEMENT (pipeline), GST_STATE_PAUSED);  //do all plugins like being left paused?
+	gst_element_set_state (GST_ELEMENT (pipeline), state); 
 }
 
 void gstcontext_init(EGLDisplay display, EGLContext context,volatile GLint *texture_id_p ,volatile bool *texture_fresh_p ,volatile bool *video_done_flag_p){

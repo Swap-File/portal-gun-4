@@ -1,7 +1,7 @@
 #include "state.h"
 #include "io.h"
 #include "pipe.h"
-#include "projector/projector.h"
+#include "common/effects.h"
 #include <stdio.h>
 #include <stdlib.h>
 

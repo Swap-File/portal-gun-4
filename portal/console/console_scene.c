@@ -3,14 +3,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+
 #include "../common/memory.h"
 #include "../common/common.h"
 #include "../common/esUtil.h"
+#include "../common/gstcontext.h"
+#include "../common/effects.h"
+
 #include "console_logic.h"
 #include "console_scene.h"
-#include "../common/gstcontext.h"
 #include "font.h"
-#include "../projector/projector.h"
 
 struct gun_struct *this_gun; 
 static volatile GLint gstcontext_texture_id; //in gstcontext
@@ -96,24 +98,39 @@ void center_text(struct atlas * a, char * text, float line){
 	const float sx = 2.0 / 480;
 	const float sy = 2.0 / 640;
 	float space = 2.0 - font_length(text,a,sx,sy);
-	font_render(text,a, -1+( space / 2 ), 1 - (630 - 64 * line) * sy, sx, sy);
+	font_render(text,a, -1 +( space / 2 ), 1 - (630 - 64 * line) * sy, sx, sy);
 }
 
-static void slide_to(float r, float g, float b)
+
+static void slide_to(float r_target, float g_target, float b_target)
 {
-	static float r_target,g_target,b_target;
-	if (r_target < r)		r_target += .02;
-	else if (r_target > r)	r_target -= .02;
-	if (g_target < g)		g_target += .02;
-	else if (g_target > g)	g_target -= .02;
-	if (b_target < b)		b_target += .02;
-	else if (b_target > b)	b_target -= .02;
-	glClearColor(r_target,g_target,b_target,0.0); 
+	const int speed = 100;
+	static float r_now,g_now,b_now;
+	static uint32_t last_frame_time = 0;
+	
+	uint32_t this_frame_time = millis();
+
+	uint32_t time_delta = this_frame_time - last_frame_time;
+
+	
+	float color_delta = time_delta / speed;
+	
+	if (r_target < r_now)		r_now = MIN(r_now + color_delta,r_target);
+	else if (r_target > r_now)	r_now = MAX(r_now - color_delta,r_target);
+	
+	if (g_target < g_now)		r_now = MIN(g_now + color_delta,g_target);
+	else if (g_target > g_now)	r_now = MAX(g_now - color_delta,g_target);
+	
+	if (b_target < b_now)		r_now = MIN(b_now + color_delta,b_target);
+	else if (b_target > b_now)	r_now = MAX(b_now - color_delta,b_target);
+	
+	last_frame_time = this_frame_time;
+	
+	glClearColor(r_now,g_now,b_now,0.0); 
 }
 
 static void draw_scene(unsigned i)
-{
-	
+{	
 	if		(this_gun->state_solo < 0 || this_gun->state_duo < 0)	slide_to(0.0,0.5,0.5); 
 	else if (this_gun->state_solo > 0 || this_gun->state_duo > 0)	slide_to(0.8,0.4,0.0); 
 	else 															slide_to(0.0,0.0,0.0); 

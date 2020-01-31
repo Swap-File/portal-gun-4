@@ -3,12 +3,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+
 #include "../common/memory.h"
 #include "../common/common.h"
 #include "../common/esUtil.h"
+#include "../common/gstcontext.h"
+
 #include "projector_logic.h"
 #include "projector_scene.h"
-#include "../common/gstcontext.h"
 #include "png.h"
 
 struct gun_struct *this_gun; 
@@ -17,13 +19,10 @@ static volatile bool gstcontext_texture_fresh; //in gstcontext
 
 //textures
 static GLuint orange_1,blue_n,orange_n,orange_0,blue_0,blue_1,texture_orange,texture_blue,circle64;
-
-
 static struct egl egl;
-
 static GLfloat aspect;
-
 static GLuint program;
+
 /* uniform handles: */
 static GLint modelviewmatrix, modelviewprojectionmatrix, normalmatrix;
 static GLint texture;

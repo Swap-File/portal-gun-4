@@ -1,5 +1,5 @@
 #include "memory.h"
-#include "../projector/projector.h"
+#include "../common/effects.h"
 #include <string.h> // memcpy
 #include <sys/shm.h>  
 #include <stdlib.h> //exit

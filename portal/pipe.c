@@ -7,7 +7,7 @@
 #include <stdlib.h> //system exit getenv
 #include <string.h> //strstr
 #include <sys/stat.h> //mkfifo  
-#include "projector/projector.h"
+#include "common/effects.h"
 
 #define WEB_PRIMARY_FIRE	100
 #define WEB_ALT_FIRE		101
@@ -30,7 +30,8 @@ void pipe_cleanup(void)
 {
 	printf("KILLING OLD PROCESSES\n");
 	system("pkill gst*");
-	system("pkill portalgl");
+	system("pkill console");
+	system("pkill projector");
 	system("pkill mjpeg*");
 }
 
@@ -41,7 +42,8 @@ void pipe_init(bool gordon)
 
 	system("sudo -E /home/pi/portal/console/console &");
 	sleep(5);
-	
+	system("sudo -E /home/pi/portal/console/projector &");
+	sleep(5);
 	system("LD_LIBRARY_PATH=/usr/local/lib mjpg_streamer -i 'input_file.so -f /var/www/html/tmp -n snapshot.jpg' -o 'output_http.so -w /usr/local/www' &");
 	
 	//kick the core logic up to realtime for faster bit banging
