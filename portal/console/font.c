@@ -12,9 +12,10 @@ static FT_Face face;
 
 static GLuint text_program;
 static GLuint text_vbo;
-static GLint text_attribute_coord;
+static GLint text_attribute_coord,rotatematrix;
 static GLint text_uniform_tex;
 static GLint text_uniform_color;
+ESMatrix text_rotation;
 
 struct point {
 	GLfloat x;
@@ -24,10 +25,11 @@ struct point {
 };
 
 static const char *font_vertex_shader_source =
-"attribute vec4 coord;                 \n"
-"varying vec2 texpos;                  \n"
-"void main(void) {                     \n"
-"  gl_Position = vec4(coord.xy, 0, 1); \n"
+"uniform mat4 rotatematrix;                           \n"
+"attribute vec4 coord;                                \n"
+"varying vec2 texpos;                                 \n"
+"void main(void) {                                    \n"
+"  gl_Position = rotatematrix * vec4(coord.xy, 0, 1); \n"
 "  texpos = coord.zw;                  \n"
 "}                                     \n";
 
@@ -46,6 +48,25 @@ void text_color(GLfloat color[4])
    glUniform4fv(text_uniform_color, 1, color);
 }
 
+float font_length(const char *text, struct atlas * a, float sx, float sy)
+{
+	float x = 0;
+	const uint8_t *p;
+
+	/* Loop through all characters */
+	for (p = (const uint8_t *)text; *p; p++) {
+		/* Calculate the vertex and texture coordinates */
+		float w = a->c[*p].bw * sx;
+		float h = a->c[*p].bh * sy;
+		/* Advance the cursor to the start of the next character */
+		x += a->c[*p].ax * sx;
+		/* Skip glyphs that have no pixels */
+		if (!w || !h)
+		continue;
+	}
+    return x;
+}
+
 void font_render(const char *text, struct atlas * a, float x, float y, float sx, float sy)
 {
 	const uint8_t *p;
@@ -57,7 +78,8 @@ void font_render(const char *text, struct atlas * a, float x, float y, float sx,
 	/* Set up the text_vbo for our vertex data */
 	glEnableVertexAttribArray(text_attribute_coord);
 	glBindBuffer(GL_ARRAY_BUFFER, text_vbo);
-	glVertexAttribPointer(text_attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(text_attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);	
+	glUniformMatrix4fv(rotatematrix, 1, GL_FALSE, &text_rotation.m[0][0]);
 
 	struct point coords[6 * strlen(text)];
 	int c = 0;
@@ -206,17 +228,22 @@ int font_init(char *fontfilename ) {
 	return 0;
 	
 	link_program(text_program);
-	
+	 
+	rotatematrix = glGetUniformLocation(text_program, "rotatematrix");
 	text_attribute_coord = glGetAttribLocation(text_program, "coord");
 	text_uniform_tex = glGetUniformLocation(text_program, "tex");
 	text_uniform_color = glGetUniformLocation(text_program, "color");
 	
 	
-	if(text_attribute_coord == -1 || text_uniform_tex == -1 || text_uniform_color == -1)
+	if(rotatematrix == -1 || text_attribute_coord == -1 || text_uniform_tex == -1 || text_uniform_color == -1)
 	return 0;
-
+	
+		
 	// Create the vertex buffer object
 	glGenBuffers(1, &text_vbo);
+	
+	esMatrixLoadIdentity(&text_rotation);
+	esRotate(&text_rotation, 270.0f, 0.0f, 0.0f,1.0f);
 	
 	return 1;
 }

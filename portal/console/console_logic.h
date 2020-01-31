@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-void gstlogic_init(void);  
-
+void console_logic_init(void);  
+void console_logic(int gst_state);
 
 #endif

@@ -17,7 +17,7 @@ int main()
 	char mode_str[DRM_DISPLAY_MODE_LEN] = "1366x768";
 	uint32_t format = DRM_FORMAT_XRGB8888;
 	uint64_t modifier = DRM_FORMAT_MOD_LINEAR;
-	int samples = 2; //MSAA
+	int samples = 4; //MSAA
 	unsigned int vrefresh = 0;
 
 	drm = init_drm_legacy(device, mode_str, vrefresh,0);

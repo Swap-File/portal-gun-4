@@ -33,7 +33,7 @@
 		float ty;	// y offset of glyph in texture coordinates
 	}c[128];
 };
-
+float font_length(const char *text, struct atlas * a, float sx, float sy);
 int font_init(char *fontfilename);
 void text_color(GLfloat color[4]);
 void font_atlas_init(int height,struct atlas *input);

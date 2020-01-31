@@ -30,12 +30,14 @@ static GLint texture;
 static GLuint vbo;
 static GLuint positionsoffset, texcoordsoffset, normalsoffset;
 
+#define VIDEO_WIDTH 1280
+#define VIDEO_HEIGHT 720
 static const GLfloat vVertices[] = {
 		// front
-		-1.0f, -1.0f, +1.0f,
-		+1.0f, -1.0f, +1.0f,
-		-1.0f, +1.0f, +1.0f,
-		+1.0f, +1.0f, +1.0f,
+		-VIDEO_WIDTH/2, -VIDEO_HEIGHT/2, 0.0f,
+		+VIDEO_WIDTH/2, -VIDEO_HEIGHT/2, 0.0f,
+		-VIDEO_WIDTH/2, +VIDEO_HEIGHT/2, 0.0f,
+		+VIDEO_WIDTH/2, +VIDEO_HEIGHT/2, 0.0f,
 		// back
 		+1.0f, -1.0f, -1.0f,
 		-1.0f, -1.0f, -1.0f,
@@ -172,7 +174,7 @@ static void scene_draw(unsigned i)
 
  
 	while (gstcontext_texture_fresh == false){
- usleep(100);
+ usleep(1000);
 }
 
 	glClearColor(0.3, 0.3, 0.3, 0.3);
@@ -182,22 +184,22 @@ static void scene_draw(unsigned i)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	ESMatrix modelview;
-
-
 	esMatrixLoadIdentity(&modelview);
-	esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
-	esRotate(&modelview, 45.0f + (0.25f * i), 1.0f, 0.0f, 0.0f);
-	esRotate(&modelview, 45.0f - (0.5f * i), 0.0f, 1.0f, 0.0f);
-	esRotate(&modelview, 10.0f + (0.15f * i), 0.0f, 0.0f, 1.0f);
-
-	ESMatrix projection;
-	esMatrixLoadIdentity(&projection);
-	esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
-
+	//esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
+	//esScale(&modelview, 3.25f, 1.8f, 1.0f);
+	//esRotate(&modelview, 45.0f + (0.25f * i), 1.0f, 0.0f, 0.0f);
+	//esRotate(&modelview, 45.0f - (0.5f * i), 0.0f, 1.0f, 0.0f);
+	//esRotate(&modelview, 10.0f + (0.15f * i), 0.0f, 0.0f, 1.0f);
+	
+	//ESMatrix projection;
+	//esMatrixLoadIdentity(&projection);
+	//esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
 	ESMatrix modelviewprojection;
 	esMatrixLoadIdentity(&modelviewprojection);
-	esMatrixMultiply(&modelviewprojection, &modelview, &projection);
+	//esMatrixMultiply(&modelviewprojection, &modelview, &projection);
+     esOrtho(&modelviewprojection, -1366/2, 1366/2,-768/2, 768/2, -1,1);
 
+	 
 	float normal[9];
 	normal[0] = modelview.m[0][0];
 	normal[1] = modelview.m[0][1];
@@ -208,8 +210,7 @@ static void scene_draw(unsigned i)
 	normal[6] = modelview.m[2][0];
 	normal[7] = modelview.m[2][1];
 	normal[8] = modelview.m[2][2];
-		
-
+	
 	
 	glUseProgram(program);
 	glActiveTexture(GL_TEXTURE0);
@@ -226,8 +227,8 @@ static void scene_draw(unsigned i)
 	glUniformMatrix3fv(normalmatrix, 1, GL_FALSE, normal);
 	//glUniform1i(texture, 0); /* '0' refers to texture unit 0. */
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glBindTexture(GL_TEXTURE_2D, orange_0);
-	glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+	//glBindTexture(GL_TEXTURE_2D, orange_0);
+	//glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
