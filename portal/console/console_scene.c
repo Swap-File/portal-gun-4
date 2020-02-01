@@ -94,43 +94,50 @@ static const char *fragment_shader_source =
 "}                                                   \n";
 
 //each char is 0.145833 wide, screen is 2 wide, .05 on either side
-void center_text(struct atlas * a, char * text, float line){
+void center_text(struct atlas * a, char * text, float line)
+{
 	const float sx = 2.0 / 480;
 	const float sy = 2.0 / 640;
 	float space = 2.0 - font_length(text,a,sx,sy);
 	font_render(text,a, -1 +( space / 2 ), 1 - (630 - 64 * line) * sy, sx, sy);
 }
 
-
 static void slide_to(float r_target, float g_target, float b_target)
 {
-	const int speed = 100;
+	const int speed = 1000;
 	static float r_now,g_now,b_now;
 	static uint32_t last_frame_time = 0;
 	
 	uint32_t this_frame_time = millis();
-
 	uint32_t time_delta = this_frame_time - last_frame_time;
-
+	float color_delta = (float)time_delta / speed; //must cast to float!
 	
-	float color_delta = time_delta / speed;
+	if (r_target < r_now)		r_now = MAX2(r_now - color_delta,r_target);
+	else if (r_target > r_now)	r_now = MIN2(r_now + color_delta,r_target);
 	
-	if (r_target < r_now)		r_now = MIN(r_now + color_delta,r_target);
-	else if (r_target > r_now)	r_now = MAX(r_now - color_delta,r_target);
+	if (g_target < g_now)		g_now = MAX2(g_now - color_delta,g_target);
+	else if (g_target > g_now)	g_now = MIN2(g_now + color_delta,g_target);
 	
-	if (g_target < g_now)		r_now = MIN(g_now + color_delta,g_target);
-	else if (g_target > g_now)	r_now = MAX(g_now - color_delta,g_target);
-	
-	if (b_target < b_now)		r_now = MIN(b_now + color_delta,b_target);
-	else if (b_target > b_now)	r_now = MAX(b_now - color_delta,b_target);
+	if (b_target < b_now)		b_now = MAX2(b_now - color_delta,b_target);
+	else if (b_target > b_now)	b_now = MIN2(b_now + color_delta,b_target);
 	
 	last_frame_time = this_frame_time;
 	
 	glClearColor(r_now,g_now,b_now,0.0); 
 }
 
-static void draw_scene(unsigned i)
-{	
+static void draw_scene(unsigned i,char * debug_msg)
+{
+	if (debug_msg[0] != '\0'){
+		int temp[2];
+		int result = sscanf(debug_msg,"%d %d", &temp[0],&temp[1]);
+		if (result == 2){
+			printf("\nDebug Message Parsed: Setting state_duo: %d and ui_mode: %d\n",temp[0],temp[1]);
+			this_gun->state_duo = temp[0];
+			this_gun->ui_mode = temp[1];
+		}
+	}
+
 	if		(this_gun->state_solo < 0 || this_gun->state_duo < 0)	slide_to(0.0,0.5,0.5); 
 	else if (this_gun->state_solo > 0 || this_gun->state_duo > 0)	slide_to(0.8,0.4,0.0); 
 	else 															slide_to(0.0,0.0,0.0); 
@@ -142,8 +149,7 @@ static void draw_scene(unsigned i)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
-	bool video = false;
-	if (video){
+	if (this_gun->state_duo < -1){
 		ESMatrix modelview;
 		esMatrixLoadIdentity(&modelview);
 		ESMatrix modelviewprojection;
@@ -319,7 +325,6 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 	glBufferSubData(GL_ARRAY_BUFFER, positionsoffset, sizeof(vVertices), &vVertices[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, texcoordsoffset, sizeof(vTexCoords), &vTexCoords[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, normalsoffset, sizeof(vNormals), &vNormals[0]);
-	
 	
 	//fire up gstreamer 
 	gstcontext_init(egl.display, egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, NULL);

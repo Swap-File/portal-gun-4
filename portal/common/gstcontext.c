@@ -10,7 +10,6 @@
 #include <GLES3/gl3.h> //GLint
 
 static GMainLoop *loop;
-
 static GstContext *egl_context;
 static GstContext *gst_context;
 
@@ -74,6 +73,12 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
 	return TRUE;
 }
 
+void gstcontext_set(GstPipeline *pipeline)
+{
+	gst_element_set_context(GST_ELEMENT (pipeline), gst_context);  			
+	gst_element_set_context(GST_ELEMENT (pipeline), egl_context);
+}
+
 void gstcontext_load_pipeline(GstPipeline *pipeline, GstState state, char * text)
 {
 	printf("Loading pipeline...\n");
@@ -92,8 +97,7 @@ void gstcontext_load_pipeline(GstPipeline *pipeline, GstState state, char * text
 	g_signal_connect(grabtexture, "client-draw",  G_CALLBACK (drawCallback), NULL);
 	gst_object_unref(grabtexture);	
 	
-	gst_element_set_context(GST_ELEMENT (pipeline), gst_context);  			
-	gst_element_set_context(GST_ELEMENT (pipeline), egl_context);
+	gstcontext_set(pipeline);
 
     gst_element_set_state (GST_ELEMENT (pipeline), GST_STATE_PLAYING);
 	gst_element_set_state (GST_ELEMENT (pipeline), state); 

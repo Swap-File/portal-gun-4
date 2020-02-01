@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h> //STDIN_FILENO
 #include <sys/select.h>
 #include <sys/time.h>
 #include "common.h"
@@ -70,12 +71,13 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 		return ret;
 	}
 	
+	char debug_msg[100];
 	
 	while (1) {
 		struct gbm_bo *next_bo;
 		int waiting_for_flip = 1;
-
-		egl->draw(i++);
+		
+		egl->draw(i++,debug_msg);
 
 		eglSwapBuffers(egl->display, egl->surface);
 		next_bo = gbm_surface_lock_front_buffer(gbm->surface);
@@ -89,17 +91,18 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 		 * Here you could also update drm plane layers if you want
 		 * hw composition
 		 */
-		 
+
 		drm_wait_master(drm.fd);
 		ret = drmModePageFlip(drm.fd, drm.crtc_id, fb->fb_id,DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
 		drmDropMaster(drm.fd);
-	
+		
+		debug_msg[0] = '\0';
 		if (ret) {
 			printf("failed to queue page flip: %s\n", strerror(errno));
 		}else{
 			while (waiting_for_flip) {
 				FD_ZERO(&fds);
-				FD_SET(0, &fds);
+				FD_SET(STDIN_FILENO, &fds);
 				FD_SET(drm.fd, &fds);
 
 				ret = select(drm.fd + 1, &fds, NULL, NULL, NULL);
@@ -109,14 +112,14 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 				} else if (ret == 0) {
 					printf("select timeout!\n");
 					return -1;
-				} else if (FD_ISSET(0, &fds)) {
-					printf("user interrupted!\n");
-					return 0;
+				} else if (FD_ISSET(STDIN_FILENO, &fds)) {
+					//stdin is generally line buffered so this works fine for debug input
+					int results = read(STDIN_FILENO, debug_msg, 90);
+					debug_msg[results] = '\0';
 				}
 				drmHandleEvent(drm.fd, &evctx);
 			}
 		}
-
 		
 		/* release last buffer to render on again: */
 		gbm_surface_release_buffer(gbm->surface, bo);

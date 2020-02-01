@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include "../common/memory.h"
 #include "../common/common.h"
@@ -130,6 +131,8 @@ static const GLfloat vNormals[] = {
 		+0.0f, -1.0f, +0.0f  // down
 };
 
+
+
 static const char *vertex_shader_source =
 		"uniform mat4 modelviewMatrix;                                 \n"
 		"uniform mat4 modelviewprojectionMatrix;                       \n"
@@ -168,13 +171,19 @@ static const char *fragment_shader_source =
 
 
 
-static void scene_draw(unsigned i)
+static void scene_draw(unsigned i,char * debug_msg)
 {
+	if (debug_msg[0] != '\0'){
+		printf(" Magic %s \n",debug_msg);
 
- 
+	}
+	
+	uint32_t start_time = millis();
+	
 	while (gstcontext_texture_fresh == false){
- usleep(1000);
-}
+		usleep(1000);
+		if (millis() - start_time > 30) break;
+	}
 
 	glClearColor(0.3, 0.3, 0.3, 0.3);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -237,7 +246,7 @@ static void scene_draw(unsigned i)
 	glDisableVertexAttribArray(2);
 	
 
-gstcontext_texture_fresh = false;
+	gstcontext_texture_fresh = false;
 
 }
 
@@ -246,6 +255,9 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 {
 	
 	shared_init(&this_gun,false);
+	
+	
+	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
 	
 	int ret = init_egl(&egl, gbm, samples);
 	if (ret)

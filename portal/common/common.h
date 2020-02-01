@@ -116,7 +116,7 @@ struct egl {
 
 	bool modifiers_supported;
 
-	void (*draw)(unsigned i);
+	void (*draw)(unsigned i,char *debug_stdin);
 };
 
 static inline int __egl_check(void *ptr, const char *name)
