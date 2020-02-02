@@ -126,7 +126,7 @@ static void slide_to(float r_target, float g_target, float b_target)
 	glClearColor(r_now,g_now,b_now,0.0); 
 }
 
-static void draw_scene(unsigned i,char * debug_msg)
+static void draw_scene(unsigned i,char *debug_msg)
 {
 	if (debug_msg[0] != '\0'){
 		int temp[2];
@@ -134,7 +134,7 @@ static void draw_scene(unsigned i,char * debug_msg)
 		if (result == 2){
 			printf("\nDebug Message Parsed: Setting state_duo: %d and ui_mode: %d\n",temp[0],temp[1]);
 			this_gun->state_duo = temp[0];
-			this_gun->ui_mode = temp[1];
+			this_gun->gst_state = temp[1];
 		}
 	}
 
@@ -149,7 +149,7 @@ static void draw_scene(unsigned i,char * debug_msg)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
-	if (this_gun->state_duo < -1){
+	if (this_gun->gst_state == GST_RPICAMSRC){
 		ESMatrix modelview;
 		esMatrixLoadIdentity(&modelview);
 		ESMatrix modelviewprojection;
@@ -284,7 +284,8 @@ static void draw_scene(unsigned i,char * debug_msg)
 const struct egl * init_scene(const struct gbm *gbm, int samples)
 {
 	shared_init(&this_gun,false);
-
+	this_gun->gst_state = 0;
+	
 	int ret = init_egl(&egl, gbm, samples);
 	if (ret)
 	return NULL;
@@ -328,7 +329,7 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 	
 	//fire up gstreamer 
 	gstcontext_init(egl.display, egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, NULL);
-	console_logic_init();
+	console_logic_init(this_gun->gordon);
 	
 	font_init("/home/pi/assets/consola.ttf");
 	font_atlas_init(64,&a64);

@@ -171,20 +171,29 @@ static const char *fragment_shader_source =
 
 
 
-static void scene_draw(unsigned i,char * debug_msg)
+static void scene_draw(unsigned i,char *debug_msg)
 {
 	if (debug_msg[0] != '\0'){
-		printf(" Magic %s \n",debug_msg);
-
+		int temp[2];
+		int result = sscanf(debug_msg,"%d %d", &temp[0],&temp[1]);
+		if (result == 2){
+			printf("\nDebug Message Parsed: Setting gst_state: %d and portal_state: %d\n",temp[0],temp[1]);
+			this_gun->gst_state = temp[0];
+			this_gun->portal_state = temp[1];
+		}
 	}
 	
 	uint32_t start_time = millis();
-	
 	while (gstcontext_texture_fresh == false){
 		usleep(1000);
-		if (millis() - start_time > 30) break;
+		if (millis() - start_time > 30){
+			printf("Frameskip\n");
+			break;
+		}
 	}
 
+	logic_update(this_gun->gst_state,this_gun->portal_state);
+	
 	glClearColor(0.3, 0.3, 0.3, 0.3);
 	glClear(GL_COLOR_BUFFER_BIT);
 	// Enable blending, necessary for our alpha texture
@@ -255,7 +264,7 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 {
 	
 	shared_init(&this_gun,false);
-	
+	this_gun->gst_state = 1;
 	
 	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
 	
@@ -302,8 +311,9 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 	
 	
 	//fire up gstreamer 
-	gstcontext_init(egl.display, egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, NULL);
-	logic_init();
+	gstcontext_init(egl.display, egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, &this_gun->video_done);
+	
+	logic_init(&this_gun->video_done);
 
 	//load textures
 	

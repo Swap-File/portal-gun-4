@@ -73,34 +73,32 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
 	return TRUE;
 }
 
-void gstcontext_set(GstPipeline *pipeline)
+void gstcontext_set(GstPipeline **pipeline)
 {
-	gst_element_set_context(GST_ELEMENT (pipeline), gst_context);  			
-	gst_element_set_context(GST_ELEMENT (pipeline), egl_context);
+	gst_element_set_context(GST_ELEMENT (*pipeline), gst_context);  			
+	gst_element_set_context(GST_ELEMENT (*pipeline), egl_context);
 }
 
-void gstcontext_load_pipeline(GstPipeline *pipeline, GstState state, char * text)
+void gstcontext_load_pipeline(GstPipeline **pipeline, GstState state, char * text)
 {
 	printf("Loading pipeline...\n");
 	
-	pipeline = GST_PIPELINE(gst_parse_launch(text, NULL));
+	*pipeline = GST_PIPELINE(gst_parse_launch(text, NULL));
 
 	//set the bus watcher for error handling and to pass the egl display and gles context when the elements request it
 	//must be BEFORE setting the client-draw callback
-	GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE (pipeline));
+	GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE (*pipeline));
 	gst_bus_add_watch(bus, bus_call, loop);
 	gst_object_unref(bus);
 	
 	//set the glfilterapp callback that will capture the textures
 	//do this AFTER attaching the bus handler so context can be set
-	GstElement *grabtexture = gst_bin_get_by_name(GST_BIN (pipeline), "grabtexture");
+	GstElement *grabtexture = gst_bin_get_by_name(GST_BIN (*pipeline), "grabtexture");
 	g_signal_connect(grabtexture, "client-draw",  G_CALLBACK (drawCallback), NULL);
 	gst_object_unref(grabtexture);	
 	
 	gstcontext_set(pipeline);
-
-    gst_element_set_state (GST_ELEMENT (pipeline), GST_STATE_PLAYING);
-	gst_element_set_state (GST_ELEMENT (pipeline), state); 
+	gst_element_set_state (GST_ELEMENT (*pipeline), state); 
 }
 
 void gstcontext_init(EGLDisplay display, EGLContext context,volatile GLint *texture_id_p ,volatile bool *texture_fresh_p ,volatile bool *video_done_flag_p){
@@ -109,7 +107,7 @@ void gstcontext_init(EGLDisplay display, EGLContext context,volatile GLint *text
 	texture_fresh = texture_fresh_p;
 	
 	/* Initialize GStreamer */
-	static char *arg1_gst[]  = {"hud"}; 
+	static char *arg1_gst[]  = {"gstcontext"}; 
 	static char *arg2_gst[]  = {"--gst-disable-registry-update"};  //dont rescan the registry to load faster.
 	static char *arg3_gst[]  = {"--gst-debug-level=1"};  //dont show debug messages
 	static char **argv_gst[] = {arg1_gst,arg2_gst,arg3_gst};
