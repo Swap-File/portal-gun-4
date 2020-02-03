@@ -1,5 +1,5 @@
-#ifndef _SHARED_H
-#define _SHARED_H
+#ifndef _MEMORY_H
+#define _MEMORY_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -57,8 +57,10 @@ struct gun_struct {
 	int gst_state;
 	int portal_state;
 
-	bool video_done;  //flag set via shared memory with gstvideo
-
+	volatile bool video_done;  //flag set via shared memory with projector
+	volatile bool projector_loaded;  //flag set via shared memory with projector
+	volatile bool console_loaded;  //flag set via shared memory with console
+	
 	int other_gun_state; //state read from other gun
 	int other_gun_state_previous;
 
@@ -70,5 +72,6 @@ void shared_init(struct gun_struct **this_gun,bool init);
 void shared_cleanup(void);
 uint32_t millis(void);
 int piHiPri(const int pri);
+uint32_t micros(void);
 
 #endif

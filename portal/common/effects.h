@@ -1,5 +1,5 @@
-#ifndef _PORTALGL_H 
-#define _PORTALGL_H
+#ifndef _PROJECTOR_H 
+#define _PROJECTOR_H
 
 #include <stdint.h>
 
