@@ -51,7 +51,7 @@ void shared_init(struct gun_struct **this_gun,bool init)
 	key_t key;
 	
 	/* make the key: */
-    if ((key = ftok("/home/pi/por", 'R')) == -1) {
+    if ((key = ftok("/home/pi/portal/portal", 'R')) == -1) {
         perror("ftok");
         exit(1);
     }
@@ -118,3 +118,12 @@ int piHiPri(const int pri)
   return sched_setscheduler (0, SCHED_RR, &sched);
 }
 
+
+uint32_t micros(void)
+{
+  uint64_t now ;
+  struct  timespec ts ;
+  clock_gettime (CLOCK_MONOTONIC_RAW, &ts) ;
+  now  = (uint64_t)ts.tv_sec * (uint64_t)1000000 + (uint64_t)(ts.tv_nsec / 1000) ;
+  return (uint32_t)now;
+}

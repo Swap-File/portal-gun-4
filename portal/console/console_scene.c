@@ -337,5 +337,8 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 	font_atlas_init(64,&a64b); 
 	
 	egl.draw = draw_scene;
+	
+	this_gun->console_loaded = true;
+	
 	return &egl;
 }

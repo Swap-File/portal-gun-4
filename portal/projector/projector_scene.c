@@ -19,7 +19,7 @@ static volatile GLint gstcontext_texture_id; //in gstcontext
 static volatile bool gstcontext_texture_fresh; //in gstcontext
 
 //textures
-static GLuint orange_1,blue_n,orange_n,orange_0,blue_0,blue_1,texture_orange,texture_blue,circle64;
+static GLuint orange_1,blue_n,orange_n,orange_0,blue_0,blue_1,orange_portal,blue_portal,circle64;
 static struct egl egl;
 static GLfloat aspect;
 static GLuint program;
@@ -33,36 +33,36 @@ static GLuint positionsoffset, texcoordsoffset, normalsoffset;
 #define VIDEO_WIDTH 1280
 #define VIDEO_HEIGHT 720
 static const GLfloat vVertices[] = {
-		// front
+		// the video
 		-VIDEO_WIDTH/2, -VIDEO_HEIGHT/2, 0.0f,
 		+VIDEO_WIDTH/2, -VIDEO_HEIGHT/2, 0.0f,
 		-VIDEO_WIDTH/2, +VIDEO_HEIGHT/2, 0.0f,
 		+VIDEO_WIDTH/2, +VIDEO_HEIGHT/2, 0.0f,
-		// back
-		+1.0f, -1.0f, -1.0f,
-		-1.0f, -1.0f, -1.0f,
-		+1.0f, +1.0f, -1.0f,
-		-1.0f, +1.0f, -1.0f,
-		// right
-		+1.0f, -1.0f, +1.0f,
-		+1.0f, -1.0f, -1.0f,
-		+1.0f, +1.0f, +1.0f,
-		+1.0f, +1.0f, -1.0f,
-		// left
-		-1.0f, -1.0f, -1.0f,
-		-1.0f, -1.0f, +1.0f,
-		-1.0f, +1.0f, -1.0f,
-		-1.0f, +1.0f, +1.0f,
-		// top
-		-1.0f, +1.0f, +1.0f,
-		+1.0f, +1.0f, +1.0f,
-		-1.0f, +1.0f, -1.0f,
-		+1.0f, +1.0f, -1.0f,
-		// bottom
-		-1.0f, -1.0f, -1.0f,
-		+1.0f, -1.0f, -1.0f,
-		-1.0f, -1.0f, +1.0f,
-		+1.0f, -1.0f, +1.0f,
+		// front
+		-1.0f, -1.0f, 0.0f,
+		+1.0f, -1.0f, 0.0f,
+		-1.0f, +1.0f, 0.0f,
+		+1.0f, +1.0f, 0.0f,
+		// front
+		-1.0f, -1.0f, 0.0f,
+		+1.0f, -1.0f, 0.0f,
+		-1.0f, +1.0f, 0.0f,
+		+1.0f, +1.0f, 0.0f,
+		// front
+		-1.0f, -1.0f, 0.0f,
+		+1.0f, -1.0f, 0.0f,
+		-1.0f, +1.0f, 0.0f,
+		+1.0f, +1.0f, 0.0f,
+		// front
+		-1.0f, -1.0f, 0.0f,
+		+1.0f, -1.0f, 0.0f,
+		-1.0f, +1.0f, 0.0f,
+		+1.0f, +1.0f, 0.0f,
+		// front
+		-1.0f, -1.0f, 0.0f,
+		+1.0f, -1.0f, 0.0f,
+		-1.0f, +1.0f, 0.0f,
+		+1.0f, +1.0f, 0.0f,
 };
 
 GLfloat vTexCoords[] = {
@@ -92,10 +92,10 @@ GLfloat vTexCoords[] = {
 		1.0f, 0.0f,
 		0.0f, 0.0f,
 		//bottom
-		1.0f, 0.0f,
-		0.0f, 0.0f,
 		1.0f, 1.0f,
 		0.0f, 1.0f,
+		1.0f, 0.0f,
+		0.0f, 0.0f,
 };
 
 static const GLfloat vNormals[] = {
@@ -105,30 +105,30 @@ static const GLfloat vNormals[] = {
 		+0.0f, +0.0f, +1.0f, // forward
 		+0.0f, +0.0f, +1.0f, // forward
 		// back
-		+0.0f, +0.0f, -1.0f, // backward
-		+0.0f, +0.0f, -1.0f, // backward
-		+0.0f, +0.0f, -1.0f, // backward
-		+0.0f, +0.0f, -1.0f, // backward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
 		// right
-		+1.0f, +0.0f, +0.0f, // right
-		+1.0f, +0.0f, +0.0f, // right
-		+1.0f, +0.0f, +0.0f, // right
-		+1.0f, +0.0f, +0.0f, // right
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
 		// left
-		-1.0f, +0.0f, +0.0f, // left
-		-1.0f, +0.0f, +0.0f, // left
-		-1.0f, +0.0f, +0.0f, // left
-		-1.0f, +0.0f, +0.0f, // left
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
 		// top
-		+0.0f, +1.0f, +0.0f, // up
-		+0.0f, +1.0f, +0.0f, // up
-		+0.0f, +1.0f, +0.0f, // up
-		+0.0f, +1.0f, +0.0f, // up
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
 		// bottom
-		+0.0f, -1.0f, +0.0f, // down
-		+0.0f, -1.0f, +0.0f, // down
-		+0.0f, -1.0f, +0.0f, // down
-		+0.0f, -1.0f, +0.0f  // down
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
+		+0.0f, +0.0f, +1.0f, // forward
 };
 
 
@@ -185,14 +185,25 @@ static void scene_draw(unsigned i,char *debug_msg)
 	
 	uint32_t start_time = millis();
 	while (gstcontext_texture_fresh == false){
-		usleep(1000);
-		if (millis() - start_time > 30){
-			printf("Frameskip\n");
+		usleep(500);
+		if (millis() - start_time > 20){
+			//printf("Frameskip\n");
 			break;
 		}
 	}
 
 	logic_update(this_gun->gst_state,this_gun->portal_state);
+	
+	const int speed = 10000;
+	static uint32_t last_frame_time = 0;
+	uint32_t this_frame_time = micros(); //use micros for better resolution
+	uint32_t time_delta = this_frame_time - last_frame_time;
+	float delta = (float)time_delta / speed; //must cast to float! 
+	last_frame_time = this_frame_time;
+	
+	static float rotation = 0;
+	rotation += delta * 0.3; //we only want to cut the delta speed, not increase, or jitter will happen
+	
 	
 	glClearColor(0.3, 0.3, 0.3, 0.3);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -201,22 +212,11 @@ static void scene_draw(unsigned i,char *debug_msg)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	ESMatrix modelview;
-	esMatrixLoadIdentity(&modelview);
-	//esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
-	//esScale(&modelview, 3.25f, 1.8f, 1.0f);
-	//esRotate(&modelview, 45.0f + (0.25f * i), 1.0f, 0.0f, 0.0f);
-	//esRotate(&modelview, 45.0f - (0.5f * i), 0.0f, 1.0f, 0.0f);
-	//esRotate(&modelview, 10.0f + (0.15f * i), 0.0f, 0.0f, 1.0f);
-	
-	//ESMatrix projection;
-	//esMatrixLoadIdentity(&projection);
-	//esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
+	esMatrixLoadIdentity(&modelview);	
 	ESMatrix modelviewprojection;
 	esMatrixLoadIdentity(&modelviewprojection);
-	//esMatrixMultiply(&modelviewprojection, &modelview, &projection);
-     esOrtho(&modelviewprojection, -1366/2, 1366/2,-768/2, 768/2, -1,1);
-
-	 
+    esOrtho(&modelviewprojection, -1366/2, 1366/2,-768/2, 768/2, -1,1);
+ 
 	float normal[9];
 	normal[0] = modelview.m[0][0];
 	normal[1] = modelview.m[0][1];
@@ -244,8 +244,27 @@ static void scene_draw(unsigned i,char *debug_msg)
 	glUniformMatrix3fv(normalmatrix, 1, GL_FALSE, normal);
 	//glUniform1i(texture, 0); /* '0' refers to texture unit 0. */
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	//glBindTexture(GL_TEXTURE_2D, orange_0);
-	//glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+	
+	
+	esMatrixLoadIdentity(&modelview);
+	esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
+	const float scale = 4.8f;
+	esScale(&modelview,scale * 1366/768,scale,1.0f);
+	esRotate(&modelview, rotation , 0.0f, 0.0f, 1.0f);
+	//esScale(&modelview,100,100,1);
+	ESMatrix projection;
+	esMatrixLoadIdentity(&projection);
+	esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
+
+	esMatrixLoadIdentity(&modelviewprojection);
+	esMatrixMultiply(&modelviewprojection, &modelview, &projection);
+
+		glUniformMatrix4fv(modelviewmatrix, 1, GL_FALSE, &modelview.m[0][0]);
+	glUniformMatrix4fv(modelviewprojectionmatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
+	
+	glBindTexture(GL_TEXTURE_2D, blue_portal);
+	glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+	
 	//glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
@@ -333,17 +352,20 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 	blue_0 = png_load("/home/pi/assets/blue_0.png", NULL, NULL);
 	blue_1 = png_load("/home/pi/assets/blue_1.png", NULL, NULL);
 	
-	texture_orange = png_load("/home/pi/assets/orange_portal.png", NULL, NULL);
-	texture_blue   = png_load("/home/pi/assets/blue_portal.png",   NULL, NULL);
+	orange_portal = png_load("/home/pi/assets/orange_portal.png", NULL, NULL);
+	blue_portal   = png_load("/home/pi/assets/blue_portal.png",   NULL, NULL);
 	
 	circle64 = png_load("/home/pi/assets/circle64.png", NULL, NULL);
 	
-	if (orange_n == 0 || blue_n == 0 || texture_orange == 0 || texture_blue == 0 || orange_0 == 0 || orange_1 == 0 || blue_0 == 0 || blue_1 == 0 || circle64 == 0)
+	if (orange_n == 0 || blue_n == 0 || orange_portal == 0 || blue_portal == 0 || orange_0 == 0 || orange_1 == 0 || blue_0 == 0 || blue_1 == 0 || circle64 == 0)
 	{
 		printf("Loading textures failed.\n");
 		exit(1);
 	}
 	
 	egl.draw = scene_draw;
+	
+	this_gun->projector_loaded = true;
+		
 	return &egl;
 }
