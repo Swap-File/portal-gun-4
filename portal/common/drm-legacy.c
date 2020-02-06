@@ -124,19 +124,6 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 		/* release last buffer to render on again: */
 		gbm_surface_release_buffer(gbm->surface, bo);
 		bo = next_bo;
-		
-		/* FPS counter */
-		static uint32_t time_fps = 0;
-		static int fps = 0;
-		fps++;
-		if (time_fps < millis()) {		
-			printf("MAIN FPS:%d \n",fps);
-			fps = 0;
-			time_fps += 1000;
-			/* readjust counter if we missed a cycle */
-			if (time_fps < millis()) time_fps = millis() + 1000;
-		}	
-		
 	}
 
 	return 0;

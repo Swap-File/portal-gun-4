@@ -143,6 +143,7 @@ static void draw_scene(unsigned i,char *debug_msg)
 	else 															slide_to(0.0,0.0,0.0); 
 	
 	console_logic(this_gun->gst_state);
+	uint32_t render_start_time = micros();
 	
 	glClear(GL_COLOR_BUFFER_BIT);
 	// Enable blending, necessary for our alpha texture
@@ -277,7 +278,23 @@ static void draw_scene(unsigned i,char *debug_msg)
 		center_text(&a64,temp, 0);
 	}
 	
-	gstcontext_texture_fresh = false;
+
+	
+	/* FPS counter */
+	glFinish();
+	static uint32_t render_time = 0;
+	static uint32_t time_fps = 0;
+	static int fps = 0;
+	render_time += micros() - render_start_time; 
+	fps++;
+	if (time_fps < millis()) {		
+		printf("MAIN FPS:%d  OpenGL microseconds Per Frame: %d \n",fps, render_time/fps);
+		fps = 0;
+		render_time = 0;
+		time_fps += 1000;
+		/* readjust counter if we missed a cycle */
+		if (time_fps < millis()) time_fps = millis() + 1000;
+	}	
 }
 
 

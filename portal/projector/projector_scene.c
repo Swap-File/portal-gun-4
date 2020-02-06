@@ -138,62 +138,26 @@ static const char *fragment_shader_source =
       "  gl_FragColor = texture2D( s_texture, vTexCoord ); \n"
       "}                                                   \n";
 	  
-//https://www.shadertoy.com/view/Wt3GRS
-
 	
 static const char *shadertoy_vertex_source = 
 	"#version 310 es                         \n"
-	"uniform mat4 modelviewprojectionMatrix;                       \n"
-    "in  vec4 in_position;  									 \n"
-    "in  vec2 in_TexCoord;                 			       \n"
-    "out  vec2 vUv;            								   \n"
-    "void main() {             									  \n"
-    "    vUv = in_TexCoord;                  		  \n"
-    "    gl_Position =   in_position;  			\n"
-    "}               							 \n";
-
-   
-static const char *shadertoy_fragment_source2 =
-"#version 310 es																		\n"
-"precision lowp float;																		\n"
-"precision lowp int;																			\n"
-"uniform float iTime; 																			\n"
-"in vec2 vUv;																				\n"
-"out vec4 fragmentColor;																			\n"
-"float snoise(vec2 uv, float res)																\n"
-"{																								\n"
-"	const vec2 s = vec2(1e0, 1e2);															\n"
-"	uv *= res;																					\n"
-"	vec2 uv0 = floor(mod(uv, res))*s;															\n"
-"	vec2 uv1 = floor(mod(uv+vec2(1.), res))*s;													\n"
-"	vec2 f = fract(uv); f = f*f*(3.0-2.0*f);												  	\n"
-"	vec4 v = vec4(uv0.x+uv0.y, uv1.x+uv0.y,uv0.x+uv1.y, uv1.x+uv1.y); 	                \n"
-"	vec4 r = fract(sin(v*1e-1)*1e3);															\n"
-"	float r0 = mix(mix(r.x, r.y, f.x), mix(r.z, r.w, f.x), f.y);								\n"
-"	return r0*2.-1.;																\n"
-"}																								\n"
-"void main() 																					\n"
-"{																								\n"
-"	vec2 p =  0.44 * (-1.0 + 2.0 * vUv);																	\n"
-"	float color = 3.0 - (3.*length(2.*p));														\n"
-"	vec2 coord = vec2(atan(p.x,p.y)/6.2832+.5, length(p)*.4);								\n"
-"   coord = 1.0 - coord;																		\n"
-"        float power = 1.0;														\n"  
-"        color += (0.4 / power) * snoise(coord + vec2(0,-iTime*.05), power*32.); \n" //power*32 is sharpness
-"   color = 1.0 * 2.7 - color *2.7;																		\n"
-"   color *= smoothstep(0.43, 0.4, length(p));													\n"
-"   float alpha = smoothstep(0.25 ,0.44, length(p));											\n"
-"   fragmentColor = vec4(pow(max(color,0.),2.)*0.15, pow(max(color,0.),2.)*0.4, color, alpha);	\n"
-"}																								\n";
+	"uniform mat4 modelviewprojectionMatrix; \n"
+    "in  vec4 in_position;  				 \n"
+    "in  vec2 in_TexCoord;                 	 \n"
+    "out  vec2 vUv;            				 \n"
+    "void main() {             				 \n"
+    "    vUv = in_TexCoord;                  \n"
+    "    gl_Position =   in_position;  		\n"
+    "}               						 \n";
 
 
 static const char *shadertoy_fragment_source = 
-"#version 310 es																		\n"
-"precision lowp float;																		\n"
-"precision lowp int;																			\n"
+"#version 310 es																				\n"
+"precision highp float;																			\n"
+"precision highp int;																			\n"
 "uniform float iTime; 																			\n"
-"in vec2 vUv;																				\n"
-"out vec4 fragmentColor;																			\n"
+"in vec2 vUv;																					\n"
+"out vec4 fragmentColor;																		\n"
 "float snoise(vec3 uv, float res)																\n"
 "{																								\n"
 "	const vec3 s = vec3(1e0, 1e2, 1e3);															\n"
@@ -204,19 +168,19 @@ static const char *shadertoy_fragment_source =
 "	vec4 v = vec4(uv0.x+uv0.y+uv0.z, uv1.x+uv0.y+uv0.z,uv0.x+uv1.y+uv0.z, uv1.x+uv1.y+uv0.z); 	\n"
 "	vec4 r = fract(sin(v*1e-1)*1e3);															\n"
 "	float r0 = mix(mix(r.x, r.y, f.x), mix(r.z, r.w, f.x), f.y);								\n"
-"	r = fract(sin((v + uv1.z - uv0.z)*1e-1)*1e3);								\n"
+"	r = fract(sin((v + uv1.z - uv0.z)*1e-1)*1e3);												\n"
 "	float r1 = mix(mix(r.x, r.y, f.x), mix(r.z, r.w, f.x), f.y);								\n"
 "	return mix(r0, r1, f.z)*2.-1.;																\n"
 "}																								\n"
 "void main() 																					\n"
 "{																								\n"
-"	vec2 p =  0.44 * (-1.0 + 2.0 * vUv);																	\n"
+"	vec2 p =  0.44 * (-1.0 + 2.0 * vUv);														\n"
 "	float color = 3.0 - (3.*length(2.*p));														\n"
 "	vec3 coord = vec3(atan(p.x,p.y)/6.2832+.5, length(p)*.4, .5);								\n"
 "   coord = 1.0 - coord;																		\n"
-"        float power = 2.0;														\n"  
-"        color += (0.4 / power) * snoise(coord + vec3(0,-iTime*.05, iTime*.01), power*32.); \n" //power*32 is sharpness
-"   color = 1.0 * 2.7 - color *2.7;																		\n"
+"   float power = 2.0;																			\n"  
+"   color += (0.4 / power) * snoise(coord + vec3(0,-iTime*.05, iTime*.01), power*32.);			\n " //power*32 is sharpness
+"   color = 1.0 * 2.7 - color *2.7;																\n"
 "   color *= smoothstep(0.43, 0.4, length(p));													\n"
 "   float alpha = smoothstep(0.25 ,0.44, length(p));											\n"
 "   fragmentColor = vec4(pow(max(color,0.),2.)*0.15, pow(max(color,0.),2.)*0.4, color, alpha);	\n"
@@ -235,16 +199,17 @@ static void scene_draw(unsigned i,char *debug_msg)
 		}
 	}
 	
-	//uint32_t start_time = millis();
-	//while (gstcontext_texture_fresh == false){
-	//	usleep(1000);
-	//	if (millis() - start_time > 20){
-	//		printf("Frameskip\n");
-	//		break;
-	//	}
-	//}
+	uint32_t start_time = millis();
+	while (gstcontext_texture_fresh == false){
+		usleep(100);
+		if (millis() - start_time > 20){
+			printf("Frameskip\n");
+			break;
+		}
+	}
 	gstcontext_texture_fresh = false;
 	logic_update(this_gun->gst_state,this_gun->portal_state);
+	uint32_t render_start_time = micros();
 	
 	const int speed = 10000;
 	static uint32_t last_frame_time = 0;
@@ -336,7 +301,21 @@ static void scene_draw(unsigned i,char *debug_msg)
 	//glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
 
 	
-
+	/* FPS counter */
+	glFinish();
+	static uint32_t render_time = 0;
+	static uint32_t time_fps = 0;
+	static int fps = 0;
+	render_time += micros() - render_start_time; 
+	fps++;
+	if (time_fps < millis()) {		
+		printf("MAIN FPS:%d  OpenGL microseconds Per Frame: %d \n",fps, render_time/fps);
+		fps = 0;
+		render_time = 0;
+		time_fps += 1000;
+		/* readjust counter if we missed a cycle */
+		if (time_fps < millis()) time_fps = millis() + 1000;
+	}	
 }
 
 
