@@ -7,7 +7,7 @@
 #include <gst/gl/gl.h>
 #include <gst/gl/egl/gstgldisplay_egl.h>
 #include <EGL/egl.h>   //EGLDisplay & EGLContext
-#include <GLES3/gl3.h> //GLint
+#include <GLES3/gl31.h> //GLint
 
 static GMainLoop *loop;
 static GstContext *egl_context;

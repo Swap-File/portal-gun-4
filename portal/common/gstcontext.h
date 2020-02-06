@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <gst/gst.h> //GstPipeline
 #include <EGL/egl.h>   //EGLDisplay & EGLContext
-#include <GLES3/gl3.h> //GLint
+#include <GLES3/gl31.h> //GLint
 
 void gstcontext_set(GstPipeline **pipeline);
 void gstcontext_load_pipeline(GstPipeline **pipeline, GstState state,char * text);

@@ -25,7 +25,7 @@
 #define _COMMON_H
 #include "../common/drm-common.h"
 #include <drm_fourcc.h>
-#include <GLES3/gl3.h>
+#include <GLES3/gl31.h>
 #include <GLES2/gl2ext.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
