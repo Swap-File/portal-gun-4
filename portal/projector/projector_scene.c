@@ -21,12 +21,12 @@ static volatile bool gstcontext_texture_fresh; //passed to gstcontext
 static GLuint orange_1,orange_0,blue_0,blue_1;
 static struct egl egl;
 static GLfloat aspect;
-static GLuint program,portal_program;
 
-GLint portal_uv,portal_position,portal_modelViewMatrix,portal_projectionMatrix,portal_iTime;
+GLuint basic_program,basic_u_mvpMatrix,basic_in_Position,basic_in_TexCoord,basic_u_Texture;
 
+GLuint portal_program,portal_in_TexCoord,portal_in_Position,portal_u_blue,portal_u_time,portal_u_size,portal_u_shutter;
+	
 /* uniform handles: */
-static GLint  modelviewprojectionmatrix;
 static GLuint vbo;
 static GLuint positionsoffset, texcoordsoffset;
 
@@ -44,8 +44,6 @@ static const GLfloat vVertices[] = {
 		+1.0f, -1.0f, 0.0f,
 		-1.0f, +1.0f, 0.0f,
 		+1.0f, +1.0f, 0.0f,
-		// front
-
 };
 
 
@@ -60,7 +58,6 @@ GLfloat vTexCoords[] = {
 		0.0f, 1.0f,
 		1.0f, 0.0f,
 		0.0f, 0.0f,
-		//right
 };
 
 static void scene_draw(unsigned i,char *debug_msg)
@@ -108,60 +105,62 @@ static void scene_draw(unsigned i,char *debug_msg)
 	esMatrixLoadIdentity(&modelviewprojection);
     esOrtho(&modelviewprojection, -1366/2, 1366/2,-768/2, 768/2, -1,1);
 
-	
-	glUseProgram(program);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture( GL_TEXTURE_2D, gstcontext_texture_id);
+	glUseProgram(basic_program);
+	//glActiveTexture(GL_TEXTURE0);
+	glBindTexture( GL_TEXTURE_2D,gstcontext_texture_id);
+	glUniform1i(basic_u_Texture, 0); /* '0' refers to texture unit 0. */
+
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
-	//glEnableVertexAttribArray(0);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);
-	//glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(basic_in_Position);
+	glVertexAttribPointer(basic_in_Position, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
+	glEnableVertexAttribArray(basic_in_TexCoord);
+	glVertexAttribPointer(basic_in_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);
 
-	glUniformMatrix4fv(modelviewprojectionmatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
 
-	//glUniform1i(texture, 0); /* '0' refers to texture unit 0. */
+	glUniformMatrix4fv(basic_u_mvpMatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
+
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glDisableVertexAttribArray(basic_in_Position);
+	glDisableVertexAttribArray(basic_in_TexCoord);
 
-	//glDisableVertexAttribArray(0);
-	//glDisableVertexAttribArray(1);
-	//glDisableVertexAttribArray(2);
-
-	ESMatrix modelview;
-	esMatrixLoadIdentity(&modelview);
-	esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
-	//const float scale = 4.8f;
-	//esScale(&modelview,scale * 1366/768,scale,1.0f);
+	
+	//ESMatrix modelview;
+	//esMatrixLoadIdentity(&modelview);
+	//esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
+	//const float scale = 0.4f;
+	//esScale(&modelview,scale,scale,1.0f);
 	//esRotate(&modelview, rotation , 0.0f, 0.0f, 1.0f);
 	//esScale(&modelview,100,100,1);
-	ESMatrix projection;
-	esMatrixLoadIdentity(&projection);
-	esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
-	esMatrixLoadIdentity(&modelviewprojection);
-	esMatrixMultiply(&modelviewprojection, &modelview, &projection);
+	//ESMatrix projection;
+	//esMatrixLoadIdentity(&projection);
+	//esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
+	//esMatrixLoadIdentity(&modelviewprojection);
+	//esMatrixMultiply(&modelviewprojection, &modelview, &projection);
 
 
-	glEnableVertexAttribArray(portal_position);
-	glEnableVertexAttribArray(portal_uv);
+	glEnableVertexAttribArray(portal_in_Position);
+	glEnableVertexAttribArray(portal_in_TexCoord);
 	glUseProgram(portal_program);
-	glVertexAttribPointer(portal_position, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
-	glVertexAttribPointer(portal_uv, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);
-	glUniform1f(portal_iTime,(float)millis()/1000);
-	//portal_iTime = glGetUniformLocation(portal_program, "iTime");
-	//portal_uv = glGetAttribLocation(portal_program, "in_TexCoord");
-	//portal_position = glGetAttribLocation(portal_program, "in_position");
-	//portal_modelViewMatrix = glGetUniformLocation(portal_program, "modelviewprojectionMatrix");
-
-	glUniformMatrix4fv(portal_modelViewMatrix, 1, GL_FALSE, &modelview.m[0][0]);
+	glVertexAttribPointer(portal_in_Position, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
+	glVertexAttribPointer(portal_in_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);
+	glUniform1f(portal_u_time,(float)millis()/1000);
+	glUniform1f(portal_u_blue,FALSE);
+	glUniform1f(portal_u_shutter,FALSE);
+	static float portal_u_sizevar = 0.0;
+	glUniform1f(portal_u_size,portal_u_sizevar);
+	portal_u_sizevar += 0.05;
+	if (portal_u_sizevar > 5 ) portal_u_sizevar = 0.44;
+	//glUniformMatrix4fv(portal_u_mvpMatrix, 1, GL_FALSE, &modelview.m[0][0]);
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+	glDisableVertexAttribArray(portal_in_Position);
+	glDisableVertexAttribArray(portal_in_TexCoord);
 
-	//glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
-	//glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
-	//glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
-	//glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
-
-
+	//glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);   //draw shimmer 1
+	//glDrawArrays(GL_TRIANGLE_STRIP, 12, 4); //draw shimmer 2
+	//glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);  //shutter?
+	
+	
 	/* FPS counter */
 	glFinish();
 	fps_counter("Projector:",render_start_time);
@@ -185,20 +184,22 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 
 	aspect = (GLfloat)(gbm->height) / (GLfloat)(gbm->width);
 
-	program = create_program_from_disk("../common/basic.vert", "../common/basic.frag");
-	glBindAttribLocation(program, 0, "in_position");
-	link_program(program);
-	modelviewprojectionmatrix = glGetUniformLocation(program, "modelviewprojectionMatrix");
-	
+	basic_program = create_program_from_disk("../common/basic.vert", "../common/basic.frag");
+	link_program(basic_program);
+	basic_u_mvpMatrix = glGetUniformLocation(basic_program, "u_mvpMatrix");
+	basic_in_Position = glGetAttribLocation(basic_program, "in_Position");
+	basic_in_TexCoord = glGetAttribLocation(basic_program, "in_TexCoord");
+	basic_u_Texture = glGetAttribLocation(basic_program, "u_Texture");
 
 	portal_program = create_program_from_disk("portal.vert","portal.frag");
 	link_program(portal_program);
-	portal_iTime = glGetUniformLocation(portal_program, "iTime");
-	portal_uv = glGetAttribLocation(portal_program, "in_TexCoord");
-	portal_position = glGetAttribLocation(portal_program, "in_position");
-	portal_modelViewMatrix = glGetUniformLocation(portal_program, "modelviewprojectionMatrix");
-
-
+	portal_in_TexCoord = glGetAttribLocation(portal_program, "in_TexCoord");
+	portal_in_Position = glGetAttribLocation(portal_program, "in_Position");
+	portal_u_shutter = glGetUniformLocation(portal_program, "u_shutter");
+	portal_u_blue = glGetUniformLocation(portal_program, "u_blue");
+	portal_u_time = glGetUniformLocation(portal_program, "u_time");
+	portal_u_size = glGetUniformLocation(portal_program, "u_size");
+		
 	positionsoffset = 0;
 	texcoordsoffset = sizeof(vVertices);
 

@@ -59,6 +59,12 @@ void center_text(struct atlas * a, char * text, float line)
 	font_render(text,a, -1 +( space / 2 ), 1 - (630 - 64 * line) * sy, sx, sy);
 }
 
+static inline float slide(float target, float color_delta, float now){
+	if (target < now)		return MAX2(now - color_delta,target);
+	else if (target > now)	return MIN2(now + color_delta,target);
+	return now;
+}
+
 static void slide_to(float r_target, float g_target, float b_target)
 {
 	const int speed = 1000;
@@ -69,14 +75,9 @@ static void slide_to(float r_target, float g_target, float b_target)
 	uint32_t time_delta = this_frame_time - last_frame_time;
 	float color_delta = (float)time_delta / speed; //must cast to float!
 	
-	if (r_target < r_now)		r_now = MAX2(r_now - color_delta,r_target);
-	else if (r_target > r_now)	r_now = MIN2(r_now + color_delta,r_target);
-	
-	if (g_target < g_now)		g_now = MAX2(g_now - color_delta,g_target);
-	else if (g_target > g_now)	g_now = MIN2(g_now + color_delta,g_target);
-	
-	if (b_target < b_now)		b_now = MAX2(b_now - color_delta,b_target);
-	else if (b_target > b_now)	b_now = MIN2(b_now + color_delta,b_target);
+	r_now = slide(r_target,color_delta,r_now);
+	g_now = slide(g_target,color_delta,g_now);
+	b_now = slide(b_target,color_delta,b_now);
 	
 	last_frame_time = this_frame_time;
 	
@@ -115,14 +116,12 @@ static void draw_scene(unsigned i,char *debug_msg)
 		
 		glUseProgram(program);
 		//glActiveTexture(GL_TEXTURE0);
-		
 		glBindTexture( GL_TEXTURE_2D, gstcontext_texture_id);
 		glUniform1i(texture, 0); /* '0' refers to texture unit 0. */
-		
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			glEnableVertexAttribArray(in_position_location);
+		glEnableVertexAttribArray(in_position_location);
 		glVertexAttribPointer(in_position_location, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
-				glEnableVertexAttribArray(in_TexCoord_location);
+		glEnableVertexAttribArray(in_TexCoord_location);
 		glVertexAttribPointer(in_TexCoord_location, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);
 
 	

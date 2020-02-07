@@ -1,7 +1,10 @@
 #version 310 es
 precision highp float;
 precision highp int;
-uniform float iTime;
+uniform float u_time;
+uniform float u_size;
+uniform bool u_blue;
+uniform bool u_shutter;
 in vec2 vUv;
 out vec4 fragmentColor;
 float snoise(vec3 uv, float res)
@@ -20,14 +23,21 @@ float snoise(vec3 uv, float res)
 }
 void main()
 {
-	vec2 p =  0.44 * (-1.0 + 2.0 * vUv);
-	float color = 3.0 - (3.*length(2.*p));
-	vec3 coord = vec3(atan(p.x,p.y)/6.2832+.5, length(p)*.4, .5);
-	coord = 1.0 - coord;
-	float power = 2.0;
-	color += (0.4 / power) * snoise(coord + vec3(0,-iTime*.05, iTime*.01), power*32.);
-	color = 1.0 * 2.7 - color *2.7;
-	color *= smoothstep(0.43, 0.4, length(p));
-	float alpha = smoothstep(0.25 ,0.44, length(p));
-	fragmentColor = vec4(pow(max(color,0.),2.)*0.15, pow(max(color,0.),2.)*0.4, color, alpha);
+	if (u_shutter){
+		fragmentColor = vec4(0.0,0.0,0.0,1.0);
+	} else {
+		vec2 p =  u_size * (-1.0 + 2.0 * vUv);  
+		float color = 3.0 - (3.*length(2.*p));
+		vec3 coord = vec3(atan(p.x,p.y)*(1.0/6.2832)+.5, length(p)*.4, .5);  
+		coord = 1.0 - coord;
+		const float power = 2.0;
+		color += (0.4 / power) * snoise(coord + vec3(0,-u_time*.05, u_time*.01), power*32.);
+		color = 1.0 - color;
+		color *= 2.7;
+		color *= smoothstep(0.43, 0.4, length(p));
+		float alpha = smoothstep(0.25 ,0.44, length(p));
+		fragmentColor = vec4(pow(max(color,0.),3.)*0.15, pow(max(color,0.),2.)*0.4, color, alpha);
+		if (u_blue) //swizzling is so fast its not measurable
+			fragmentColor = fragmentColor.zyxw;
+	}
 }

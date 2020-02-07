@@ -1,9 +1,9 @@
 #version 310 es
 precision mediump float;
-uniform sampler2D s_texture;
+uniform sampler2D u_Texture;
 in vec2 vTexCoord;
-out vec4 fragmentColor;
+out vec4 vFragColor;
 void main()
 {
-	fragmentColor = texture2D( s_texture, vTexCoord );
+	vFragColor = texture( u_Texture, vTexCoord );
 }

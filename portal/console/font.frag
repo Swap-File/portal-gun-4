@@ -1,8 +1,10 @@
+#version 310 es
 precision mediump float;
-varying vec2 texpos;
+in vec2 texpos;
 uniform sampler2D tex;
 uniform vec4 color;
+out vec4 fragmentColor;
 void main(void)
 {
-	gl_FragColor = vec4(1.0, 1.0, 1.0, texture2D(tex, texpos).a) * color;
+	fragmentColor = vec4(1.0, 1.0, 1.0, texture2D(tex, texpos).a) * color;
 }
