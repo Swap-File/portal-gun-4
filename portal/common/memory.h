@@ -73,5 +73,6 @@ void shared_cleanup(void);
 uint32_t millis(void);
 int piHiPri(const int pri);
 uint32_t micros(void);
+void fps_counter(char * title,uint32_t start_time);
 
 #endif

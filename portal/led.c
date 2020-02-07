@@ -54,10 +54,10 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 	
 	if (abs(total_offset - total_offset_previous) > 8){ //this gives it a bit more leeway  50 FPS, 2 seconds per offset, offset cycle of 400. 400/100 = 4
 		//find shortest route 
-		if((( total_offset - total_offset_previous + 400) % 400) < 200){  // add to total_offset_previous to reach total_offset
+		if(((total_offset - total_offset_previous + 400) % 400) < 200){  // add to total_offset_previous to reach total_offset
 			total_offset_previous = ((total_offset_previous + 8)  % 400 ) ;
 			//printf("this: %d previous %d adding to catchup!\n", total_offset, total_offset_previous);
-		}else {// subtract from total_offset_previous to reach total_offset
+		} else {// subtract from total_offset_previous to reach total_offset
 			total_offset_previous = (total_offset_previous - 8 + 400) % 400;
 			//printf("this: %d previous %d subbing to catchup!\n", total_offset, total_offset_previous);
 		}		   
@@ -74,7 +74,7 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 		overlay_primer = true;
 		overlay_enabled=false;
 		overlay = 0x00;
-	}else{
+	} else {
 		if( overlay_primer == true && overlay_enabled== false){
 			overlay = 0xFF;
 			overlay_enabled= true;
@@ -95,7 +95,7 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 	}
 
 	//on a color change, or coming back from zero width, go full bright on fill complete
-	if( (color1_previous.r != color1.r || color1_previous.g != color1.g || color1_previous.b != color1.b) || ((led_width_requested !=0 && led_width_actual == 0 ) && overlay_enabled == false)){
+	if((color1_previous.r != color1.r || color1_previous.g != color1.g || color1_previous.b != color1.b) || ((led_width_requested !=0 && led_width_actual == 0 ) && overlay_enabled == false)){
 		//adjust time offset, aiming to hit max brightness as color fill completes
 		//offset to half of resolution for 50 FPS
 		timeoffset = 300 - total_offset;
@@ -110,9 +110,9 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 
 	if (time_this_cycle - cooldown_time > 1000){ 
 		for ( int i = 0; i < EFFECT_LENGTH; i++ ){
-			if(timearray[i] < 0){  // add to total_offset_previous to reach total_offset
+			if (timearray[i] < 0) {  // add to total_offset_previous to reach total_offset
 				timearray[i] = timearray[i] + 1;
-			}else if(timearray[i] > 0) {// subtract from total_offset_previous to reach total_offset
+			} else if (timearray[i] > 0) {// subtract from total_offset_previous to reach total_offset
 				timearray[i] = timearray[i] - 1;
 			}	
 		}
@@ -120,7 +120,7 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 		if(timeoffset < 0){  // add to total_offset_previous to reach total_offset
 			timeoffset = timeoffset + 1;
 			//printf("Subbing to timearray! %d \n",timeoffset);
-		}else if(timeoffset > 0){// subtract from total_offset_previous to reach total_offset
+		} else if (timeoffset > 0){// subtract from total_offset_previous to reach total_offset
 			timeoffset = timeoffset - 1;
 			//printf("Adding to timearray! %d \n",timeoffset);
 		}	
@@ -149,7 +149,7 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 			}
 			overlay = 0x00;
 			
-		}else{	
+		} else {	
 			//during the overlay ramp up linearly, gives white output
 			overlay = ticks_since_overlay_enable;
 		}

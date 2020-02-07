@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
+#include "opengl.h"
 
 static struct gbm gbm;
 
@@ -357,3 +357,28 @@ int link_program(unsigned program)
 
 	return 0;
 }
+
+static char * load_file(const char * fname){
+	FILE *f = fopen(fname, "rb");
+	if (f == NULL) printf("Can't open %s\n",fname);
+	fseek(f, 0, SEEK_END);
+	int fileSize = ftell(f);
+	fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
+	char *dat = malloc(fileSize + 1);
+	fread(dat, 1, fileSize, f);
+	fclose(f);
+	dat[fileSize] = '\0';
+	return dat;
+}
+
+int create_program_from_disk(const char *vs_src,const char *fs_src){
+	char * vs = load_file(vs_src);
+	char * fs = load_file(fs_src);
+	GLuint program = create_program(vs,fs);
+	free(vs);
+	free(fs);
+	return program;
+}
+
+
+

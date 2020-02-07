@@ -95,7 +95,7 @@ static gint64 get_position(void)
 	return pos;
 }
 
-void logic_update(int gst_state, int portal_state){
+void projector_logic_update(int gst_state, int portal_state){
 
 	video_mode_requested = gst_state;
 		
@@ -128,7 +128,7 @@ void logic_update(int gst_state, int portal_state){
 	}
 }
 
-void logic_init(volatile bool *video_done_flag_p){
+void projector_logic_init(volatile bool *video_done_flag_p){
 
 	video_done_flag = video_done_flag_p;
 

@@ -50,24 +50,19 @@ int main(void)
 	/* toggles every other cycle, cuts 100hz core tick speed to 50hz */
 	bool freq_50hz = true;
 	
-	//stats
-	uint32_t time_start = millis(); //reset timer to now to avoid missing first cycle
-	int missed = 0;
-	uint32_t time_delay = 0;
-	int changes = 0;
-	
+	/* reset timer to now to avoid missing first cycle */
+	uint32_t time_start = millis(); 
+
 	while (1) {
 		/* Cycle Delay */
 		time_start += 10;
-		uint32_t predicted_delay = time_start - millis(); //calc predicted delay
+		uint32_t predicted_delay = time_start - millis();
 		if (predicted_delay > 10) predicted_delay = 0; //check for overflow
 		if (predicted_delay != 0){
 			delay(predicted_delay); 
-			time_delay += predicted_delay;
-		}else{
-			time_start = millis(); //reset timer to now
-			printf("MAIN Skipping Idle...\n");
-			missed++;
+		} else {
+			time_start = millis(); //reset timer to now to skip idle
+			printf("Portal Skipping Idle...\n");
 		}
 		
 		/* Cycle Setup */
@@ -98,7 +93,6 @@ int main(void)
 						
 		/* Process State changes */
 		state_engine(button_event,this_gun);
-		if (button_event != BUTTON_NONE) changes++;
 
 		/* Alternate blocking tasks to keep core at 100hz */
 		if(freq_50hz)
@@ -115,17 +109,7 @@ int main(void)
 		}
 		
 		/* FPS counter */
-		static uint32_t time_fps = 0;
-		static int fps = 0;
-		fps++;
-		if (time_fps < millis()) {		
-			printf("MAIN FPS:%d mis:%d idle:%d%% changes:%d \n",fps,missed,time_delay/10,changes);
-			fps = 0;
-			time_delay = 0;
-			time_fps += 1000;
-			/* readjust counter if we missed a cycle */
-			if (time_fps < millis()) time_fps = millis() + 1000;
-		}	
+		fps_counter("Portal:",this_gun->clock * 1000);
 	}
 	return 0;
 }

@@ -43,7 +43,7 @@ void console_logic_init(bool gordon){
 	}	
 	playing = false;
 	
-	//gstcontext_load_pipeline(pipeline[0],GST_STATE_PAUSED,"rpicamsrc preview=0 ! image/jpeg,width=640,height=480,framerate=30/1 ! jpegparse ! jpegdec ! queue ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true");
+	//gstcontext_load_pipeline(&pipeline,GST_STATE_PAUSED,"rpicamsrc preview=0 ! image/jpeg,width=640,height=480,framerate=30/1 ! jpegparse ! jpegdec ! queue ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true");
 	//playing = false;
 	
 	

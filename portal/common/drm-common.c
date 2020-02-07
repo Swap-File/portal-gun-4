@@ -29,7 +29,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include "common.h"
+#include "opengl.h"
 #include "drm-common.h"
 
 WEAK uint64_t

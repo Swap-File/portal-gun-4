@@ -4,7 +4,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <sys/select.h>
-#include "../common/common.h"
+#include "../common/opengl.h"
 #include "console_scene.h"
 
 static const struct egl *egl;

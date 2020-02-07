@@ -27,7 +27,7 @@
 #include <unistd.h> //STDIN_FILENO
 #include <sys/select.h>
 #include <sys/time.h>
-#include "common.h"
+#include "opengl.h"
 #include "drm-common.h"
 #include "memory.h" //millis only
 

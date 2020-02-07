@@ -1,7 +1,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include "font.h"
-#include "../common/common.h"
+#include "../common/opengl.h"
 #include "../common/esUtil.h"
 
 // Maximum texture width
@@ -23,24 +23,6 @@ struct point {
 	GLfloat s;
 	GLfloat t;
 };
-
-static const char *font_vertex_shader_source =
-"uniform mat4 rotatematrix;                           \n"
-"attribute vec4 coord;                                \n"
-"varying vec2 texpos;                                 \n"
-"void main(void) {                                    \n"
-"  gl_Position = rotatematrix * vec4(coord.xy, 0, 1); \n"
-"  texpos = coord.zw;                  \n"
-"}                                     \n";
-
-static const char *font_fragment_shader_source =
-"precision mediump float;                                          \n"
-"varying vec2 texpos;                                              \n"
-"uniform sampler2D tex;                                            \n"
-"uniform vec4 color;                                               \n"
-"void main(void) {                                                 \n"
-"  gl_FragColor = vec4(1, 1, 1, texture2D(tex, texpos).a) * color; \n"
-"}                                                                 \n";
 
 void text_color(GLfloat color[4])
 {
@@ -223,10 +205,7 @@ int font_init(char *fontfilename ) {
 		return 0;
 	}
 
-	text_program = create_program(font_vertex_shader_source,font_fragment_shader_source);
-	if(text_program == 0)
-	return 0;
-	
+	text_program = create_program_from_disk("font.vert","font.frag");
 	link_program(text_program);
 	 
 	rotatematrix = glGetUniformLocation(text_program, "rotatematrix");
@@ -237,7 +216,6 @@ int font_init(char *fontfilename ) {
 	
 	if(rotatematrix == -1 || text_attribute_coord == -1 || text_uniform_tex == -1 || text_uniform_color == -1)
 	return 0;
-	
 		
 	// Create the vertex buffer object
 	glGenBuffers(1, &text_vbo);
@@ -247,4 +225,3 @@ int font_init(char *fontfilename ) {
 	
 	return 1;
 }
-
