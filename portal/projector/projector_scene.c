@@ -20,11 +20,9 @@ static volatile bool gstcontext_texture_fresh; //passed to gstcontext
 //textures
 static GLuint orange_1,orange_0,blue_0,blue_1;
 static struct egl egl;
-static GLfloat aspect;
 
-GLuint basic_program,basic_u_mvpMatrix,basic_in_Position,basic_in_TexCoord,basic_u_Texture;
-
-GLuint portal_program,portal_in_TexCoord,portal_in_Position,portal_u_blue,portal_u_time,portal_u_size,portal_u_shutter;
+static GLuint basic_program,basic_u_mvpMatrix,basic_in_Position,basic_in_TexCoord,basic_u_Texture;
+static GLuint portal_program,portal_in_TexCoord,portal_in_Position,portal_u_blue,portal_u_time,portal_u_size,portal_u_shutter;
 	
 /* uniform handles: */
 static GLuint vbo;
@@ -109,7 +107,6 @@ static void scene_draw(unsigned i,char *debug_msg)
 	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture( GL_TEXTURE_2D,gstcontext_texture_id);
 	glUniform1i(basic_u_Texture, 0); /* '0' refers to texture unit 0. */
-
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glEnableVertexAttribArray(basic_in_Position);
 	glVertexAttribPointer(basic_in_Position, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
@@ -124,18 +121,6 @@ static void scene_draw(unsigned i,char *debug_msg)
 	glDisableVertexAttribArray(basic_in_TexCoord);
 
 	
-	//ESMatrix modelview;
-	//esMatrixLoadIdentity(&modelview);
-	//esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
-	//const float scale = 0.4f;
-	//esScale(&modelview,scale,scale,1.0f);
-	//esRotate(&modelview, rotation , 0.0f, 0.0f, 1.0f);
-	//esScale(&modelview,100,100,1);
-	//ESMatrix projection;
-	//esMatrixLoadIdentity(&projection);
-	//esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
-	//esMatrixLoadIdentity(&modelviewprojection);
-	//esMatrixMultiply(&modelviewprojection, &modelview, &projection);
 
 
 	glEnableVertexAttribArray(portal_in_Position);
@@ -146,11 +131,10 @@ static void scene_draw(unsigned i,char *debug_msg)
 	glUniform1f(portal_u_time,(float)millis()/1000);
 	glUniform1f(portal_u_blue,FALSE);
 	glUniform1f(portal_u_shutter,FALSE);
-	static float portal_u_sizevar = 0.0;
+	static float portal_u_sizevar = 0.44;
 	glUniform1f(portal_u_size,portal_u_sizevar);
-	portal_u_sizevar += 0.05;
+	portal_u_sizevar += 0.01;
 	if (portal_u_sizevar > 5 ) portal_u_sizevar = 0.44;
-	//glUniformMatrix4fv(portal_u_mvpMatrix, 1, GL_FALSE, &modelview.m[0][0]);
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 	glDisableVertexAttribArray(portal_in_Position);
@@ -181,8 +165,6 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 	    egl_check(&egl, glEGLImageTargetTexture2DOES) ||
 	    egl_check(&egl, eglDestroyImageKHR))
 		return NULL;
-
-	aspect = (GLfloat)(gbm->height) / (GLfloat)(gbm->width);
 
 	basic_program = create_program_from_disk("../common/basic.vert", "../common/basic.frag");
 	link_program(basic_program);

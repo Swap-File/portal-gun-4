@@ -23,14 +23,11 @@ static struct atlas a64b; //bold font
 
 static struct egl egl;
 
-static GLfloat aspect;
-static GLuint program;
-
 /* uniform handles: */
-static GLint modelviewprojectionmatrix;
+static GLuint basic_program,basic_u_mvpMatrix,basic_in_Position,basic_in_TexCoord,basic_u_Texture;
 
-static GLuint vbo,texture;
-static GLuint positionsoffset, texcoordsoffset, in_TexCoord_location,in_position_location;
+static GLuint vbo;
+static GLuint positionsoffset, texcoordsoffset;
 
 #define VIDEO_WIDTH 640
 #define VIDEO_HEIGHT 480
@@ -112,26 +109,20 @@ static void draw_scene(unsigned i,char *debug_msg)
 		ESMatrix modelviewprojection;
 		esMatrixLoadIdentity(&modelviewprojection);
 		esOrtho(&modelviewprojection, -640/2, 640/2,-480/2, 480/2, -1,1);
-		
-		
-		glUseProgram(program);
+		glUseProgram(basic_program);
 		//glActiveTexture(GL_TEXTURE0);
 		glBindTexture( GL_TEXTURE_2D, gstcontext_texture_id);
-		glUniform1i(texture, 0); /* '0' refers to texture unit 0. */
+		glUniform1i(basic_u_Texture, 0); /* '0' refers to texture unit 0. */
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glEnableVertexAttribArray(in_position_location);
-		glVertexAttribPointer(in_position_location, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
-		glEnableVertexAttribArray(in_TexCoord_location);
-		glVertexAttribPointer(in_TexCoord_location, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);
-
-	
-		
-		glUniformMatrix4fv(modelviewprojectionmatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
-
-	
+		glEnableVertexAttribArray(basic_in_Position);
+		glVertexAttribPointer(basic_in_Position, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
+		glEnableVertexAttribArray(basic_in_TexCoord);
+		glVertexAttribPointer(basic_in_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);		
+		glUniformMatrix4fv(basic_u_mvpMatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		glDisableVertexAttribArray(in_position_location);
-		glDisableVertexAttribArray(in_TexCoord_location);
+		glDisableVertexAttribArray(basic_in_Position);
+		glDisableVertexAttribArray(basic_in_TexCoord);
+		
 	} else {
 
 		GLfloat white[4] = { 1, 1, 1, 1 };
@@ -243,13 +234,12 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 			egl_check(&egl, eglDestroyImageKHR))
 	return NULL;
 	
-	aspect = (GLfloat)(gbm->height) / (GLfloat)(gbm->width);
-
-	program = create_program_from_disk("../common/basic.vert", "../common/basic.frag");
-	link_program(program);
-	modelviewprojectionmatrix = glGetUniformLocation(program, "modelviewprojectionMatrix");
-	in_position_location = glGetAttribLocation(program, "in_position");
-	in_TexCoord_location = glGetAttribLocation(program, "in_TexCoord");
+	basic_program = create_program_from_disk("../common/basic.vert", "../common/basic.frag");
+	link_program(basic_program);
+	basic_u_mvpMatrix = glGetUniformLocation(basic_program, "u_mvpMatrix");
+	basic_in_Position = glGetAttribLocation(basic_program, "in_Position");
+	basic_in_TexCoord = glGetAttribLocation(basic_program, "in_TexCoord");
+	basic_u_Texture = glGetAttribLocation(basic_program, "u_Texture");
 	
 	positionsoffset = 0;
 	texcoordsoffset = sizeof(vVertices);

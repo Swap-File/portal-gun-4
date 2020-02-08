@@ -6,5 +6,5 @@ uniform vec4 color;
 out vec4 fragmentColor;
 void main(void)
 {
-	fragmentColor = vec4(1.0, 1.0, 1.0, texture2D(tex, texpos).a) * color;
+	fragmentColor = vec4(1.0, 1.0, 1.0, texture(tex, texpos).a) * color;
 }

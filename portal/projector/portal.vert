@@ -1,10 +1,11 @@
 #version 310 es
 uniform mat4 u_mvpMatrix;
+uniform float u_size;
 in vec4 in_Position;
 in vec2 in_TexCoord;
-out vec2 vUv;
+out vec2 p;
 void main()
 {
-	vUv = in_TexCoord;
-	gl_Position =  in_Position;
+	p = u_size * (-1.0 + 2.0 * in_TexCoord);
+	gl_Position = in_Position;
 }
