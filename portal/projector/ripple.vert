@@ -1,10 +1,10 @@
 #version 310 es
-uniform float u_size;
 in vec4 in_Position;
 in vec2 in_TexCoord;
-out vec2 p;
+uniform float u_size;
+out vec2 uVu;
 void main()
 {
-	p = u_size * (-1.0 + 2.0 * in_TexCoord);
+	uVu = vec2(u_size,u_size) * in_TexCoord;
 	gl_Position = in_Position;
 }

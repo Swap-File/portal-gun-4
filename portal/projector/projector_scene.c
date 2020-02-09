@@ -11,19 +11,17 @@
 
 #include "projector_logic.h"
 #include "projector_scene.h"
-#include "png.h"
 
 struct gun_struct *this_gun;
 static volatile GLint gstcontext_texture_id; //passed to gstcontext
 static volatile bool gstcontext_texture_fresh; //passed to gstcontext
 
-//textures
-static GLuint orange_1,orange_0,blue_0,blue_1;
 static struct egl egl;
 
-static GLuint basic_program,basic_u_mvpMatrix,basic_in_Position,basic_in_TexCoord,basic_u_Texture;
+static GLuint basic_program,basic_u_mvpMatrix,basic_in_Position,basic_in_TexCoord,basic_u_Texture,basic_u_Alpha;
 static GLuint portal_program,portal_in_TexCoord,portal_in_Position,portal_u_blue,portal_u_time,portal_u_size,portal_u_shutter;
-	
+static GLuint ripple_program,ripple_in_TexCoord,ripple_in_Position,ripple_u_time,ripple_u_Alpha,ripple_u_blue,ripple_u_size;
+		
 /* uniform handles: */
 static GLuint vbo;
 static GLuint positionsoffset, texcoordsoffset;
@@ -32,33 +30,43 @@ static GLuint positionsoffset, texcoordsoffset;
 #define VIDEO_HEIGHT 720
 
 static const GLfloat vVertices[] = {
-		// the video
+		// video
 		-VIDEO_WIDTH/2, -VIDEO_HEIGHT/2, 0.0f,
 		+VIDEO_WIDTH/2, -VIDEO_HEIGHT/2, 0.0f,
 		-VIDEO_WIDTH/2, +VIDEO_HEIGHT/2, 0.0f,
 		+VIDEO_WIDTH/2, +VIDEO_HEIGHT/2, 0.0f,
-		// front
+		// shimmer 1
 		-1.0f, -1.0f, 0.0f,
+		+1.0f, -1.0f, 0.0f,
+		-1.0f, +1.0f, 0.0f,
+		+1.0f, +1.0f, 0.0f,
+
+		// portal
+	-1.0f, -1.0f, 0.0f,
 		+1.0f, -1.0f, 0.0f,
 		-1.0f, +1.0f, 0.0f,
 		+1.0f, +1.0f, 0.0f,
 };
 
-
-GLfloat vTexCoords[] = {
-		//front
+static GLfloat vTexCoords[] = {
+		// video
 		1.0f, 1.0f,
 		0.0f, 1.0f,
 		1.0f, 0.0f,
 		0.0f, 0.0f,
-		//back
+		// shimmer
+		0.5f, 0.5f,
+		-0.5f, 0.5f,
+		0.5f, -0.5f,
+		-0.5f, -0.5f,
+		// portal
 		1.0f, 1.0f,
 		0.0f, 1.0f,
 		1.0f, 0.0f,
 		0.0f, 0.0f,
 };
 
-static void scene_draw(unsigned i,char *debug_msg)
+static void projector_scene_draw(unsigned i,char *debug_msg)
 {
 	if (debug_msg[0] != '\0'){
 		int temp[2];
@@ -105,7 +113,7 @@ static void scene_draw(unsigned i,char *debug_msg)
 
 	glUseProgram(basic_program);
 	//glActiveTexture(GL_TEXTURE0);
-	glBindTexture( GL_TEXTURE_2D,gstcontext_texture_id);
+	glBindTexture(GL_TEXTURE_2D,gstcontext_texture_id);
 	glUniform1i(basic_u_Texture, 0); /* '0' refers to texture unit 0. */
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glEnableVertexAttribArray(basic_in_Position);
@@ -113,16 +121,42 @@ static void scene_draw(unsigned i,char *debug_msg)
 	glEnableVertexAttribArray(basic_in_TexCoord);
 	glVertexAttribPointer(basic_in_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);
 
-
+	glUniform1f(basic_u_Alpha, 1.0);
 	glUniformMatrix4fv(basic_u_mvpMatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
-
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glDisableVertexAttribArray(basic_in_Position);
-	glDisableVertexAttribArray(basic_in_TexCoord);
-
+	
 	
 
+	glDisableVertexAttribArray(basic_in_Position);
+	glDisableVertexAttribArray(basic_in_TexCoord);
+	
 
+	static float portal_u_sizevar = 0.44;
+	
+	glEnableVertexAttribArray(ripple_in_Position);
+	glEnableVertexAttribArray(ripple_in_TexCoord);
+	glUseProgram(ripple_program);
+	glVertexAttribPointer(ripple_in_Position, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)positionsoffset);
+	glVertexAttribPointer(ripple_in_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);
+	glUniform1f(ripple_u_time,(float)millis()/7000);
+
+	//static float transparent = 0.5;
+	//transparent += 0.001;
+	//if (transparent > 1.0)
+	//	glUniform1f(ripple_u_Alpha,1.0);
+	//else	
+	glUniform1f(ripple_u_Alpha,1.0);
+		
+	//if (transparent > 2.0) transparent= 0.0;
+	
+   glUniform1f(ripple_u_size,portal_u_sizevar);
+
+    glUniform1f(ripple_u_blue,true);
+	glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+	glDisableVertexAttribArray(ripple_in_Position);
+	glDisableVertexAttribArray(ripple_in_TexCoord);
+	
+		
 	glEnableVertexAttribArray(portal_in_Position);
 	glEnableVertexAttribArray(portal_in_TexCoord);
 	glUseProgram(portal_program);
@@ -131,19 +165,16 @@ static void scene_draw(unsigned i,char *debug_msg)
 	glUniform1f(portal_u_time,(float)millis()/1000);
 	glUniform1f(portal_u_blue,FALSE);
 	glUniform1f(portal_u_shutter,FALSE);
-	static float portal_u_sizevar = 0.44;
+	
 	glUniform1f(portal_u_size,portal_u_sizevar);
-	portal_u_sizevar += 0.01;
-	if (portal_u_sizevar > 5 ) portal_u_sizevar = 0.44;
-
-	glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+	//portal_u_sizevar += 0.01;
+	if (portal_u_sizevar > 1 ) portal_u_sizevar = 0.44;
+	
+	glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
 	glDisableVertexAttribArray(portal_in_Position);
 	glDisableVertexAttribArray(portal_in_TexCoord);
 
-	//glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);   //draw shimmer 1
-	//glDrawArrays(GL_TRIANGLE_STRIP, 12, 4); //draw shimmer 2
-	//glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);  //shutter?
-	
+
 	
 	/* FPS counter */
 	glFinish();
@@ -172,7 +203,8 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 	basic_in_Position = glGetAttribLocation(basic_program, "in_Position");
 	basic_in_TexCoord = glGetAttribLocation(basic_program, "in_TexCoord");
 	basic_u_Texture = glGetAttribLocation(basic_program, "u_Texture");
-
+	basic_u_Alpha = glGetUniformLocation(basic_program, "u_Alpha");
+	
 	portal_program = create_program_from_disk("portal.vert","portal.frag");
 	link_program(portal_program);
 	portal_in_TexCoord = glGetAttribLocation(portal_program, "in_TexCoord");
@@ -181,7 +213,16 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 	portal_u_blue = glGetUniformLocation(portal_program, "u_blue");
 	portal_u_time = glGetUniformLocation(portal_program, "u_time");
 	portal_u_size = glGetUniformLocation(portal_program, "u_size");
-		
+	
+	ripple_program = create_program_from_disk("ripple.vert","ripple.frag");
+	link_program(ripple_program);
+	ripple_in_TexCoord = glGetAttribLocation(ripple_program, "in_TexCoord");
+	ripple_in_Position = glGetAttribLocation(ripple_program, "in_Position");
+	ripple_u_time = glGetUniformLocation(ripple_program, "u_time");
+	ripple_u_Alpha = glGetUniformLocation(ripple_program, "u_Alpha");
+	ripple_u_blue = glGetUniformLocation(ripple_program, "u_blue");
+	ripple_u_size = glGetUniformLocation(ripple_program, "u_size");
+	
 	positionsoffset = 0;
 	texcoordsoffset = sizeof(vVertices);
 
@@ -196,18 +237,7 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 	gstcontext_init(egl.display, egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, &this_gun->video_done);
 	projector_logic_init(&this_gun->video_done);
 
-	//load textures
-	orange_0 = png_load("/home/pi/assets/orange_0.png", NULL, NULL);
-	orange_1 = png_load("/home/pi/assets/orange_1.png", NULL, NULL);
-	blue_0 = png_load("/home/pi/assets/blue_0.png", NULL, NULL);
-	blue_1 = png_load("/home/pi/assets/blue_1.png", NULL, NULL);
-
-	if (orange_0 == 0 || orange_1 == 0 || blue_0 == 0 || blue_1 == 0) {
-		printf("Loading textures failed.\n");
-		exit(1);
-	}
-
-	egl.draw = scene_draw;
+	egl.draw = projector_scene_draw;
 
 	this_gun->projector_loaded = true;
 

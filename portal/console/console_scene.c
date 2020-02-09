@@ -24,7 +24,7 @@ static struct atlas a64b; //bold font
 static struct egl egl;
 
 /* uniform handles: */
-static GLuint basic_program,basic_u_mvpMatrix,basic_in_Position,basic_in_TexCoord,basic_u_Texture;
+static GLuint basic_program,basic_u_mvpMatrix,basic_in_Position,basic_in_TexCoord,basic_u_Texture,basic_u_Alpha;
 
 static GLuint vbo;
 static GLuint positionsoffset, texcoordsoffset;
@@ -119,6 +119,7 @@ static void draw_scene(unsigned i,char *debug_msg)
 		glEnableVertexAttribArray(basic_in_TexCoord);
 		glVertexAttribPointer(basic_in_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)texcoordsoffset);		
 		glUniformMatrix4fv(basic_u_mvpMatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
+		glUniform1f(basic_u_Alpha, 1.0);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glDisableVertexAttribArray(basic_in_Position);
 		glDisableVertexAttribArray(basic_in_TexCoord);
@@ -237,9 +238,10 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 	basic_program = create_program_from_disk("../common/basic.vert", "../common/basic.frag");
 	link_program(basic_program);
 	basic_u_mvpMatrix = glGetUniformLocation(basic_program, "u_mvpMatrix");
+	basic_u_mvpMatrix = glGetUniformLocation(basic_program, "u_mvpMatrix");
 	basic_in_Position = glGetAttribLocation(basic_program, "in_Position");
 	basic_in_TexCoord = glGetAttribLocation(basic_program, "in_TexCoord");
-	basic_u_Texture = glGetAttribLocation(basic_program, "u_Texture");
+	basic_u_Alpha = glGetUniformLocation(basic_program, "u_Alpha");
 	
 	positionsoffset = 0;
 	texcoordsoffset = sizeof(vVertices);
