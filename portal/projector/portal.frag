@@ -63,7 +63,7 @@ void main()
 		color *= 2.7;
 		color *= smoothstep(0.43, 0.4, length(p));
 		float alpha = smoothstep(0.33,0.43, length(p));
-		fragmentColor = vec4(pow(max(color,0.),3.)*0.15, pow(max(color,0.),2.)*0.4, color,max(alpha,color));
+		fragmentColor = vec4(color, pow(max(color,0.),2.)*0.4, pow(max(color,0.),3.)*0.15,max(alpha,color));
 		if (u_blue)
 			fragmentColor = fragmentColor.zyxw;
 	}
