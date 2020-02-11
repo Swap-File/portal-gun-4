@@ -111,21 +111,17 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 	last_frame_time = this_frame_time;
 	
 
-	
-
 	//if we are displaying one color and a request comes in for the other color, reset all and spend one frame closed
 	//immediately close the portal if requested, unzoom, and unfade.
-	if(((portal_state_requested == PORTAL_OPEN_BLUE || portal_state_requested == PORTAL_CLOSED_BLUE) &&
-		(portal_state_displayed == PORTAL_OPEN_ORANGE || portal_state_displayed == PORTAL_CLOSED_ORANGE)) ||
-		((portal_state_requested ==  PORTAL_OPEN_ORANGE || portal_state_requested == PORTAL_CLOSED_ORANGE) &&
-		(portal_state_displayed == PORTAL_OPEN_BLUE || portal_state_displayed == PORTAL_CLOSED_BLUE)) ||
+	if(((portal_state_displayed & PORTAL_BLUE_BIT)   != 0 && (portal_state_requested & PORTAL_ORANGE_BIT) != 0) || 
+	   ((portal_state_displayed & PORTAL_ORANGE_BIT) != 0 && (portal_state_requested & PORTAL_BLUE_BIT)   != 0) || 
 		(portal_state_requested == PORTAL_CLOSED)){
 		portal_state_displayed = PORTAL_CLOSED;
 		zoom_displayed = ZOOM_MIN;
-		shimmer_alpha = 1.0;
 	}
+	
 	//immediately close portals if requested
-	if(portal_state_requested == PORTAL_CLOSED_BLUE || portal_state_requested == PORTAL_CLOSED_ORANGE){
+	if((portal_state_requested & PORTAL_CLOSED_BIT) != 0){
 		shimmer_alpha = 1.0;
 	}
 	
@@ -134,20 +130,20 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 		zoom_displayed -= .3;  //multiply by delta
 		if (zoom_displayed < ZOOM_MAX) zoom_displayed = ZOOM_MAX;
 		printf("zooming %f \n",zoom_displayed);
-		if (portal_state_requested == PORTAL_CLOSED_ORANGE || portal_state_requested == PORTAL_OPEN_ORANGE) 
+		if ((portal_state_requested & PORTAL_ORANGE_BIT) != 0) 
 		portal_state_displayed = PORTAL_CLOSED_ORANGE;
-		else if (portal_state_requested == PORTAL_CLOSED_BLUE || portal_state_requested == PORTAL_OPEN_BLUE) 
+		else if ((portal_state_requested & PORTAL_BLUE_BIT) != 0) 
 		portal_state_displayed = PORTAL_CLOSED_BLUE;	
 	}
 	//if fully zoomed, fade shimmer on request
-	if(portal_state_requested == PORTAL_OPEN_BLUE || portal_state_requested == PORTAL_OPEN_ORANGE)
-	if (zoom_displayed <= ZOOM_MAX && shimmer_alpha != 0.0){
-		shimmer_alpha -= 0.01;
-		if (shimmer_alpha < 0.0) shimmer_alpha = 0.0;
-		printf("shimmer_alpha %f \n",shimmer_alpha);
-		portal_state_displayed = portal_state_requested;
+	if((portal_state_requested & PORTAL_OPEN_BIT) != 0){
+		if (zoom_displayed <= ZOOM_MAX && shimmer_alpha != 0.0){
+			shimmer_alpha -= 0.01;
+			if (shimmer_alpha < 0.0) shimmer_alpha = 0.0;
+			printf("shimmer_alpha %f \n",shimmer_alpha);
+			portal_state_displayed = portal_state_requested;
+		}
 	}
-	
 
 	uint32_t render_start_time = micros();
 	
@@ -195,10 +191,8 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 	glUniform1f(ripple_u_size,zoom_displayed);
 	
 	/* Color */	
-	if(portal_state_displayed == PORTAL_OPEN_BLUE || portal_state_displayed == PORTAL_CLOSED_BLUE)
-	glUniform1f(ripple_u_blue,TRUE);
-	else
-	glUniform1f(ripple_u_blue,FALSE);
+	if((portal_state_displayed & PORTAL_BLUE_BIT) != 0)	glUniform1f(ripple_u_blue,TRUE);
+	else												glUniform1f(ripple_u_blue,FALSE);
 	
 	/* Draw & Disable */	
 	glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
@@ -218,10 +212,8 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 	glUniform1f(portal_u_time,(float)millis()/1000);
 	
 	/* Color */
-	if(portal_state_displayed == PORTAL_OPEN_BLUE || portal_state_displayed == PORTAL_CLOSED_BLUE)
-	glUniform1f(portal_u_blue,TRUE);
-	else
-	glUniform1f(portal_u_blue,FALSE);
+	if((portal_state_displayed & PORTAL_BLUE_BIT) != 0)	glUniform1f(portal_u_blue,TRUE);
+	else 												glUniform1f(portal_u_blue,FALSE);
 	
 	/* Safety Shutter - Screen Blanking */
 	if (portal_state_displayed == PORTAL_CLOSED)	glUniform1f(portal_u_shutter,TRUE);
