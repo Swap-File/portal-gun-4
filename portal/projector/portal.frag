@@ -1,4 +1,5 @@
 #version 310 es
+//https://www.shadertoy.com/view/Wt3GRS
 precision highp float;
 precision highp int;
 uniform float u_time;
@@ -6,7 +7,6 @@ uniform bool u_blue;
 uniform bool u_shutter;
 in vec2 p;
 out vec4 fragmentColor;
-
 
 float snoise(vec3 uv, float res)
 {
