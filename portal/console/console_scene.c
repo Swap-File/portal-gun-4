@@ -223,7 +223,6 @@ static void draw_scene(unsigned i,char *debug_msg)
 const struct egl * init_scene(const struct gbm *gbm, int samples)
 {
 	shared_init(&this_gun,false);
-	this_gun->gst_state = 0;
 	
 	int ret = init_egl(&egl, gbm, samples);
 	if (ret)
@@ -234,7 +233,7 @@ const struct egl * init_scene(const struct gbm *gbm, int samples)
 			egl_check(&egl, eglDestroyImageKHR))
 	return NULL;
 	
-	basic_program = create_program_from_disk("../common/basic.vert", "../common/basic.frag");
+	basic_program = create_program_from_disk("/home/pi/portal/common/basic.vert", "/home/pi/portal/common/basic.frag");
 	link_program(basic_program);
 	basic_u_mvpMatrix = glGetUniformLocation(basic_program, "u_mvpMatrix");
 	basic_u_mvpMatrix = glGetUniformLocation(basic_program, "u_mvpMatrix");

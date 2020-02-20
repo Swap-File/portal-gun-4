@@ -8,6 +8,12 @@
 #include <time.h> //millis
 #include "opengl.h" //max and min
 
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+
+float map(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 static int shmid;	
 static struct gun_struct *cleanup_pointer;
 
@@ -18,7 +24,7 @@ static void shared_init_gun(struct gun_struct *this_gun)
 	this_gun->ir_pwm = 1024;
 	this_gun->fan_pwm = 1024;
 	
-	this_gun->playlist_solo[0]=GST_LIBVISUAL_INFINITE;
+	this_gun->playlist_solo[0]=GST_VIDEOTESTSRC;
 	this_gun->playlist_solo[1]=GST_LIBVISUAL_JESS;
 	this_gun->playlist_solo[2]=GST_GOOM;
 	this_gun->playlist_solo[3]=GST_GOOM2K1;

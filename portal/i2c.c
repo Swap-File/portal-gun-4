@@ -3,7 +3,7 @@
 #include <math.h>
 #include <bcm2835.h>
 
-#define ACCEL_ADDR 0x19
+#define GYRO_ADDR  0x6B
 #define ADC_ADDR   0x48
 
 static int adc_active_channel = 0; //what channel we are working on
@@ -22,18 +22,18 @@ static float temp_conversion(int input)
 	return T * 9.0 / 5.0 + 32.0; //Convert C to F
 }
 
-static void i2c_read_accel(int *accel)
+static void i2c_read_gyro(int *gyro)
 {
 	char temp[6];
-	temp[0] = 0x80 | 0x28;
+	temp[0] = 0x80 | L3G_OUT_X_L;
 	
-	bcm2835_i2c_setSlaveAddress(ACCEL_ADDR); 	
+	bcm2835_i2c_setSlaveAddress(GYRO_ADDR); 	
 	bcm2835_i2c_write(temp,1);
 	bcm2835_i2c_read(temp,6);
 	
-	accel[0] = temp[0] | temp[1] << 8;
-	accel[1] = temp[2] | temp[3] << 8;
-	accel[2] = temp[4] | temp[5] << 8;
+	gyro[0] = (int16_t)(temp[0] | (uint16_t)temp[1] << 8);
+	gyro[1] = (int16_t)(temp[2] | (uint16_t)temp[3] << 8);
+	gyro[2] = (int16_t)(temp[4] | (uint16_t)temp[5] << 8);
 }
 
 static int16_t i2c_read16(uint8_t reg)
@@ -107,23 +107,20 @@ void i2c_init(void)
 {
 	bcm2835_i2c_begin();
 	//speed is already set to 100khz, setting it here can mess with other peripherals 
-	//bcm2835_i2c_setClockDivider(BCM2835_I2C_CLOCK_DIVIDER_2500); //BCM2835_I2C_CLOCK_DIVIDER_2500 = 100khz 
-	bcm2835_i2c_setSlaveAddress(ACCEL_ADDR); 
+	bcm2835_i2c_setClockDivider(BCM2835_I2C_CLOCK_DIVIDER_2500); //BCM2835_I2C_CLOCK_DIVIDER_2500 = 100khz 
+	bcm2835_i2c_setSlaveAddress(GYRO_ADDR); 
 
 	char temp[2];
 	
-	// LSM303DLHC Accelerometer
-	// ODR = 0100 (50 Hz ODR)
-	// LPen = 0 (normal mode)
-	// Zen = Yen = Xen = 1 (all axes enabled)
-	temp[0] = CTRL_REG1_A;
-	temp[1] = 0x57;
+	// Gyro Init
+	// Normal power mode, all axes enabled
+	temp[0] = L3G_CTRL_REG1;
+	temp[1] = 0b00001111;
 	bcm2835_i2c_write(temp,2);
 	
-	// FS = 10 (8 g full scale)
-	// HR = 1 (high resolution enable)
-	temp[0] = CTRL_REG4_A;
-	temp[1] = 0x28;
+    // 2000 dps full scale
+	temp[0] = L3G_CTRL_REG4;
+	temp[1] = 0b00100000;
 	bcm2835_i2c_write(temp,2);
 }
 
@@ -137,7 +134,7 @@ void i2c_update(struct gun_struct *this_gun)
 			adc_busy = false;
 		} else {
 			/* under normal i2c update cadence calling this should never happen */
-			printf("Waiting on ADC....\n"); 
+			//printf("Waiting on ADC....\n"); 
 		}
 	} else {
 		adc_busy = true;
@@ -145,8 +142,8 @@ void i2c_update(struct gun_struct *this_gun)
 	}
 	
 	/* read accel every update call for smooth data */
-	i2c_read_accel(this_gun->accel);
-	
+	i2c_read_gyro(this_gun->gyro);
+
 	/* old battery calibration:  21600 = 16.1v  16000 = 12.1v */	
 	if (this_gun->gordon)  //update these correction values
 		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)adc_data[1] * 0.00074;

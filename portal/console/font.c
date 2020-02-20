@@ -205,7 +205,7 @@ int font_init(char *fontfilename ) {
 		return 0;
 	}
 
-	text_program = create_program_from_disk("font.vert","font.frag");
+	text_program = create_program_from_disk("/home/pi/portal/console/font.vert","/home/pi/portal/console/font.frag");
 	link_program(text_program);
 	 
 	rotatematrix = glGetUniformLocation(text_program, "rotatematrix");

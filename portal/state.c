@@ -215,7 +215,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 		if(this_gun->ui_mode == UI_SIMPLE) this_gun->ui_mode = UI_HIDDEN_SIMPLE;
 		else if(this_gun->ui_mode == UI_ADVANCED) this_gun->ui_mode = UI_HIDDEN_ADVANCED;
 	}
-	
+
 	/* PORTALGL ARPETURE */
 	/* Reminder: These variables are shared and may be read at ANY time */
 	/* for networked modes */

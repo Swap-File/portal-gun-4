@@ -38,21 +38,21 @@ void pipe_cleanup(void)
 void pipe_init(const struct gun_struct *this_gun)
 {	
 	//let this priority get inherited to the children
-	setpriority(PRIO_PROCESS, getpid(), -10);
+	//setpriority(PRIO_PROCESS, getpid(), -10);
 
+	system("/home/pi/portal/projector/projector &");
+	while(this_gun->projector_loaded == false){
+		sleep(1);
+	}
+	sleep(2);
 	system("sudo -E /home/pi/portal/console/console &");
 	while(this_gun->console_loaded == false){
 		sleep(1);
 	}
-	system("sudo -E /home/pi/portal/console/projector &");
-	while(this_gun->projector_loaded == false){
-		sleep(1);
-	}
 	system("LD_LIBRARY_PATH=/usr/local/lib mjpg_streamer -i 'input_file.so -f /var/www/html/tmp -n snapshot.jpg' -o 'output_http.so -w /usr/local/www' &");
-	sleep(1);
 	//kick the core logic up to realtime for faster bit banging
 	
-	piHiPri(40);
+	//piHiPri(40);
 	
 	bash_fp = popen("bash", "w");
 	fcntl(fileno(bash_fp), F_SETFL, fcntl(fileno(bash_fp), F_GETFL, 0) | O_NONBLOCK);

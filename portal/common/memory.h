@@ -48,7 +48,7 @@ struct gun_struct {
 	int ui_mode;
 	uint32_t laser_countdown;
 	
-	int accel[3];
+	int gyro[3];
 	int adc[4];
 
 	float  battery_level_pretty;

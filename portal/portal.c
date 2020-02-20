@@ -45,8 +45,9 @@ int main(void)
 	io_init();
 	i2c_init();	
 	udp_init(this_gun->gordon);
+
 	pipe_init(this_gun);
-	
+
 	/* toggles every other cycle, cuts 100hz core tick speed to 50hz */
 	bool freq_50hz = true;
 	

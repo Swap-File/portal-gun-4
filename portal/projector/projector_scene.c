@@ -23,27 +23,33 @@ static struct egl egl;
 
 static GLuint basic_program,basic_u_mvpMatrix,basic_in_Position,basic_in_TexCoord,basic_u_Texture;
 static GLuint portal_program,portal_in_TexCoord,portal_in_Position,portal_u_blue,portal_u_time,portal_u_size,portal_u_shutter;
-static GLuint ripple_program,ripple_in_TexCoord,ripple_in_Position,ripple_u_time,ripple_u_Alpha,ripple_u_blue,ripple_u_size;
-static GLuint points_program,points_vertex,points_color,points_sprite;
-
-static GLuint vbo,points_vbo;
+static GLuint puddle_program,puddle_in_TexCoord,puddle_in_Position,puddle_u_time,puddle_u_Alpha,puddle_u_blue,puddle_u_size;
+static GLuint particles_program,particles_vertex,particles_color,particle_sprite;
 
 #define VIDEO_WIDTH 1280
 #define VIDEO_HEIGHT 720
 
+static float particle_offset[720];
 
-static GLfloat vVertices2[3 * 3000];
-static GLfloat pointcolors[4 * 3000];
+#define NUM_PARTICLES 1000
 
-struct Particles {
+struct Particle {
 	GLfloat x,y,size;
 	float r;
+	float previous_offset;
 	float angle;
 	float angle_velocity;
 	float r_velocity;
 };  
 
-struct Particles particle[1000];
+static struct Particle particles[NUM_PARTICLES];
+
+static GLuint particles_vbo; // for particles_vertices & particles_colors
+static GLfloat particles_vertices[3 * 3 * NUM_PARTICLES];
+static GLfloat particles_colors_blue[4 * 3 * NUM_PARTICLES];
+static GLfloat particles_colors_orange[4 * 3 * NUM_PARTICLES];
+
+static GLuint vbo;  // for vVertices & vTexCoords
 
 static const GLfloat vVertices[] = {
 	// video
@@ -51,7 +57,7 @@ static const GLfloat vVertices[] = {
 	+VIDEO_WIDTH/2, -VIDEO_HEIGHT/2, 0.0f,
 	-VIDEO_WIDTH/2, +VIDEO_HEIGHT/2, 0.0f,
 	+VIDEO_WIDTH/2, +VIDEO_HEIGHT/2, 0.0f,
-	// shimmer 1
+	// puddle
 	-1.0f, -1.0f, 0.0f,
 	+1.0f, -1.0f, 0.0f,
 	-1.0f, +1.0f, 0.0f,
@@ -69,7 +75,7 @@ static GLfloat vTexCoords[] = {
 	0.0f, 1.0f,
 	1.0f, 0.0f,
 	0.0f, 0.0f,
-	// shimmer
+	// puddle
 	0.5f, 0.5f,
 	-0.5f, 0.5f,
 	0.5f, -0.5f,
@@ -81,22 +87,88 @@ static GLfloat vTexCoords[] = {
 	0.0f, 0.0f,
 };
 
+float width = 360;
+
+void calculate_offset(){  //move this into core logic?
+
+	#define GYRO_DEADSPOT 20
+	
+	#define GYRO_BLENDING 0.3
+	#define OFFSET_BLENDING 0.8
+	
+	//decay offsets
+	for (int i = 0; i < 720; i++) particle_offset[i] *= .95;
+	
+	//remap x, y, and z
+	float gyro[3];
+	gyro[0] = this_gun->gyro[0];
+	gyro[1] = this_gun->gyro[1];
+	gyro[2] = this_gun->gyro[2];
+	
+	static float gyro_smoothed[3];
+
+	//filter x and y (potentially skip)
+	for (int i = 0; i < 3; i++)
+		gyro_smoothed[i] = gyro_smoothed[i] * GYRO_BLENDING + (1.0-GYRO_BLENDING) * gyro[i];
+
+	//find magnitude
+	float temp_mag = sqrt( gyro_smoothed[0] * gyro_smoothed[0] + gyro_smoothed[1] * gyro_smoothed[1]);
+	float angle_target = atan2(gyro_smoothed[1],gyro_smoothed[0]);
+	
+	//if (temp_mag > GYRO_DEADSPOT){
+		
+		//static float peak_mag = 0.0;
+		//peak_mag *= 0.9; //decay peak mag
+		
+		//peak_mag = MAX2(peak_mag,temp_mag);
+		
+		//find angle
+		//float angle_target = atan2(-gyro_smoothed[1],-gyro_smoothed[0]);
+	
+		//scale value and width according to magnitude 
+
+		//target is the center location in the destination array, used for clamping to 0 for widths
+		//width goes from 0 to 360, and is how much of the circle, centered on the target, will spike upwards
+		//magnitude is how much will spike
+		
+		int target = (int)(720.0 * angle_target/(2*M_PI) + 720.0) % 720;  
+		printf("Data: %d %.1f | " , target , angle_target);
+		for (int i = 0; i < 720; i++){ //split the circle into 720 slices (360 is a little too low of resolution)
+			//width = 360;//  width of the spike
+			float value = 0.0;
+			////only show one spike		
+			//if (((i - target + 360) % 360) < (width/2) || ((target - i + 360) % 360) < (width/2)){ 
+				value = cos((i*M_PI/width) + angle_target);  //value of the spike from -1 to 1
+				value = (value + 1) / 2;  //remap to 0 to 1
+			//}
+			
+			if (particle_offset[i] < value) particle_offset[i] = value;
+			
+			//particle_offset[i] = (cos((i)/360.0 * 2.0 * M_PI + angle_target) + M_PI)/(2* M_PI) ;
+			if (i % 30 == 0) printf(" %.1f", particle_offset[i]);
+		}
+		printf("\n");
+	//}
+}
 static void projector_scene_draw(unsigned i,char *debug_msg)
 {
 	if (debug_msg[0] != '\0'){
-		int temp[2];
-		int result = sscanf(debug_msg,"%d %d", &temp[0],&temp[1]);
+		int temp[3];
+		int result = sscanf(debug_msg,"%d %d %d", &temp[0],&temp[1],&temp[2]);
 		if (result == 2){
 			printf("\nDebug Message Parsed: Setting gst_state: %d and portal_state: %d\n",temp[0],temp[1]);
-			this_gun->gst_state = temp[0];
-			this_gun->portal_state = temp[1];
+			this_gun->gst_state = 2;
+			this_gun->portal_state = 18;
+			this_gun->gyro[0] = temp[0];
+			this_gun->gyro[1] = temp[1];
+			width = 360;
 		}
 	}
-
+calculate_offset();
 	uint32_t start_time = millis();
 	while (gstcontext_texture_fresh == false){
 		usleep(10);
-		if (millis() - start_time > 20){
+		if (millis() - start_time > 2){
 			printf("Frameskip\n");
 			break;
 		}
@@ -189,82 +261,92 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 	glDisableVertexAttribArray(basic_in_Position);
 	glDisableVertexAttribArray(basic_in_TexCoord);
 	
-	
 	/* Portal Shimmer Shader Setup */
-	glUseProgram(ripple_program);
-	glEnableVertexAttribArray(ripple_in_Position);
-	glEnableVertexAttribArray(ripple_in_TexCoord);
-	glVertexAttribPointer(ripple_in_Position, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)0);
-	glVertexAttribPointer(ripple_in_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)sizeof(vVertices));
+	glUseProgram(puddle_program);
+	glEnableVertexAttribArray(puddle_in_Position);
+	glEnableVertexAttribArray(puddle_in_TexCoord);
+	glVertexAttribPointer(puddle_in_Position, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)0);
+	glVertexAttribPointer(puddle_in_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)sizeof(vVertices));
 	
 	/* Time */ 
-	glUniform1f(ripple_u_time,(float)millis()/7000);
+	glUniform1f(puddle_u_time,(float)millis()/7000);
 	
 	/* Transparency */
-	glUniform1f(ripple_u_Alpha,shimmer_alpha);
+	glUniform1f(puddle_u_Alpha,shimmer_alpha);
 
 	/* sSize */
-	glUniform1f(ripple_u_size,zoom_displayed);
+	glUniform1f(puddle_u_size,zoom_displayed);
 	
 	/* Color */	
-	if((portal_state_displayed & PORTAL_BLUE_BIT) != 0)	glUniform1f(ripple_u_blue,TRUE);
-	else												glUniform1f(ripple_u_blue,FALSE);
+	if((portal_state_displayed & PORTAL_BLUE_BIT) != 0)	glUniform1f(puddle_u_blue,TRUE);
+	else												glUniform1f(puddle_u_blue,FALSE);
 	
 	/* Draw & Disable */	
 	glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
-	glDisableVertexAttribArray(ripple_in_Position);
-	glDisableVertexAttribArray(ripple_in_TexCoord);
+	glDisableVertexAttribArray(puddle_in_Position);
+	glDisableVertexAttribArray(puddle_in_TexCoord);
 
 	
+	/* Portal Particle Shader Setup */
+	glBindBuffer(GL_ARRAY_BUFFER, particles_vbo);  //switch to points vbo
+	glUseProgram(particles_program);
+	glBindTexture(GL_TEXTURE_2D,particle_sprite);
+	glUniform1i(particle_sprite, 0); /* '0' refers to texture unit 0. */
 	
-	glUseProgram(points_program);
-	glBindTexture(GL_TEXTURE_2D,points_sprite);
-	glUniform1i(points_sprite, 0); /* '0' refers to texture unit 0. */
-	glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
+	glEnableVertexAttribArray(particles_vertex);
+	glEnableVertexAttribArray(particles_color);
 	
-	glEnableVertexAttribArray(points_vertex);
-	glEnableVertexAttribArray(points_color);
-	
-	for(int i = 0; i < 1000; i++){
+	for(int i = 0; i < NUM_PARTICLES; i++){
 		
-	   //move current point to be tail
-		vVertices2[i*3+6000] =  particle[i].r * cos((float) ((particle[i].angle-.5) / 360.0) * M_PI*2);
-		vVertices2[i*3+6001] = particle[i].r * sin((float) ((particle[i].angle-.5) / 360.0) * M_PI*2);
-		vVertices2[i*3+6002] = 2.0;
+		/* Motion addition */  
+		float proposed_offset = particle_offset[(int)(720.0 * particles[i].angle/360.0 + 720.0) % 720 ]/4.0; 
 		
-		//make current point background flare
-		vVertices2[i*3+0] = particle[i].r * cos((float) (particle[i].angle / 360.0) * M_PI*2);
-		vVertices2[i*3+1] = particle[i].r * sin((float) (particle[i].angle / 360.0) * M_PI*2);
-		vVertices2[i*3+2] = 6.0;
-		
-		//make point core
-		vVertices2[i*3+3000] = vVertices2[i*3+0];
-		vVertices2[i*3+3001] = vVertices2[i*3+1];
-		vVertices2[i*3+3002] = 2.0;
-		
-	
-		particle[i].angle +=particle[i].angle_velocity;
-		particle[i].r += particle[i].r_velocity;
-		
-		if (particle[i].r < .8 || particle[i].r > 1.0){
-			particle[i].r_velocity = -.001 + 0.002* (float)(rand() % 1000) /1000;
+		if (proposed_offset > particles[i].previous_offset){
+		   proposed_offset = MIN2(proposed_offset, particles[i].previous_offset + 0.1); //set max expansion rate
 		}
+		particles[i].previous_offset =	proposed_offset;
+		
+		float radius = particles[i].r - proposed_offset; 
 
+		/* Background Ember */  		
+		particles_vertices[i*3+0] = radius * cos((float)(particles[i].angle / 360.0) * M_PI*2);
+		particles_vertices[i*3+1] = radius * sin((float)(particles[i].angle / 360.0) * M_PI*2);
+		particles_vertices[i*3+2] = 6.0;
+		
+		/* Point Core */
+		particles_vertices[i*3+3*NUM_PARTICLES+0] = particles_vertices[i*3+0];
+		particles_vertices[i*3+3*NUM_PARTICLES+1] = particles_vertices[i*3+1];
+		particles_vertices[i*3+3*NUM_PARTICLES+2] = 2.0;
+		
+		/* Point Tail */
+		particles_vertices[i*3+6*NUM_PARTICLES+0] = radius * cos((float)((particles[i].angle-.2) / 360.0) * M_PI*2);
+		particles_vertices[i*3+6*NUM_PARTICLES+1] = radius * sin((float)((particles[i].angle-.2) / 360.0) * M_PI*2);
+		particles_vertices[i*3+6*NUM_PARTICLES+2] = 2.0;
+		
+		particles[i].angle += particles[i].angle_velocity;
+		particles[i].r += particles[i].r_velocity;
+		
+		if (particles[i].r < .8)	particles[i].r_velocity = 0.001 * (float)(rand() % 1000)/1000;
+		if (particles[i].r > 1.0)	particles[i].r_velocity = -.001 * (float)(rand() % 1000)/1000;
 	}
 	
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(particles_vertices), &particles_vertices[0]);
+	glVertexAttribPointer(particles_vertex, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)0);
 	
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices2), &vVertices2[0]);
-
-	glVertexAttribPointer(points_vertex, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)0);
-	glVertexAttribPointer(points_color, 4, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)sizeof(vVertices2));
+	/* Color */	
+	if((portal_state_displayed & PORTAL_ORANGE_BIT) != 0){ 
+		glVertexAttribPointer(particles_color, 4, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)sizeof(particles_vertices));
+	} else { 
+		glVertexAttribPointer(particles_color, 4, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(intptr_t)(sizeof(particles_vertices)+sizeof(particles_colors_orange)));
+	}
 	
-	glBufferSubData(GL_ARRAY_BUFFER,  sizeof(vVertices2), sizeof(pointcolors), &pointcolors[0]);
-	glDrawArrays(GL_POINTS, 0, 3000);
-	
-	glDisableVertexAttribArray(points_vertex);
-	glDisableVertexAttribArray(points_color);
+	/* Draw & Disable */	
+	glDrawArrays(GL_POINTS, 0, NUM_PARTICLES*3);
+	glDisableVertexAttribArray(particles_vertex);
+	glDisableVertexAttribArray(particles_color);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	
 	/* Portal Rim Shader Setup */
 	glUseProgram(portal_program);
 	glEnableVertexAttribArray(portal_in_Position);
@@ -291,11 +373,6 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 	glDisableVertexAttribArray(portal_in_Position);
 	glDisableVertexAttribArray(portal_in_TexCoord);
 	
-	
-
-
-	
-
 	/* FPS Counter */
 	glFinish();
 	fps_counter("Projector:",render_start_time);
@@ -304,9 +381,7 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 
 const struct egl * scene_init(const struct gbm *gbm, int samples)
 {
-
 	shared_init(&this_gun,false);
-	this_gun->gst_state = 1;
 
 	int ret = init_egl(&egl, gbm, samples);
 	if (ret)
@@ -317,14 +392,14 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 			egl_check(&egl, eglDestroyImageKHR))
 	return NULL;
 
-	basic_program = create_program_from_disk("../common/basic.vert", "../common/basic.frag");
+	basic_program = create_program_from_disk("/home/pi/portal/common/basic.vert", "/home/pi/portal/common/basic.frag");
 	link_program(basic_program);
 	basic_u_mvpMatrix = glGetUniformLocation(basic_program, "u_mvpMatrix");
 	basic_in_Position = glGetAttribLocation(basic_program, "in_Position");
 	basic_in_TexCoord = glGetAttribLocation(basic_program, "in_TexCoord");
 	basic_u_Texture = glGetAttribLocation(basic_program, "u_Texture");
 	
-	portal_program = create_program_from_disk("portal.vert","portal.frag");
+	portal_program = create_program_from_disk("/home/pi/portal/projector/portal.vert","/home/pi/portal/projector/portal.frag");
 	link_program(portal_program);
 	portal_in_TexCoord = glGetAttribLocation(portal_program, "in_TexCoord");
 	portal_in_Position = glGetAttribLocation(portal_program, "in_Position");
@@ -333,16 +408,16 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 	portal_u_time = glGetUniformLocation(portal_program, "u_time");
 	portal_u_size = glGetUniformLocation(portal_program, "u_size");
 	
-	ripple_program = create_program_from_disk("ripple.vert","ripple.frag");
-	link_program(ripple_program);
-	ripple_in_TexCoord = glGetAttribLocation(ripple_program, "in_TexCoord");
-	ripple_in_Position = glGetAttribLocation(ripple_program, "in_Position");
-	ripple_u_time = glGetUniformLocation(ripple_program, "u_time");
-	ripple_u_Alpha = glGetUniformLocation(ripple_program, "u_Alpha");
-	ripple_u_blue = glGetUniformLocation(ripple_program, "u_blue");
-	ripple_u_size = glGetUniformLocation(ripple_program, "u_size");
+	puddle_program = create_program_from_disk("/home/pi/portal/projector/puddle.vert","/home/pi/portal/projector/puddle.frag");
+	link_program(puddle_program);
+	puddle_in_TexCoord = glGetAttribLocation(puddle_program, "in_TexCoord");
+	puddle_in_Position = glGetAttribLocation(puddle_program, "in_Position");
+	puddle_u_time = glGetUniformLocation(puddle_program, "u_time");
+	puddle_u_Alpha = glGetUniformLocation(puddle_program, "u_Alpha");
+	puddle_u_blue = glGetUniformLocation(puddle_program, "u_blue");
+	puddle_u_size = glGetUniformLocation(puddle_program, "u_size");
 	
-	//upload data
+	//upload data for video, puddle, and portal
 	glGenBuffers(1, &vbo);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -350,50 +425,53 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices), &vVertices[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, sizeof(vVertices), sizeof(vTexCoords), &vTexCoords[0]);
 
+	//particle program setup
+	particles_program = create_program_from_disk("/home/pi/portal/projector/particles.vert","/home/pi/portal/projector/particles.frag");
+	link_program(particles_program);
+	particles_vertex = glGetAttribLocation(particles_program, "vertex");	
+	particles_color = glGetAttribLocation(particles_program, "in_color");
+	particle_sprite = glGetUniformLocation(particles_program, "u_Texture");
 	
-	points_program = create_program_from_disk("points.vert","points.frag");
-	link_program(points_program);
-	points_vertex = glGetAttribLocation(points_program, "vertex");	
-	points_color = glGetAttribLocation(points_program, "in_color");
-	points_sprite = glGetUniformLocation(points_program, "u_Texture");
-	
-
-	for(int i=0; i < 1000; i++){
-		particle[i].angle = ((float)(rand() % 36000))/100;
-		particle[i].r = .75 + .1* (float)(rand() % 1000) /1000;
-		particle[i].angle_velocity = 1.0 + .2* (float)(rand() % 1000) /1000;
-		particle[i].r_velocity = -.001 + 0.002* (float)(rand() % 1000) /1000;
+	//data for particles
+	for(int i=0; i < NUM_PARTICLES; i++){
+		particles[i].angle = ((float)(rand() % 36000))/100;
+		particles[i].r = .75 + .1* (float)(rand() % 1000) /1000;
+		particles[i].angle_velocity = 1.0 + .2* (float)(rand() % 1000) /1000;
+		particles[i].r_velocity = -.001 + 0.002* (float)(rand() % 1000) /1000;
 		
 	}
+	//load the colors, orange and blue are the same except for swapping r and b
+	for(int i =0; i < NUM_PARTICLES; i++){
+		particles_colors_orange[i*4+2] = particles_colors_blue[i*4+0] = 0.25;
+		particles_colors_orange[i*4+1] = particles_colors_blue[i*4+1] = 0.35;
+		particles_colors_orange[i*4+0] = particles_colors_blue[i*4+2] = 1.0;
+		particles_colors_orange[i*4+3] = particles_colors_blue[i*4+3] = 1.0;
+	}
+	for(int i = NUM_PARTICLES; i < NUM_PARTICLES * 2; i++){
+		particles_colors_orange[i*4+2] = particles_colors_blue[i*4+0] = 0.4;
+		particles_colors_orange[i*4+1] = particles_colors_blue[i*4+1] = 0.8;
+		particles_colors_orange[i*4+0] = particles_colors_blue[i*4+2] = 1.0;
+		particles_colors_orange[i*4+3] = particles_colors_blue[i*4+3] = 1.0;
+	}
+	for(int i = NUM_PARTICLES * 2; i < NUM_PARTICLES * 3; i++){
+		particles_colors_orange[i*4+2] = particles_colors_blue[i*4+0] = 0.5;
+		particles_colors_orange[i*4+1] = particles_colors_blue[i*4+1] = 0.5;
+		particles_colors_orange[i*4+0] = particles_colors_blue[i*4+2] = 0.5;
+		particles_colors_orange[i*4+3] = particles_colors_blue[i*4+3] = 1.0;
+	}
+
+	glGenBuffers(1, &particles_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, particles_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(particles_vertices)+sizeof(particles_colors_orange)+sizeof(particles_colors_blue), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0															, sizeof(particles_vertices)	 , &particles_vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(particles_vertices)									, sizeof(particles_colors_orange), &particles_colors_orange[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(particles_vertices)+sizeof(particles_colors_orange)	, sizeof(particles_colors_blue)	 , &particles_colors_blue[0]);
 	
-	for(int i =0; i < 1000; i++){
-		pointcolors[i*4+0] = 0.25;
-		pointcolors[i*4+1] = 0.35;
-		pointcolors[i*4+2] = 1.0;
-		pointcolors[i*4+3] = 1.0;
-	}
-	for(int i = 1000; i < 2000; i++){
-		pointcolors[i*4+0] = 0.4;
-		pointcolors[i*4+1] = .8;
-		pointcolors[i*4+2] = 1.0;
-		pointcolors[i*4+3] = 1.0;
-	}
-	for(int i = 2000; i < 3000; i++){
-		pointcolors[i*4+0] = 0.5;
-		pointcolors[i*4+1] = 0.5;
-		pointcolors[i*4+2] = 0.5;
-		pointcolors[i*4+3] = 1.0;
-	}
-	glGenBuffers(1, &points_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices2) + sizeof(pointcolors), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vVertices2), &vVertices2[0]);
-	glBufferSubData(GL_ARRAY_BUFFER,  sizeof(vVertices2), sizeof(pointcolors), &pointcolors[0]);
+	particle_sprite = png_load("/home/pi/portal/projector/circle64.png", NULL, NULL);
 	
 	//fire up gstreamer
 	gstcontext_init(egl.display, egl.context, &gstcontext_texture_id, &gstcontext_texture_fresh, &this_gun->video_done);
 	projector_logic_init(&this_gun->video_done);
-	points_sprite = png_load("circle64.png", NULL, NULL);
 	
 	egl.draw = projector_scene_draw;
 
