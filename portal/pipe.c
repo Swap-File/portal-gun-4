@@ -28,7 +28,7 @@ static FILE *ping_fp;
 
 void pipe_cleanup(void)
 {
-	printf("KILLING OLD PROCESSES\n");
+	printf("Killing old processes...\n");
 	system("pkill gst*");
 	system("pkill console");
 	system("pkill projector");

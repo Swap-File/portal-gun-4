@@ -27,14 +27,14 @@ void console_logic(int gst_state){
 void console_logic_init(bool gordon){
 
 	if(gordon){
-		gstcontext_load_pipeline(&pipeline,GST_STATE_PAUSED,"rpicamsrc preview=0 awb-mode=10 ! image/jpeg,width=640,height=480,framerate=30/1 ! "
+		gstcontext_load_pipeline(GST_RPICAMSRC,&pipeline,GST_STATE_PAUSED,"rpicamsrc preview=0 awb-mode=10 ! image/jpeg,width=640,height=480,framerate=30/1 ! "
 		"queue max-size-time=50000000 leaky=upstream ! jpegparse ! tee name=t "
 		"t. ! queue ! rtpjpegpay ! udpsink host=192.168.3.21 port=9000 sync=false "
 		"t. ! queue ! jpegdec ! videorate ! video/x-raw,framerate=10/1 ! videoscale ! video/x-raw,width=400,height=240 ! videoflip method=3 ! jpegenc ! multifilesink location=/var/www/html/tmp/snapshot.jpg sync=false "
 		"t. ! queue ! jpegdec ! glupload ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false"
 		);  //the order of this matters, the fakesink MUST Be last in the tee chain!
 	}else {
-		gstcontext_load_pipeline(&pipeline,GST_STATE_PAUSED,"rpicamsrc preview=0 awb-mode=10 ! image/jpeg,width=640,height=480,framerate=30/1 ! "
+		gstcontext_load_pipeline(GST_RPICAMSRC,&pipeline,GST_STATE_PAUSED,"rpicamsrc preview=0 awb-mode=10 ! image/jpeg,width=640,height=480,framerate=30/1 ! "
 		"queue max-size-time=50000000 leaky=upstream ! jpegparse ! tee name=t "
 		"t. ! queue ! rtpjpegpay ! udpsink host=192.168.3.20 port=9000 sync=false "
 		"t. ! queue ! jpegdec ! videorate ! video/x-raw,framerate=10/1 ! videoscale ! video/x-raw,width=400,height=240 ! videoflip method=3 ! jpegenc ! multifilesink location=/var/www/html/tmp/snapshot.jpg sync=false "

@@ -8,6 +8,7 @@
 #include <gst/gl/egl/gstgldisplay_egl.h>
 #include <EGL/egl.h>   //EGLDisplay & EGLContext
 #include <GLES3/gl31.h> //GLint
+#include "effects.h"
 
 static GMainLoop *loop;
 static GstContext *egl_context;
@@ -79,9 +80,9 @@ void gstcontext_set(GstPipeline **pipeline)
 	gst_element_set_context(GST_ELEMENT (*pipeline), egl_context);
 }
 
-void gstcontext_load_pipeline(GstPipeline **pipeline, GstState state, char * text)
+void gstcontext_load_pipeline(int index, GstPipeline **pipeline, GstState state, char * text)
 {
-	printf("Loading pipeline...\n");
+	printf("Loading %s...\n",effectnames[index]);
 	
 	*pipeline = GST_PIPELINE(gst_parse_launch(text, NULL));
 

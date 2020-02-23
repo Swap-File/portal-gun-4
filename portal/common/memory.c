@@ -146,7 +146,7 @@ void fps_counter(char * title,uint32_t start_time,int skip)
 		float ms_per_frame = (float)render_time/(fps * interval);
 		int load_percent = (float)render_time/(interval * 10.0);
 		float jitter = (float)(frame_time_max-frame_time_min)/100.0;
-		printf("%s fps:%d\t%.2fms per frame\t%.2fms jitter\t%d%% load %d skipped\n",title,fps, ms_per_frame,jitter,load_percent,frameskip);
+		printf("%s fps:%d\t%.2fms frame\t%.2fms jitter\t%d%% load %d skipped\n",title,fps, ms_per_frame,jitter,load_percent,frameskip);
 		fps = 0;
 		render_time = 0;
 		frameskip = 0;
