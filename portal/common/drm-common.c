@@ -57,10 +57,16 @@ drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 }
 
 void drm_wait_master(int fd){
+	int cycles = 0;
 	while (drmSetMaster(fd) != 0){
-		printf("Sleep\n");
 		usleep(100);  //manually tuned so one sleep is enough
+		cycles++;
+		if (cycles > 10000) {
+			printf("drm_wait_master: Break\n");
+			break;
+		}
 	}
+	if (cycles != 0) printf("drm_wait_master: %.2f ms \n",(float)cycles /10.0);
 }
 
 struct drm_fb * drm_fb_get_from_bo(struct gbm_bo *bo)

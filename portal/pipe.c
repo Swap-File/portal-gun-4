@@ -44,7 +44,7 @@ void pipe_init(const struct gun_struct *this_gun)
 	while(this_gun->projector_loaded == false){
 		sleep(1);
 	}
-	sleep(2);
+	
 	system("sudo -E /home/pi/portal/console/console &");
 	while(this_gun->console_loaded == false){
 		sleep(1);

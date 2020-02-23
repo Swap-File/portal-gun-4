@@ -48,8 +48,9 @@ struct gun_struct {
 	int ui_mode;
 	uint32_t laser_countdown;
 	
-	int gyro[3];
 	int adc[4];
+	float particle_offset[720];
+	float particle_magnitude;
 
 	float  battery_level_pretty;
 	float  temperature_pretty;
@@ -73,6 +74,6 @@ void shared_cleanup(void);
 uint32_t millis(void);
 int piHiPri(const int pri);
 uint32_t micros(void);
-void fps_counter(char * title,uint32_t start_time);
+void fps_counter(char * title,uint32_t start_time,int skip);
 
 #endif

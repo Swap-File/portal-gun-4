@@ -8,7 +8,8 @@
 
 static int adc_active_channel = 0; //what channel we are working on
 static int adc_data[4];
-	
+static int gyro_data[3];
+
 static float temp_conversion(int input)
 {
 	float R =  10000.0 / (26000.0/((float)input) - 1.0);
@@ -22,7 +23,7 @@ static float temp_conversion(int input)
 	return T * 9.0 / 5.0 + 32.0; //Convert C to F
 }
 
-static void i2c_read_gyro(int *gyro)
+static void i2c_read_gyro()
 {
 	char temp[6];
 	temp[0] = 0x80 | L3G_OUT_X_L;
@@ -31,9 +32,9 @@ static void i2c_read_gyro(int *gyro)
 	bcm2835_i2c_write(temp,1);
 	bcm2835_i2c_read(temp,6);
 	
-	gyro[0] = (int16_t)(temp[0] | (uint16_t)temp[1] << 8);
-	gyro[1] = (int16_t)(temp[2] | (uint16_t)temp[3] << 8);
-	gyro[2] = (int16_t)(temp[4] | (uint16_t)temp[5] << 8);
+	gyro_data[0] = (int16_t)(temp[0] | (uint16_t)temp[1] << 8);
+	gyro_data[1] = (int16_t)(temp[2] | (uint16_t)temp[3] << 8);
+	gyro_data[2] = (int16_t)(temp[4] | (uint16_t)temp[5] << 8);
 }
 
 static int16_t i2c_read16(uint8_t reg)
@@ -124,6 +125,54 @@ void i2c_init(void)
 	bcm2835_i2c_write(temp,2);
 }
 
+void calculate_offset(struct gun_struct *this_gun)
+{ 
+	#define WIDTH 180
+	#define GYRO_DEADSPOT 500
+	#define GYRO_BLENDING 0.8
+
+	//decay offsets
+	for (int i = 0; i < 720; i++) this_gun->particle_offset[i] *= .98;
+	
+	//remap x, y, and z
+	float gyro[3];
+	gyro[0] = gyro_data[0];
+	gyro[1] = gyro_data[1];
+	gyro[2] = gyro_data[2];
+	
+	static float gyro_smoothed[3];
+	
+	//filter x and y - adjust so snap-back disappears
+	for (int i = 0; i < 3; i++)
+	gyro_smoothed[i] = gyro_smoothed[i] * GYRO_BLENDING + (1.0-GYRO_BLENDING) * gyro[i];
+	
+	//find magnitude
+	this_gun->particle_magnitude = sqrt( gyro_smoothed[1] * gyro_smoothed[1] + gyro_smoothed[2] * gyro_smoothed[2]);
+	if (this_gun->particle_magnitude > GYRO_DEADSPOT){
+	
+		float angle_target = atan2(gyro_smoothed[1],gyro_smoothed[2]);
+		int array_target = (int)(720.0 * angle_target/(2.0*M_PI) + 720.0) % 720; 
+		
+		for (int i = 0; i <= 360; i++) { //go over half the circle (it's mirrored) plus one (to cover the unmirrored pixel at i=0)
+			
+			float value = 0.0;
+			
+			if (i <= WIDTH)
+				value = (cos(i * M_PI/WIDTH)+ 1.0) / 2.0; //remap -1 to 1 into 0 to 1
+
+			int right_target = (array_target + i + 720) % 720;
+			int left_target = (array_target - i + 720) % 720;
+
+			if (this_gun->particle_offset[right_target] < value)
+				this_gun->particle_offset[right_target] = value;	
+
+			if (this_gun->particle_offset[left_target] < value)
+				this_gun->particle_offset[left_target] = value;
+
+		}
+	}
+}
+
 void i2c_update(struct gun_struct *this_gun)
 {
 	static bool adc_busy = false;
@@ -142,8 +191,8 @@ void i2c_update(struct gun_struct *this_gun)
 	}
 	
 	/* read accel every update call for smooth data */
-	i2c_read_gyro(this_gun->gyro);
-
+	i2c_read_gyro();
+	calculate_offset(this_gun);
 	/* old battery calibration:  21600 = 16.1v  16000 = 12.1v */	
 	if (this_gun->gordon)  //update these correction values
 		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)adc_data[1] * 0.00074;

@@ -29,8 +29,7 @@ static GLuint particles_program,particles_vertex,particles_color,particle_sprite
 #define VIDEO_WIDTH 1280
 #define VIDEO_HEIGHT 720
 
-static float particle_offset[720];
-
+ 
 #define NUM_PARTICLES 1000
 
 struct Particle {
@@ -87,89 +86,23 @@ static GLfloat vTexCoords[] = {
 	0.0f, 0.0f,
 };
 
-int width = 360;
-
-void calculate_offset(){  //move this into core logic?
-
-	#define GYRO_DEADSPOT 20
-	
-	#define GYRO_BLENDING 0.3
-	#define OFFSET_BLENDING 0.8
-	
-	//decay offsets
-	for (int i = 0; i < 720; i++) particle_offset[i] *= .95;
-	
-	//remap x, y, and z
-	float gyro[3];
-	gyro[0] = this_gun->gyro[0];
-	gyro[1] = this_gun->gyro[1];
-	gyro[2] = this_gun->gyro[2];
-	
-	static float gyro_smoothed[3];
-
-	//filter x and y - adjust so snap-back disappears
-	for (int i = 0; i < 3; i++)
-		gyro_smoothed[i] = gyro_smoothed[i] * GYRO_BLENDING + (1.0-GYRO_BLENDING) * gyro[i];
-
-	//find magnitude
-	float temp_mag = sqrt( gyro_smoothed[0] * gyro_smoothed[0] + gyro_smoothed[1] * gyro_smoothed[1]);
-	//float angle_target = atan2(gyro_smoothed[1],gyro_smoothed[0]);
-
-	static float angle_target = 0;
-	angle_target += 0.005;
-	//if (temp_mag > GYRO_DEADSPOT){
-		
-		//static float peak_mag = 0.0;
-		//peak_mag *= 0.9; //decay peak mag
-		
-		//peak_mag = MAX2(peak_mag,temp_mag);
-		
-		//find angle
-		//scale value and width according to magnitude 
-
-		//target is the center location in the destination array, used for clamping to 0 for widths
-		//width goes from 0 to 360, and is how much of the circle, centered on the target, will spike upwards
-		//magnitude is how much will spike
-		
-	 int array_target = (int)(720.0 * angle_target/(2.0*M_PI) + 720.0) % 720; 
-	 
-	for (int i = 0; i <= 360; i++){ //go over half the circle (it's mirrored) plus one (to cover the unmirrored pixel at i=0)
-	
-		float value = 0.0;
-
-		if (i <= width)
-			value = (cos(i * M_PI/width)+ 1.0) / 2.0; //remap -1 to 1 into 0 to 1
-		
-		particle_offset[(array_target + i + 720) % 720] = value;
-		particle_offset[(array_target - i + 720) % 720] = value;
-		
-		//only set value if its bigger & adjust previous_offset to compensate for fast push in?
-		//do we want to add this on instead?
-		//if (particle_offset[i] < value) particle_offset[i] = value;
-	}
-	printf("\n");
-}
-
 static void projector_scene_draw(unsigned i,char *debug_msg)
 {
 	if (debug_msg[0] != '\0'){
 		int temp[3];
 		int result = sscanf(debug_msg,"%d %d %d", &temp[0],&temp[1],&temp[2]);
-		if (result == 3){
+		if (result == 2){
 			printf("\nDebug Message Parsed: Setting gst_state: %d and portal_state: %d\n",temp[0],temp[1]);
-			this_gun->gst_state = 2;
-			this_gun->portal_state = 18;
-			this_gun->gyro[0] = temp[0];
-			this_gun->gyro[1] = temp[1];
-			width = temp[2];
+			this_gun->gst_state = temp[0];
+			this_gun->portal_state = temp[1];
 		}
 	}
-calculate_offset();
+	bool frameskip = false;
 	uint32_t start_time = millis();
 	while (gstcontext_texture_fresh == false){
 		usleep(10);
 		if (millis() - start_time > 2){
-			printf("Frameskip\n");
+			frameskip = true;
 			break;
 		}
 	}
@@ -188,7 +121,6 @@ calculate_offset();
 	//this is pass by value on purpose, it prevents gst_state from changing during execution
 	projector_logic_update(this_gun->gst_state,portal_state_displayed);  
 	
-
 	//calculate the delta between frames
 	const int speed = 10000;
 	static uint32_t last_frame_time = 0;
@@ -197,12 +129,11 @@ calculate_offset();
 	float delta = (float)time_delta / speed; //must cast to float! delta should be 3.33 per frame @ 30 fps
 	last_frame_time = this_frame_time;
 	
-
 	//if we are displaying one color and a request comes in for the other color, reset all and spend one frame closed
 	//immediately close the portal if requested, unzoom, and unfade.
 	if(((portal_state_displayed & PORTAL_BLUE_BIT)   != 0 && (portal_state_requested & PORTAL_ORANGE_BIT) != 0) || 
-			((portal_state_displayed & PORTAL_ORANGE_BIT) != 0 && (portal_state_requested & PORTAL_BLUE_BIT)   != 0) || 
-			(portal_state_requested == PORTAL_CLOSED)){
+		((portal_state_displayed & PORTAL_ORANGE_BIT) != 0 && (portal_state_requested & PORTAL_BLUE_BIT)   != 0) || 
+		(portal_state_requested == PORTAL_CLOSED)){
 		portal_state_displayed = PORTAL_CLOSED;
 		zoom_displayed = ZOOM_MIN;
 	}
@@ -299,12 +230,12 @@ calculate_offset();
 	for(int i = 0; i < NUM_PARTICLES; i++){
 		
 		/* Motion addition */  
-		float proposed_offset = particle_offset[(int)(720.0 * particles[i].angle/360.0 + 720.0) % 720]/4.0; 
+		float proposed_offset = MIN2(this_gun->particle_offset[(int)(720.0 * particles[i].angle/360.0 + 720.0) % 720]/6, .05); 
 		
 		if (proposed_offset > particles[i].previous_offset){
-		   proposed_offset = MIN2(proposed_offset, particles[i].previous_offset + 0.01); //set max expansion rate
+			proposed_offset = MIN2(proposed_offset, particles[i].previous_offset + 0.008); //set max expansion rate
 		}else if (proposed_offset < particles[i].previous_offset){
-			proposed_offset = MAX2(proposed_offset, particles[i].previous_offset - 0.01); //set max contraction rate
+			proposed_offset = MAX2(proposed_offset, particles[i].previous_offset - 0.008); //set max contraction rate
 		}
 		particles[i].previous_offset =	proposed_offset;
 		
@@ -377,7 +308,7 @@ calculate_offset();
 	
 	/* FPS Counter */
 	glFinish();
-	fps_counter("Projector:",render_start_time);
+	fps_counter("Projector: ",render_start_time,frameskip);
 }
 
 
@@ -437,7 +368,7 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
 	//data for particles
 	for(int i=0; i < NUM_PARTICLES; i++){
 		particles[i].angle = ((float)(rand() % 36000))/100;
-		particles[i].r = .75 + .1* (float)(rand() % 1000) /1000;
+		particles[i].r = .7 + .1* (float)(rand() % 1000) /1000;
 		particles[i].angle_velocity = 1.0 + .2* (float)(rand() % 1000) /1000;
 		particles[i].r_velocity = -.001 + 0.002* (float)(rand() % 1000) /1000;
 		

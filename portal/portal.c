@@ -44,8 +44,9 @@ int main(void)
 	led_init();
 	io_init();
 	i2c_init();	
-	udp_init(this_gun->gordon);
-
+	//udp_init(this_gun->gordon);
+this_gun->mode = MODE_SOLO;
+this_gun->state_solo = 4;
 	pipe_init(this_gun);
 
 	/* toggles every other cycle, cuts 100hz core tick speed to 50hz */
@@ -55,6 +56,7 @@ int main(void)
 	uint32_t time_start = millis(); 
 
 	while (1) {
+		bool frameskip = false;
 		/* Cycle Delay */
 		time_start += 10;
 		uint32_t predicted_delay = time_start - millis();
@@ -63,7 +65,7 @@ int main(void)
 			delay(predicted_delay); 
 		} else {
 			time_start = millis(); //reset timer to now to skip idle
-			printf("Portal Skipping Idle...\n");
+			frameskip = true;
 		}
 		
 		/* Cycle Setup */
@@ -104,13 +106,13 @@ int main(void)
 		/* Send data to other gun and www output */
 		static uint32_t time_udp_send = 0;
 		if (this_gun->clock - time_udp_send > 100) {
-			udp_send_state(this_gun->state_duo,this_gun->clock);
+			//udp_send_state(this_gun->state_duo,this_gun->clock);
 			time_udp_send = this_gun->clock;
 			pipe_www_out(this_gun);
 		}
 		
 		/* FPS counter */
-		fps_counter("Portal:",this_gun->clock * 1000);
+		fps_counter("Portal:    ",this_gun->clock * 1000,frameskip);
 	}
 	return 0;
 }

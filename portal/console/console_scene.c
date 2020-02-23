@@ -216,7 +216,7 @@ static void draw_scene(unsigned i,char *debug_msg)
 	
 	/* FPS counter */
 	glFinish();
-	fps_counter("Console:",render_start_time);
+	fps_counter("Console:   ",render_start_time,false);
 }
 
 

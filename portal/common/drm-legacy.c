@@ -29,7 +29,7 @@
 #include <sys/time.h>
 #include "opengl.h"
 #include "drm-common.h"
-#include "memory.h" //millis only
+
 
 static struct drm drm;
 
@@ -76,7 +76,7 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 	while (1) {
 		struct gbm_bo *next_bo;
 		int waiting_for_flip = 1;
-		
+
 		egl->draw(i++,debug_msg);
 
 		eglSwapBuffers(egl->display, egl->surface);
