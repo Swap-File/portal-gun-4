@@ -181,11 +181,14 @@ Select Item to Edit...<br><br>
 <select id="playlist_duo_select" onchange="playlist_onchange(this)">
 <optgroup label="Effects">
 <option value="4">4</option>
+<option value="16">16</option>
+<option value="17">17</option>
+<option value="18">18</option>
 <option value="19">19</option>
 <option value="20">20</option>
 <option value="21">21</option>
 <option value="22">22</option>
-<option value="23">19</option>
+<option value="23">23</option>
 <option value="24">24</option>
 <option value="25">25</option>
 <option value="26">26</option>
@@ -686,7 +689,7 @@ function effect_name(a) {
 	case 0:		return "BLANK";
 	case 1:		return "TEST";
 	case 2:		return "TEST_CUBE";	
-	case 3:		return "CAMERA";	
+	case 3:		return "CAMERA";
 	case 4:		return "NORMAL";
 	case 10:	return "JESS";
 	case 11:	return "INFINITE";
@@ -694,15 +697,18 @@ function effect_name(a) {
 	case 13:	return "OINKSIE";
 	case 14:	return "GOOM";
 	case 15:	return "GOOM2K1";
-	case 19:	return "RADIOACT";
+	case 16:	return "MARBLE";
+	case 17:	return "KALEIDOSCOPE";
+	case 18:	return "STREAK";
+	case 19:	return "RADIOACTIVE";
 	case 20:	return "REV";
 	case 21:	return "AGING";
 	case 22:	return "DICE";
 	case 23:	return "WARP";
 	case 24:	return "SHAGADELIC";
 	case 25:	return "VERTIGO";
-	case 26:	return "KALEIDOSCOPE";
-	case 27:	return "MARBLE";		
+	case 26:	return "ASCII";
+	case 27:	return "CACA";
 	case 28:	return "RIPPLE";
 	case 29:	return "EDGE";	
 	case 30:	return "GL_CUBE";
@@ -712,7 +718,7 @@ function effect_name(a) {
 	case 34:	return "GL_TUNNEL";
 	case 35:	return "GL_TWIRL";
 	case 36:	return "GL_BULGE";
-	case 37:	return "GLHEAT";		
+	case 37:	return "GL_HEAT";
 	case 50:	return "MOVIE1";
 	case 51:	return "MOVIE2";
 	case 52:	return "MOVIE3";

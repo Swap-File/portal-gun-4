@@ -35,8 +35,10 @@
 #define GST_GOOM2K1 15
 #define GST_LIBVISUAL_LAST 15
 
-#define GST_FIRST_EFFECT 18
-#define GST_FIRST_TV_EFFECT 18
+#define GST_FIRST_EFFECT 16
+#define GST_FIRST_TV_EFFECT 16
+#define GST_MARBLE 16
+#define GST_KALEDIOSCOPE 17
 #define GST_STREAKTV 18
 #define GST_RADIOACTV 19 
 #define GST_REVTV 20
@@ -117,7 +119,9 @@ static char *const effectnames[GST_MOVIE_LAST+1] = {
 	[GST_LIBVISUAL_OINKSIE] = "Oinksie",
 	[GST_GOOM] = "Goom",
 	[GST_GOOM2K1] = "Goom2k1",
-
+	
+	[GST_MARBLE] = "Marble",
+	[GST_KALEDIOSCOPE] = "Kaledio",
 	[GST_STREAKTV] = "Streak",
 	[GST_RADIOACTV] = "Radioact",
 	[GST_REVTV] = "Rev",
