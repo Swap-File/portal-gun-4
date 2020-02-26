@@ -250,56 +250,56 @@ if (button == BUTTON_RESET) {
 	}
 	
 	/* SOUND - LOCAL STATES */
-	if ((this_gun->state_duo_previous != 0 || this_gun->state_solo_previous != 0) && (this_gun->state_duo == 0 && this_gun->state_solo == 0))
-		pipe_audio("/home/pi/assets/portalgun/portal_close1->wav");
+	if ((this_gun->state_duo_previous != 0 || this_gun->state_solo_previous != 0) && this_gun->state_duo == 0 && this_gun->state_solo == 0)
+		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");
 	/* on entering state 1 */
-	else if ((this_gun->state_duo_previous != this_gun->state_duo) && (this_gun->state_duo == 1))
-		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1->wav");
+	else if ((this_gun->state_duo_previous != 1) && (this_gun->state_duo == 1))
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");
 	/* on entering state -1 */
 	else if ((this_gun->state_duo_previous != -1) && (this_gun->state_duo == -1))
-		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1->wav");			
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");			
 	/* on entering state 2 */
-	else if ((this_gun->state_duo_previous !=2) && (this_gun->state_duo == 2))
-		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2->wav");		
+	else if ((this_gun->state_duo_previous != 2) && (this_gun->state_duo == 2))
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");		
 	/* on entering state -2 from -1 */
-	else if ((this_gun->state_duo_previous !=-2) && (this_gun->state_duo == -2))
-		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2->wav");
-	else if ((this_gun->state_duo_previous !=-3) && (this_gun->state_duo == -3))
-		pipe_audio("/home/pi/assets/physcannon/physcannon_charge3->wav");	
+	else if ((this_gun->state_duo_previous != -2) && (this_gun->state_duo == -2))
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");
+	else if ((this_gun->state_duo_previous != -3) && (this_gun->state_duo == -3))
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge3.wav");	
 	/* on entering state 3 from 2 */
 	else if ((this_gun->state_duo_previous == 2) && (this_gun->state_duo ==3))
-		pipe_audio("/home/pi/assets/portalgun/portalgun_shoot_blue1->wav");
+		pipe_audio("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
 	/* on quick swap to rec */
 	else if ((this_gun->state_duo_previous < 4) && (this_gun->state_duo == 4))
-		pipe_audio("/home/pi/assets/portalgun/portal_open2->wav");
+		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");
 	/* on quick swap to transmit */
 	else if ((this_gun->state_duo_previous >= 4) && (this_gun->state_duo <= -4))
-		pipe_audio("/home/pi/assets/portalgun/portal_fizzle2->wav");	
+		pipe_audio("/home/pi/assets/portalgun/portal_fizzle2.wav");	
 	/* shared effect change close portal end sfx */
 	else if (this_gun->state_duo_previous == 4 && this_gun->state_duo == 5)
-		pipe_audio("/home/pi/assets/portalgun/portal_close1->wav");	
+		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");	
 	/* shared effect change open portal end sfx */
 	else if (this_gun->state_duo_previous == 5 && this_gun->state_duo == 4)
-		pipe_audio("/home/pi/assets/portalgun/portal_open1->wav");
+		pipe_audio("/home/pi/assets/portalgun/portal_open1.wav");
 	/* SOUND - SELF STATES */
 	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 1 || this_gun->state_solo == -1))
-		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1->wav");
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");
 	/* on entering state 2 or -2 */
 	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 2 || this_gun->state_solo == -2))
-		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2->wav");				
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");				
 	/* on entering state 3 or -3 from 0 */
 	else if ((this_gun->state_solo_previous < 3 && this_gun->state_solo_previous > -3  ) && (this_gun->state_solo == 3 || this_gun->state_solo == -3))
-		pipe_audio("/home/pi/assets/portalgun/portalgun_shoot_blue1->wav");
+		pipe_audio("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
 	/* on quick swap  */
 	else if (( this_gun->state_solo_previous >= 3 && this_gun->state_solo == -3) || (this_gun->state_solo_previous <= -3 && this_gun->state_solo == 3))
-		pipe_audio("/home/pi/assets/portalgun/portal_open2->wav");		
+		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");		
 	/* private end sfx */
 	else if ((this_gun->state_solo_previous > 3 && this_gun->state_solo == 3) || (this_gun->state_solo_previous < -3 && this_gun->state_solo == -3))
-		pipe_audio("/home/pi/assets/portalgun/portal_close1->wav");
+		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");
 	/* private start sfx */
 	else if ((this_gun->state_solo_previous != -4 && this_gun->state_solo == -4) || (this_gun->state_solo_previous != 4 && this_gun->state_solo == 4))
-		pipe_audio("/home/pi/assets/portalgun/portal_open1->wav");
+		pipe_audio("/home/pi/assets/portalgun/portal_open1.wav");
 	/* rip from private to shared mode sfx */
 	else if ((this_gun->state_solo_previous <= -3 || this_gun->state_solo_previous>=3) && this_gun->state_duo == 4)
-		pipe_audio("/home/pi/assets/portalgun/portal_open2->wav");		
+		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");		
 }
