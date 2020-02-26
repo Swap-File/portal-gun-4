@@ -3,12 +3,12 @@
 <head>
 <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 <meta name="viewport" content="initial-scale=1, maximum-scale=1">
-<title>Portal Gun 3.1 Simulator</title>
+<title>Portal Gun 4.0 Simulator</title>
 <link rel="stylesheet" type="text/css" href="simstyle.css">
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
-<h3>Portal Gun 3.1 Simulator</h3>
+<h3>Portal Gun 4.0 Simulator</h3>
 
 <div class="auto_margin">
 Gordon's Gun:<br>
@@ -67,92 +67,135 @@ var BUTTON_ALT_FIRE  = 101;
 var BUTTON_MODE_TOGGLE = 102;
 var BUTTON_RESET = 103;
 
+var UI_ADVANCED = 0;
+var UI_SIMPLE = 1;
+var UI_HIDDEN_ADVANCED = 2;
+var UI_HIDDEN_SIMPLE = 3;
+
+var LASER_WARMUP_MS = 3000;
 var recusrive_depth = 0;
 
-var gordon = { 'mode': MODE_DUO, 'state_solo': 0 ,'state_duo': 0, 'state': 0, 'state_previous': 0, 'skip_states': false};
-var chell  = { 'mode': MODE_DUO, 'state_solo': 0 ,'state_duo': 0, 'state': 0, 'state_previous': 0, 'skip_states': false};
+var gordon = { 'mode': MODE_DUO, 'state_solo': 0 ,'state_duo': 0, 'state_previous': 0, 'ui_mode': 0, 'laser': false };
+var chell  = { 'mode': MODE_DUO, 'state_solo': 0 ,'state_duo': 0, 'state_previous': 0, 'ui_mode': 0, 'laser': false };
+
 
 update();
+
+function pipe_laser_pwr(this_gun, other_gun,pwr){
+
+	if(pwr == true && this_gun.laser == false){
+		console.log("Starting Laser Warmup...\n");
+		setTimeout(function(){ this_gun.laser = true; button(this_gun,other_gun,0); }, LASER_WARMUP_MS);
+	}
+	
+	if(pwr == false && this_gun.laser == true ){ 
+		console.log("Laser Powerdown...\n");
+		this_gun.laser = false;
+	}
+	
+}
+
 
 //state engine code copy/pasted out of C core logic
 function button(this_gun,other_gun,button){
 	recusrive_depth = 0;
-	this_gun.state_previous = this_gun.state;
+	this_gun.state_previous = this_gun.state_duo;
 
-	
-	//button event transitions
-	if(button == BUTTON_RESET){
+	/* button event transitions     */
+	/* TODO: add LONG PRESS from V2 */
+	if (button == BUTTON_RESET) {	
 		this_gun.state_solo = 0; //reset self state
 		this_gun.state_duo = 0; //reset local state
-		this_gun.skip_states = false; 
 		this_gun.mode = MODE_DUO; //reset to duo mode for common use case
-	}
-	else if(button == BUTTON_MODE_TOGGLE){
+	} else if (button == BUTTON_MODE_TOGGLE) {
 		if (this_gun.state_solo == 0 && this_gun.state_duo == 0){//only allow mode toggle when completely off
-			if (this_gun.mode == MODE_DUO){
+			if (this_gun.mode == MODE_DUO) {
 				this_gun.mode = MODE_SOLO;
-			}else if (this_gun.mode == MODE_SOLO){
+			}else if (this_gun.mode == MODE_SOLO) {
 				this_gun.mode = MODE_DUO;
 			}
+		} else {  //when not idle, control preview modes
+			if (this_gun.ui_mode == UI_ADVANCED) {
+				this_gun.ui_mode = UI_SIMPLE;
+			} else if (this_gun.ui_mode == UI_SIMPLE) {
+				this_gun.ui_mode = UI_ADVANCED;
+			} else if (this_gun.ui_mode == UI_HIDDEN_SIMPLE) {
+				this_gun.ui_mode = UI_SIMPLE;
+			} else if (this_gun.ui_mode == UI_HIDDEN_ADVANCED) {
+				this_gun.ui_mode = UI_ADVANCED;
+			}
 		}
-	}//TODO: add LONG PRESS from V2?
-	else if (button == BUTTON_PRIMARY_FIRE){
-		if (this_gun.mode == MODE_DUO){
-			//projector modes
-			if(this_gun.state_duo == 0){
-				this_gun.state_duo = 1;
-			}else if(this_gun.state_duo == 1){
-				this_gun.state_duo = 2;
-			}else if((this_gun.state_duo == 2 || this_gun.state_duo == 3) && (other_gun.state <= -3 || this_gun.skip_states)){ 	
-			    this_gun.state_duo = 4; //answer an incoming call immediately and open portal on button press
-			}else if(this_gun.state_duo == 5){ //playlist advance with closed portal
-				this_gun.state_duo = 4; //open the portal
-			}else if(this_gun.state_duo == 2 && other_gun.state > -3){ 
-				this_gun.state_duo = 3; //wait at  mode 3 for other gun
+	} else if (button == BUTTON_PRIMARY_FIRE) {
+		if (this_gun.mode == MODE_DUO){ 
+			/* projector modes */
+			if (this_gun.state_duo == 0) {  //off
+				this_gun.state_duo = 1;  //orange idle lights
+			}else if (this_gun.state_duo == 2) {  //orange dialed lights
+				this_gun.state_duo = 3;  //start projector
+			} else if (this_gun.state_duo == 1) {  //orange idle lights
+				this_gun.state_duo = 3;  //start projector
+			} else if (this_gun.state_duo == 6) {  //duo closed portal
+				this_gun.state_duo = 5;  //closed portal
 			}
-			//camera modes
-			else if (this_gun.state_duo == -1){
-				this_gun.state_duo = -2;
-			}else if((this_gun.state_duo == -2 || this_gun.state_duo == -3) && other_gun.state >= 3 ){ 	
-			   this_gun.state_duo = -4;
-			}else if (this_gun.state_duo == -2){
-				this_gun.state_duo = -3;//wait at -3 for the other gun
+			/* camera modes */
+			else if (this_gun.state_duo == -1) {  //blue idle lights
+				this_gun.state_duo = -3;  //camera start
+			} else if (this_gun.state_duo == -2) {  //blue dialed lights
+				this_gun.state_duo = -3;  //camera start
 			}
-		}else if (this_gun.mode == MODE_SOLO){
-			if(this_gun.state_solo >= 0 && this_gun.state_solo < 4){
-				this_gun.state_solo++;
-			}else if(this_gun.state_solo == 4){
-				this_gun.state_solo = 3; //possibly move this to alt fire for consistency?  But then solo color change needs to be moved
-			}else if(this_gun.state_solo < 0 && this_gun.state_solo > -4){
-				this_gun.state_solo--;
-			}else if(this_gun.state_solo == -4){
-				this_gun.state_solo = -3; //possibly move this to alt fire for consistency? But then solo color change needs to be moved
-			}		
+		} else if (this_gun.mode == MODE_SOLO) {
+			if (this_gun.state_solo == 0) {  //off
+				this_gun.state_solo = 2;  //orange solo idle lights
+			} else if (this_gun.state_solo == 2) {  //orange solo idle lights
+				this_gun.state_solo = 3;  //orange start projector
+			} else if (this_gun.state_solo == 4) {  //orange closed portal
+				this_gun.state_solo = 5;   //orange open portal
+			} else if (this_gun.state_solo == 5) {  //orange open portal
+				this_gun.state_solo = 4;   //orange closed portal
+			} else if (this_gun.state_solo == -2) { //blue solo idle lights
+				this_gun.state_solo = -3;  //blue start projector
+			} else if (this_gun.state_solo == -4) {  //blue closed portal
+				this_gun.state_solo = -5;  //blue open portal
+			} else if (this_gun.state_solo == -5) {  //blue open portal
+				this_gun.state_solo = -4;  //blue closed portal
+			}
 		}
 	}
-	else if (button == BUTTON_ALT_FIRE){
-		if (this_gun.mode == MODE_DUO){
-			if (this_gun.state_duo == 0){ //start duo camera mode
-				this_gun.state_duo = -1;
-			}else if(this_gun.state_duo == 4){ //go back to closed portal for effect change 
-				this_gun.state_duo = 5;  //moved to alt fire from primary to prevent mode overrun when quickly tapping fire
-			}else if(this_gun.state_duo == -4){ //quick swap function
-				this_gun.state_duo = 4;
+	else if (button == BUTTON_ALT_FIRE) {
+		if (this_gun.mode == MODE_DUO) {
+			if (this_gun.state_duo == 0) {  //off
+				this_gun.state_duo = -1;  //blue duo idle lights
+			} else if(this_gun.state_duo == 5) { //orange open portal
+				this_gun.state_duo = 6;  //duo closed portal
+			} else if(this_gun.state_duo == -4) { //quick swap function
+				this_gun.state_duo = 3;  //orange start projector
 			}
-		}else if (this_gun.mode == MODE_SOLO){
-			if(this_gun.state_solo == 0){ //blue solo portal open
-				this_gun.state_solo = -1;
-			}else if(this_gun.state_solo == 3 || this_gun.state_solo == 4){//solo portal color change
-				this_gun.state_solo = -3;
-			}else if(this_gun.state_solo == -3 || this_gun.state_solo == -4){//solo portal color change
-				this_gun.state_solo = 3;
+		} else if (this_gun.mode == MODE_SOLO) {
+			if (this_gun.state_solo == 0) { //off
+				this_gun.state_solo = -2;  //blue solo idle
+			} else if(this_gun.state_solo >= 3) {//solo portal color change
+				this_gun.state_solo = -3; //should immediately transition to -4, could be set to -4
+			} else if(this_gun.state_solo <= -3) {//solo portal color change
+				this_gun.state_solo = 3;  //should immediately transition to 4, could be set to 4
 			}			
 		}
 	}
 	
-	//let the other gun isntantly reply
-	if ( Math.abs(this_gun.state_duo) > 1)	this_gun.state = this_gun.state_duo;
-	else this_gun.state = 0; 
+	
+	//laser powerup for solo orange
+	if (this_gun.state_solo == 3 || this_gun.state_solo == -3 || this_gun.state_duo == 3){
+		if (this_gun.laser != true) pipe_laser_pwr(this_gun,other_gun,true);
+		if (this_gun.laser == true){ 
+			if(this_gun.state_duo == 3)			this_gun.state_duo = 4;
+			else if(this_gun.state_solo == 3)	this_gun.state_solo = 4;
+			else if(this_gun.state_solo == -3)	this_gun.state_solo = -4;
+		}
+	}
+	
+	//laser shutdown
+	if ((Math.abs(this_gun.state_solo) < 3 && this_gun.mode == MODE_SOLO) || (this_gun.state_duo < 3 && this_gun.mode == MODE_DUO))
+		pipe_laser_pwr(this_gun,other_gun,false);
+	
 	other_gun_transitions(other_gun,this_gun);
 	
 	update();
@@ -164,48 +207,66 @@ function other_gun_transitions(this_gun,other_gun){
 	recusrive_depth = recusrive_depth + 1;
 	console.log (recusrive_depth);
 	
-	this_gun.state_previous = this_gun.state;
-
-	//other gun transitions
-	if (other_gun.state_previous != other_gun.state){
+	this_gun.state_previous = this_gun.state_duo;
+	
+	/* other gun transition - fixed */
+	if (this_gun.state_duo == 4 && other_gun.state_duo == -3) {
+		this_gun.state_duo = 5;
+		other_gun_transitions(other_gun,this_gun);
+		button(other_gun,this_gun,0);
+	}
+	
+	/* other gun transitions - on change */
+	if (other_gun.state_previous != other_gun.state_duo){
 		if (this_gun.mode == MODE_DUO){
-			if (other_gun.state == 0){
+			if (other_gun.state_duo == 0)
 				this_gun.state_duo = 0;
-				this_gun.skip_states = false; 
-			}else if ((other_gun.state == -2 || other_gun.state == -3) && this_gun.state_duo < 2){
-				this_gun.state_duo = 2;
-				this_gun.skip_states = true; 
-			}else if ((other_gun.state == 2 || other_gun.state == 3) && this_gun.state_duo > -2){
-				this_gun.state_duo = -2;
-			}else if (other_gun.state <= -4 && this_gun.state_duo == 3){ //special case
-				this_gun.state_duo = 4; //only bump into state 4 from 3, since 3 & 4 turn on the projector, below 3 the portal is off
-			}else if (other_gun.state >= 4 && this_gun.state_duo > -4){
-				this_gun.state_duo = -4;
+			if (other_gun.state_duo == 3 || other_gun.state_duo == 4) {
+				if (this_gun.state_duo == 0 || this_gun.state_duo == -1)
+					this_gun.state_duo = -2;
 			}
-		}else if (this_gun.mode == MODE_SOLO){  //code to pull out of solo states
-			if (other_gun.state <= -3){
-				if (this_gun.state_solo <= -3 || this_gun.state_solo >= 3){
-					this_gun.state_duo = 4;  //if a portal is open, go direct to projecting
-				}else{
-					this_gun.state_duo = 2; //if a portal is closed, don't blind anyone and just go to duo mode 2
-				}			
-				this_gun.mode = MODE_DUO;
+			if (other_gun.state_duo == -3) {
+				if (this_gun.state_duo == 0 || this_gun.state_duo == 1) 
+					this_gun.state_duo = 2;
+			}
+			if (other_gun.state_duo == 3 || other_gun.state_duo == 4) {
+				if (this_gun.state_duo == 5 || this_gun.state_duo == 6) 
+					this_gun.state_duo = -3;
+			}
+			if (other_gun.state_duo == 5 || other_gun.state_duo == 6) {
+				if (this_gun.state_duo == -3)
+					this_gun.state_duo = -4;
+			}
+		}else if (this_gun.mode == MODE_SOLO) {  //code to pull out of solo states
+			if (other_gun.state_duo == 3 || other_gun.state_duo == 4) {
 				this_gun.state_solo = 0;
+				this_gun.state_duo = -2;
+				this_gun.mode = MODE_DUO;
+			}
+			if (other_gun.state_duo == -3) {
+				if (this_gun.state_solo >= -2 && this_gun.state_solo <= 2) {
+					this_gun.state_solo = 0;
+					this_gun.state_duo = 2;
+					this_gun.mode = MODE_DUO;
+				}
+				if (this_gun.state_solo < -2 || this_gun.state_solo > 2) {
+					this_gun.state_solo = 0;
+					this_gun.state_duo = 3;
+					this_gun.mode = MODE_DUO;
+				}
 			}
 		}
-		
-	//let the other gun isntantly reply
-	if ( Math.abs(this_gun.state_duo) > 1)	this_gun.state = this_gun.state_duo;
-	else this_gun.state = 0; 
-	other_gun_transitions(other_gun,this_gun);
-		
+
+		//let the other gun isntantly reply
+		other_gun_transitions(other_gun,this_gun);
 	}
+
 }
 
 function update_portal(this_gun){
 
-	if (this_gun.state_duo == 4 || Math.abs(this_gun.state_solo) == 4) return "Open";
-	else if (this_gun.state_duo == 5 || this_gun.state_duo == 3 || Math.abs(this_gun.state_solo) == 3) return "Closed";
+	if (this_gun.state_duo == 5 || Math.abs(this_gun.state_solo) == 5) return "Open";
+	else if (this_gun.state_duo == 6 || this_gun.state_duo == 4 || Math.abs(this_gun.state_solo) == 4) return "Closed";
 	
 	return "Off"
 }		
@@ -219,15 +280,15 @@ function update_lights(this_gun){
 }
 
 function update_special(this_gun){
-
-	if (this_gun.state_duo == 5) return "Playlist Advance"; 
+	if ((this_gun.state_duo == 3 || Math.abs(this_gun.state_solo) == 3 ) && this_gun.laser == false) return "Starting Laser..";
+	else if (this_gun.state_duo == 6) return "Playlist Advance"; 
 	else if (this_gun.state_duo >= 4 && this_gun.state_previous <= -4) return "Swap To Projecting"; 
 	else if (this_gun.state_previous >= 4 && this_gun.state_duo <= -4) return "Swap To Camera"; 
-	else if (this_gun.state_duo == 4 && this_gun.state_previous == 0) return "Auto Solo to Duo";
-	else if (this_gun.state_duo == 4) return "Projecting Live Video";
+	//else if (this_gun.state_duo == 4 && this_gun.state_previous == 0) return "Auto Solo to Duo";
+	else if (this_gun.state_duo == 5) return "Projecting Live Video";
 	else if (this_gun.state_duo == -4) return "Sending Live Video";
-	else if (this_gun.state_solo == 4 || this_gun.state_solo == -4) return "Projecting Solo Portal";
-	else if (this_gun.state_solo == 3 || this_gun.state_solo == -3 || this_gun.state_duo == 3) return "Projecting Closed Portal";
+	else if (this_gun.state_solo == 5 || this_gun.state_solo == -5) return "Projecting Solo Portal";
+	else if (this_gun.state_solo == 4 || this_gun.state_solo == -4 || this_gun.state_duo == 4) return "Projecting Closed Portal";
 	
 	return "-"; 	
 }
