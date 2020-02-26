@@ -24,7 +24,6 @@ struct gun_struct {
 	int8_t state_duo_previous;
 	int8_t state_solo; //internal state for single player modes
 	int8_t state_solo_previous;
-	bool skip_states; //accelerate portal opening by skipping states
 	uint32_t clock;
 	int  ir_pwm;
 	int  fan_pwm;

@@ -103,16 +103,16 @@ uint32_t pipe_laser_pwr(bool pwr)  //returns a countdown. 0 means request is com
 	static bool current_power_state = false;
 	static uint32_t event_complete_time = 0;
 	
-	if(pwr == true && current_power_state == false){
-		printf("                                            Starting Laser Warmup...\n");
+	if (pwr == true && current_power_state == false){
+		printf("Starting Laser Warmup...\n");
 		fprintf(bash_fp, "vcgencmd display_power 1 2 &\n");
 		fflush(bash_fp);
 		current_power_state = true;
 		event_complete_time = millis() + LASER_WARMUP_MS; //5 second laser warmup
 	}
 	
-	if(pwr == false && current_power_state == true ){ 
-	printf("                                            Laser Powerdown...\n");
+	if (pwr == false && current_power_state == true ){ 
+		printf("Stopping Laser...\n");
 		fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
 		fflush(bash_fp);
 		current_power_state = false;
