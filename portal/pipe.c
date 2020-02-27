@@ -116,8 +116,9 @@ uint32_t pipe_laser_pwr(bool pwr)  //returns a countdown. 0 means request is com
 		fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
 		fflush(bash_fp);
 		current_power_state = false;
-		return 0;
 	}
+	
+	if(current_power_state == false) return 0;;
 	
 	uint32_t current_time = millis();
 	if (event_complete_time < current_time) return 0;

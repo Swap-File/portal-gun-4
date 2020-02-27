@@ -69,7 +69,7 @@ if (button == BUTTON_RESET) {
 			else if (this_gun->state_duo == -1) {  //blue idle lights
 				this_gun->state_duo = -3;  //camera start
 			} else if (this_gun->state_duo == -2) {  //blue dialed lights
-				this_gun->state_duo = -3;  //camera start
+				this_gun->state_duo = -4;  //camera start
 			}
 		} else if (this_gun->mode == MODE_SOLO) {
 			if (this_gun->state_solo == 0) {  //off
@@ -108,23 +108,9 @@ if (button == BUTTON_RESET) {
 			}			
 		}
 	}
-
-	/* laser power up */
-	if (this_gun->state_solo == 3 || this_gun->state_solo == -3 || this_gun->state_duo == 3){
-		this_gun->laser_countdown = pipe_laser_pwr(true);
-		if (this_gun->laser_countdown == 0){ 
-			if(this_gun->state_duo == 3)			this_gun->state_duo = 4;
-			else if(this_gun->state_solo == 3)	this_gun->state_solo = 4;
-			else if(this_gun->state_solo == -3)	this_gun->state_solo = -4;
-		}
-	}
-	
-	/* laser shutdown */
-	if ((abs(this_gun->state_solo) < 3 && this_gun->mode == MODE_SOLO) || (this_gun->state_duo < 3 && this_gun->mode == MODE_DUO))
-		pipe_laser_pwr(false);
 	
 	/* other gun transition - fixed */
-	if (this_gun->state_duo == 4 && this_gun->other_gun_state == -3)
+	if (this_gun->state_duo == 4 && this_gun->other_gun_state <= -3)  // must be <= -3 to catch quick swap direct to -4
 		this_gun->state_duo = 5;
 	
 	/* other gun transitions - on change */
@@ -142,13 +128,13 @@ if (button == BUTTON_RESET) {
 			}
 			if (this_gun->other_gun_state == 3 || this_gun->other_gun_state == 4) {
 				if (this_gun->state_duo == 5 || this_gun->state_duo == 6) 
-					this_gun->state_duo = -3;
+					this_gun->state_duo = -4;  //go directly to 4 to skip -3 sound
 			}
 			if (this_gun->other_gun_state == 5 || this_gun->other_gun_state == 6) {
 				if (this_gun->state_duo == -3)
 					this_gun->state_duo = -4;
 			}
-		}else if (this_gun->mode == MODE_SOLO) {  //code to pull out of solo states
+		} else if (this_gun->mode == MODE_SOLO) {  //code to pull out of solo states
 			if (this_gun->other_gun_state == 3 || this_gun->other_gun_state == 4) {
 				this_gun->state_solo = 0;
 				this_gun->state_duo = -2;
@@ -166,6 +152,27 @@ if (button == BUTTON_RESET) {
 					this_gun->mode = MODE_DUO;
 				}
 			}
+		}
+	}
+	
+	/* laser power */
+	if ((abs(this_gun->state_solo) < 3 && this_gun->mode == MODE_SOLO) || (this_gun->state_duo < 3 && this_gun->mode == MODE_DUO)) {
+		pipe_laser_pwr(false);
+		this_gun->laser_countdown = 0;
+		this_gun->laser_on = false;
+	} else {
+		this_gun->laser_countdown = pipe_laser_pwr(true);
+		
+		if (this_gun->laser_countdown == 0) this_gun->laser_on = true;
+		else 								this_gun->laser_on = false;
+	}	
+	
+	/* laser states */
+	if (this_gun->state_solo == 3 || this_gun->state_solo == -3 || this_gun->state_duo == 3){
+		if (this_gun->laser_on) { 
+			if(this_gun->state_duo == 3)			this_gun->state_duo = 4;
+			else if(this_gun->state_solo == 3)	this_gun->state_solo = 4;
+			else if(this_gun->state_solo == -3)	this_gun->state_solo = -4;
 		}
 	}
 	
@@ -249,57 +256,71 @@ if (button == BUTTON_RESET) {
 		}
 	}
 	
-	/* SOUND - LOCAL STATES */
+	/* DUO 0 OR SOLO 0 CLOSE */
 	if ((this_gun->state_duo_previous != 0 || this_gun->state_solo_previous != 0) && this_gun->state_duo == 0 && this_gun->state_solo == 0)
 		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");
-	/* on entering state 1 */
-	else if ((this_gun->state_duo_previous != 1) && (this_gun->state_duo == 1))
+	/* DUO 3+ ENTRY FROM SOLO 3 OR -3 (must be high on list to override other entry sounds) */
+	else if ((this_gun->state_solo_previous <= -3 || this_gun->state_solo_previous >= 3) && this_gun->state_duo >= 3)
+		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");	
+	/* DUO -2 ENTRY FROM SOLO (must be high on list to override other entry sounds) */
+	else if ((this_gun->state_solo_previous < 0 || this_gun->state_solo_previous > 0) && this_gun->state_duo == -2)
+		pipe_audio("/home/pi/assets/portalgun/portal_fizzle2.wav");
+	/* DUO 2 ENTRY FROM SOLO (must be high on list to override other entry sounds) */
+	else if ((this_gun->state_solo_previous == -2 || this_gun->state_solo_previous == 2) && this_gun->state_duo == 2)
+		pipe_audio("/home/pi/assets/portalgun/portal_fizzle2.wav");
+	/* DUO 1 ENTRY */
+	else if (this_gun->state_duo_previous != 1 && this_gun->state_duo == 1)
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");
-	/* on entering state -1 */
-	else if ((this_gun->state_duo_previous != -1) && (this_gun->state_duo == -1))
+	/* DUO -1 ENTRY */
+	else if (this_gun->state_duo_previous != -1 && this_gun->state_duo == -1)
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");			
-	/* on entering state 2 */
-	else if ((this_gun->state_duo_previous != 2) && (this_gun->state_duo == 2))
+	/* DUO 2 ENTRY */
+	else if (this_gun->state_duo_previous != 2 && this_gun->state_duo == 2)
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");		
-	/* on entering state -2 from -1 */
-	else if ((this_gun->state_duo_previous != -2) && (this_gun->state_duo == -2))
+	/* DUO -2 ENTRY */
+	else if (this_gun->state_duo_previous != -2 && this_gun->state_duo == -2)
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");
-	else if ((this_gun->state_duo_previous != -3) && (this_gun->state_duo == -3))
+	/* DUO -3 ENTRY */
+	else if (this_gun->state_duo_previous != -3 && this_gun->state_duo == -3)
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge3.wav");
+	/* DUO 3 ENTRY */
+	else if (this_gun->state_duo_previous != 3 && this_gun->state_duo == 3)
 		pipe_audio("/home/pi/assets/physcannon/physcannon_charge3.wav");	
-	/* on entering state 3 from 2 */
-	else if ((this_gun->state_duo_previous == 2) && (this_gun->state_duo ==3))
+	/* DUO 4 ENTRY */
+	else if (this_gun->state_duo_previous != 4 && this_gun->state_duo == 4)
 		pipe_audio("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
-	/* on quick swap to rec */
-	else if ((this_gun->state_duo_previous < 4) && (this_gun->state_duo == 4))
+	/* DUO 5 ENTRY FROM OFF */
+	else if (this_gun->state_duo_previous < 5 && this_gun->state_duo == 5)
 		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");
-	/* on quick swap to transmit */
-	else if ((this_gun->state_duo_previous >= 4) && (this_gun->state_duo <= -4))
+	/* DUO -4 ENTRY FOR QUICK SWAP */
+	else if (this_gun->state_duo_previous >= 3 && this_gun->state_duo <= -4)
 		pipe_audio("/home/pi/assets/portalgun/portal_fizzle2.wav");	
-	/* shared effect change close portal end sfx */
-	else if (this_gun->state_duo_previous == 4 && this_gun->state_duo == 5)
+	/* DUO 6 CLOSE PORTAL FOR PLAYLIST ADVANCE */
+	else if (this_gun->state_duo_previous == 5 && this_gun->state_duo == 6)
 		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");	
-	/* shared effect change open portal end sfx */
-	else if (this_gun->state_duo_previous == 5 && this_gun->state_duo == 4)
+	/* DUO 5 OPEN PORTAL FROM PLAYLIST ADVANCE */
+	else if (this_gun->state_duo_previous == 6 && this_gun->state_duo == 5)
 		pipe_audio("/home/pi/assets/portalgun/portal_open1.wav");
-	/* SOUND - SELF STATES */
-	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 1 || this_gun->state_solo == -1))
-		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");
-	/* on entering state 2 or -2 */
+	/* SOLO 1 & -1 (Not used!) */
+	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 1 || this_gun->state_solo == -2))
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");	
+	/* SOLO 2 & -2 */
 	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 2 || this_gun->state_solo == -2))
-		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");				
-	/* on entering state 3 or -3 from 0 */
-	else if ((this_gun->state_solo_previous < 3 && this_gun->state_solo_previous > -3  ) && (this_gun->state_solo == 3 || this_gun->state_solo == -3))
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge2.wav");	
+	/* SOLO 3 & -3 */
+	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 3 || this_gun->state_solo == -3))
+		pipe_audio("/home/pi/assets/physcannon/physcannon_charge3.wav");	
+	/* SOLO 4 & -4 - Closed Portal entry from off */
+	else if ((this_gun->state_solo_previous < 4 && this_gun->state_solo_previous > -4) && (this_gun->state_solo == 4 || this_gun->state_solo == -4))
 		pipe_audio("/home/pi/assets/portalgun/portalgun_shoot_blue1.wav");
-	/* on quick swap  */
-	else if (( this_gun->state_solo_previous >= 3 && this_gun->state_solo == -3) || (this_gun->state_solo_previous <= -3 && this_gun->state_solo == 3))
-		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");		
-	/* private end sfx */
-	else if ((this_gun->state_solo_previous > 3 && this_gun->state_solo == 3) || (this_gun->state_solo_previous < -3 && this_gun->state_solo == -3))
-		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav");
-	/* private start sfx */
-	else if ((this_gun->state_solo_previous != -4 && this_gun->state_solo == -4) || (this_gun->state_solo_previous != 4 && this_gun->state_solo == 4))
+	/* SOLO 4 & -4 - Closed Portal entry from swap */
+	else if (( this_gun->state_solo_previous >= 4 && this_gun->state_solo == -4) || (this_gun->state_solo_previous <= -4 && this_gun->state_solo == 4))
+		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");
+	/* SOLO 4 & -4 - Closed Portal entry from playing */
+	else if ((this_gun->state_solo_previous > 4 && this_gun->state_solo == 4) || (this_gun->state_solo_previous < -4 && this_gun->state_solo == -4))
+		pipe_audio("/home/pi/assets/portalgun/portal_close1.wav"); 
+	/* SOLO 5 & -5 - Entry to playing */
+	else if ((this_gun->state_solo_previous != -5 && this_gun->state_solo == -5) || (this_gun->state_solo_previous != 5 && this_gun->state_solo == 5))
 		pipe_audio("/home/pi/assets/portalgun/portal_open1.wav");
-	/* rip from private to shared mode sfx */
-	else if ((this_gun->state_solo_previous <= -3 || this_gun->state_solo_previous>=3) && this_gun->state_duo == 4)
-		pipe_audio("/home/pi/assets/portalgun/portal_open2.wav");		
+		
 }

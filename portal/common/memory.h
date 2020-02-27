@@ -46,6 +46,7 @@ struct gun_struct {
 	
 	int ui_mode;
 	uint32_t laser_countdown;
+	bool laser_on;
 	
 	int adc[4];
 	float particle_offset[720];
