@@ -50,6 +50,9 @@ static void start_pipeline(void)
 				printf("Projector: Video hot swap!\n");	
 			}	
 			movie_is_playing = false;
+		} else {//null everything else	
+			printf("Projector: Null-ing Pipeline!\n");	
+			gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_NULL);
 		}
 	}
 	

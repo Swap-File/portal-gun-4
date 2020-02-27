@@ -18,8 +18,8 @@ static GstContext *gst_context;
 static volatile bool *video_done_flag = NULL;  //points to shared struct (if set)
 
 //incoming
-volatile GLint *texture_id = 0;  //technically a GLint
-volatile bool  *texture_fresh = false;
+volatile GLint *texture_id;
+volatile bool  *texture_fresh;
 
 //grabs the texture via the glfilterapp element
 static gboolean drawCallback(GstElement* object, guint id , guint width ,guint height, gpointer user_data){
