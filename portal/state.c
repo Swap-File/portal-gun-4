@@ -170,7 +170,7 @@ if (button == BUTTON_RESET) {
 	/* laser states */
 	if (this_gun->state_solo == 3 || this_gun->state_solo == -3 || this_gun->state_duo == 3){
 		if (this_gun->laser_on) { 
-			if(this_gun->state_duo == 3)			this_gun->state_duo = 4;
+			if(this_gun->state_duo == 3)		this_gun->state_duo = 4;
 			else if(this_gun->state_solo == 3)	this_gun->state_solo = 4;
 			else if(this_gun->state_solo == -3)	this_gun->state_solo = -4;
 		}
@@ -230,18 +230,17 @@ if (button == BUTTON_RESET) {
 	/* Reminder: These variables are shared and may be read at ANY time */
 	/* for networked modes */
 	if (this_gun->state_solo == 0) {
-		if      (this_gun->state_duo == 3)   this_gun->portal_state = PORTAL_CLOSED_ORANGE;
-		else if (this_gun->state_duo == 4)   this_gun->portal_state = PORTAL_OPEN_ORANGE;	
-		else if (this_gun->state_duo < -2 && (this_gun->ui_mode == UI_HIDDEN_SIMPLE || this_gun->ui_mode == UI_HIDDEN_ADVANCED))  this_gun->portal_state = PORTAL_OPEN_BLUE;  //this is redirected to the preview display
-		else if (this_gun->state_duo == 5)	 this_gun->portal_state = PORTAL_CLOSED_ORANGE; //blink shut on effect change
+		if      (this_gun->state_duo == 4)   this_gun->portal_state = PORTAL_CLOSED_ORANGE;
+		else if (this_gun->state_duo == 5)   this_gun->portal_state = PORTAL_OPEN_ORANGE;
+		else if (this_gun->state_duo == 6)	 this_gun->portal_state = PORTAL_CLOSED_ORANGE; //blink shut on effect change
 		else								 this_gun->portal_state = PORTAL_CLOSED; 
 	}
 	/* for self modes */
 	else if (this_gun->state_duo == 0) {
-		if      (this_gun->state_solo ==  3) this_gun->portal_state = PORTAL_CLOSED_ORANGE;
-		else if (this_gun->state_solo == -3) this_gun->portal_state = PORTAL_CLOSED_BLUE;
-		else if (this_gun->state_solo <= -4) this_gun->portal_state = PORTAL_OPEN_BLUE;
-		else if (this_gun->state_solo >=  4) this_gun->portal_state = PORTAL_OPEN_ORANGE;
+		if      (this_gun->state_solo ==  4) this_gun->portal_state = PORTAL_CLOSED_ORANGE;
+		else if (this_gun->state_solo == -4) this_gun->portal_state = PORTAL_CLOSED_BLUE;
+		else if (this_gun->state_solo <= -5) this_gun->portal_state = PORTAL_OPEN_BLUE;
+		else if (this_gun->state_solo >=  5) this_gun->portal_state = PORTAL_OPEN_ORANGE;
 		else								 this_gun->portal_state = PORTAL_CLOSED; 
 	} else {
 											 this_gun->portal_state = PORTAL_CLOSED; 											 

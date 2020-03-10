@@ -1,8 +1,11 @@
 #include "io.h"
 #include <bcm2835.h>
+#include <stdio.h>
 
 void io_init(void)
 {
+	bcm2835_gpio_fsel(PIN_SERVO_SOFT_PWM, BCM2835_GPIO_FSEL_OUTP);
+	
 	bcm2835_gpio_fsel(PIN_FAN_PWM, BCM2835_GPIO_FSEL_ALT0); //PWM_CHANNEL 0
 	bcm2835_gpio_fsel(PIN_IR_PWM, BCM2835_GPIO_FSEL_ALT0);  //PWM_CHANNEL 1
 	
@@ -23,6 +26,40 @@ void io_init(void)
 	bcm2835_gpio_set_pud(PIN_ALT, BCM2835_GPIO_PUD_UP);
 	bcm2835_gpio_set_pud(PIN_MODE, BCM2835_GPIO_PUD_UP);
 	bcm2835_gpio_set_pud(PIN_RESET, BCM2835_GPIO_PUD_UP);
+}
+
+int io_servo(bool servo_open){
+
+	static bool servo_request_previous = false;
+	static int pulses = 0;
+	
+	if (servo_request_previous != servo_open){
+		pulses = 0;
+		servo_request_previous = servo_open;
+	}
+	
+	if (pulses < SERVO_NUM_PULSES){
+		pulses++;
+		bcm2835_gpio_write(PIN_SERVO_SOFT_PWM, HIGH);
+		uint64_t complete_time = bcm2835_st_read();
+		if(servo_open){
+			complete_time += SERVO_OPEN_TIME;
+			while(bcm2835_st_read() < complete_time){
+				;
+			}
+			bcm2835_gpio_write(PIN_SERVO_SOFT_PWM, LOW);
+			return SERVO_OPEN_TIME/1000;
+		} else {
+			complete_time += SERVO_CLOSED_TIME;
+			while(bcm2835_st_read() < complete_time){
+				;
+			}
+			bcm2835_gpio_write(PIN_SERVO_SOFT_PWM, LOW);
+			return SERVO_CLOSED_TIME/1000;
+		}
+		
+	}
+	return 0;
 }
 
 int io_update(const struct gun_struct *this_gun)

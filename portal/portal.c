@@ -44,9 +44,8 @@ int main(void)
 	led_init();
 	io_init();
 	i2c_init();	
-	//udp_init(this_gun->gordon);
-this_gun->mode = MODE_SOLO;
-this_gun->state_solo = 4;
+	udp_init(this_gun->gordon);
+
 	pipe_init(this_gun);
 
 	/* toggles every other cycle, cuts 100hz core tick speed to 50hz */
@@ -62,6 +61,11 @@ this_gun->state_solo = 4;
 		uint32_t predicted_delay = time_start - millis();
 		if (predicted_delay > 10) predicted_delay = 0; //check for overflow
 		if (predicted_delay != 0){
+			/* Update servos at 20ms intervals assuming we have enough delay, otherwise skip it */
+			if (predicted_delay >= 2 && freq_50hz){
+			
+				predicted_delay -= io_servo(this_gun->servo_open);
+			}
 			delay(predicted_delay); 
 		} else {
 			time_start = millis(); //reset timer to now to skip idle
@@ -75,7 +79,7 @@ this_gun->state_solo = 4;
 		this_gun->state_duo_previous = this_gun->state_duo;
 		this_gun->state_solo_previous = this_gun->state_solo;
 		this_gun->other_gun_state_previous = this_gun->other_gun_state;
-		
+		this_gun->servo_open = this_gun->laser_on;
 		/* Program Code */
 		pipe_update(this_gun);
 	
@@ -106,7 +110,7 @@ this_gun->state_solo = 4;
 		/* Send data to other gun and www output */
 		static uint32_t time_udp_send = 0;
 		if (this_gun->clock - time_udp_send > 100) {
-			//udp_send_state(this_gun->state_duo,this_gun->clock);
+			udp_send_state(this_gun->state_duo,this_gun->clock);
 			time_udp_send = this_gun->clock;
 			pipe_www_out(this_gun);
 		}

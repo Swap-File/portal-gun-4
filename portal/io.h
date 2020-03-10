@@ -8,6 +8,8 @@
 #define PIN_IR_PWM		13 //physical pin
 #define IR_PWM_CHANNEL	1  //cpu channel
 
+#define PIN_SERVO_SOFT_PWM   25
+
 #define PIN_PRIMARY 24
 #define PIN_ALT     23
 #define PIN_MODE    22 
@@ -20,7 +22,13 @@
 #define BUTTON_LONG_RESET 4
 #define BUTTON_NONE 5
 
+#define SERVO_OPEN_TIME 1000
+#define SERVO_CLOSED_TIME 2000
+
+#define SERVO_NUM_PULSES 10
+
 void io_init(void);
 int io_update(const struct gun_struct *this_gun);
+int io_servo(bool closed);
 
 #endif

@@ -178,7 +178,7 @@ void projector_logic_init(volatile bool *video_done_flag_p){
 	"audioin. ! goom2k1            ! videosink. "
 	"funnel name=videosink ! video/x-raw,width=400,height=320,framerate=30/1 ! "
 	"glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! "
-	"glfilterapp name=grabtexture ! fakesink sync=false async=false");
+	"glfilterapp name=grabtexture ! fakesink sync=true async=false");
 	
 	//movie pipeline, has all videos as long long video, chapter start and end times stored in gstvideo.h
 	//it doesnt work well to load and unload various input files due to the 
@@ -186,8 +186,8 @@ void projector_logic_init(volatile bool *video_done_flag_p){
 	gstcontext_load_pipeline(GST_MOVIE_FIRST,&pipeline[GST_MOVIE_FIRST],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/all.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true async=false "
-	//"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true async=false device=dmix");
-	"dmux.audio_0 ! fakesink");  //disable sound for testing on the workbench
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true async=false device=dmix");
+	//"dmux.audio_0 ! fakesink");  //disable sound for testing on the workbench
 
 	//save the output pads from the visualization pipelines
 	//get the output-selector element

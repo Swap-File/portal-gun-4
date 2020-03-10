@@ -10,9 +10,9 @@ static int adc_active_channel = 0; //what channel we are working on
 static int adc_data[4];
 static int gyro_data[3];
 
-static float temp_conversion(int input)
+static float temp_conversion(int input,int offset)
 {
-	float R =  10000.0 / (26000.0/((float)input) - 1.0);
+	float R = (10000.0 + (float)offset) / (26000.0/((float)input) - 1.0);
 	#define B 3428.0 // Thermistor constant from thermistor datasheet
 	#define R0 10000.0 // Resistance of the thermistor being used
 	#define t0 273.15 // 0 deg C in K
@@ -139,7 +139,7 @@ void calculate_offset(struct gun_struct *this_gun)
 	gyro[0] = gyro_data[0];
 	gyro[1] = gyro_data[1];
 	gyro[2] = gyro_data[2];
-	
+
 	static float gyro_smoothed[3];
 	
 	//filter x and y - adjust so snap-back disappears
@@ -193,11 +193,18 @@ void i2c_update(struct gun_struct *this_gun)
 	/* read accel every update call for smooth data */
 	i2c_read_gyro();
 	calculate_offset(this_gun);
-	/* old battery calibration:  21600 = 16.1v  16000 = 12.1v */	
-	if (this_gun->gordon)  //update these correction values
-		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)adc_data[1] * 0.00074;
-	else
-		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)adc_data[1] * 0.00072;
 	
-	this_gun->temperature_pretty = temp_conversion(adc_data[0]);
+	/* old battery calibration:  21600 = 16.1v  16000 = 12.1v */	
+	static float current = 0;	
+	if(this_gun->gordon){
+		this_gun->temperature_pretty = temp_conversion(adc_data[0],1500);
+		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)adc_data[2] * 0.00075;
+		current = current * .9 + .1 *(float)adc_data[3] * 0.00075 * .166666;
+		this_gun->current_pretty = (2.65 - current) / 0.185;   //.185 is fixed
+	}else{
+		this_gun->temperature_pretty = temp_conversion(adc_data[0],600);
+		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)adc_data[2] * 0.000735;
+		current = current * .9 + .1 *(float)adc_data[3] * 0.00075 * .166666;
+		this_gun->current_pretty = (2.63 - current) / 0.185;  //.185 is fixed
+	}	
 }

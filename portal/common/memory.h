@@ -47,12 +47,14 @@ struct gun_struct {
 	int ui_mode;
 	uint32_t laser_countdown;
 	bool laser_on;
+	bool servo_open;
 	
 	int adc[4];
 	float particle_offset[720];
 	float particle_magnitude;
 
 	float  battery_level_pretty;
+	float  current_pretty;
 	float  temperature_pretty;
 
 	int gst_state;
