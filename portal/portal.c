@@ -41,7 +41,6 @@ int main(void)
 	/* setup libraries */
 	pipe_www_out(this_gun); //output initial data now to let website load during gun init
 	bcm2835_init();
-	
 	led_init();
 	io_init();
 	i2c_init();	
@@ -114,12 +113,6 @@ int main(void)
 			udp_send_state(this_gun->state_duo,this_gun->clock);
 			time_udp_send = this_gun->clock;
 			pipe_www_out(this_gun);
-						
-			bcm2835_pwm_set_mode(12, 1, 1); //PWM_CHANNEL 0
-			bcm2835_pwm_set_range(0, 1024);//PWM_CHANNEL 0 Set Range to 1024
-			
-			bcm2835_pwm_set_mode(13, 1, 1);  //PWM_CHANNEL 1
-			bcm2835_pwm_set_range(1, 1024);   //PWM_CHANNEL 1 Set Range to 1024
 		}
 		
 		/* FPS counter */

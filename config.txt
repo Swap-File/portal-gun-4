@@ -1,3 +1,4 @@
+
 # For more options and information see
 # http://rpf.io/configtxt
 # Some settings may impact device functionality. See link above for details
@@ -62,7 +63,7 @@ dtparam=spi=on
 # Additional overlays and parameters are documented /boot/overlays/README
 
 # Enable audio (loads snd_bcm2835)
-#dtparam=audio=off
+#dtparam=audio=on
 
 [pi4]
 # Enable DRM VC4 V3D driver on top of the dispmanx display stack
@@ -70,9 +71,9 @@ dtoverlay=vc4-fkms-v3d
 max_framebuffers=2
 
 [all]
-dtoverlay=vc4-fkms-v3d
+#dtoverlay=vc4-fkms-v3d
 gpu_mem=256
 force_turbo=1
 dtoverlay=fe-pi-audio
-
 start_x=1
+dtoverlay=pwm-2chan,pin=12,pin2=13,func=4,func2=4
