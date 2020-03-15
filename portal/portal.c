@@ -13,7 +13,7 @@
 
 void INThandler(int dummy) {
 	printf("\nCleaning up...\n");
-	pipe_laser_pwr(true);
+	pipe_laser_pwr(true,NULL);
 	led_wipe();
 	pipe_cleanup();
 	shared_cleanup();
@@ -64,7 +64,7 @@ int main(void)
 			/* Update servos at 20ms intervals assuming we have enough delay, otherwise skip it */
 			if (predicted_delay >= 2 && freq_50hz){
 			
-				predicted_delay -= io_servo(this_gun->servo_open);
+				predicted_delay -= io_servo(this_gun->servo_on);
 			}
 			delay(predicted_delay); 
 		} else {
@@ -79,7 +79,7 @@ int main(void)
 		this_gun->state_duo_previous = this_gun->state_duo;
 		this_gun->state_solo_previous = this_gun->state_solo;
 		this_gun->other_gun_state_previous = this_gun->other_gun_state;
-		this_gun->servo_open = this_gun->laser_on;
+
 		/* Program Code */
 		pipe_update(this_gun);
 	

@@ -17,6 +17,12 @@
 #define IFSTAT_BNEP 0
 #define IFSTAT_WLAN 1
 
+#define LASER_STATE_DELAYED_OFF	0
+#define LASER_STATE_DELAYED_ON	1
+#define LASER_STATE_OFF			2
+#define LASER_STATE_ON			3
+#define LASER_STATE_UNKNOWN		4
+
 static int temp_in;
 static int web_in;
 
@@ -98,33 +104,83 @@ void pipe_audio(const char *filename)
 	fflush(bash_fp);
 }
 
-uint32_t pipe_laser_pwr(bool pwr)  //returns a countdown. 0 means request is complete.
+void pipe_laser_pwr(bool laser_request,struct gun_struct *this_gun)
 {
-	static bool current_power_state = false;
-	static uint32_t event_complete_time = 0;
+	if (this_gun == NULL){
+		if (laser_request == true){
+			fprintf(bash_fp, "vcgencmd display_power 1 2 &\n");
+		}
+		else if (laser_request == false){
+			fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");;
+		}
+		fflush(bash_fp);
+	}
 	
-	if (pwr == true && current_power_state == false){
+	static uint8_t laser_state = LASER_STATE_UNKNOWN;
+	
+	//this is fixed, laser_startup_delay is a function of the projector
+	static uint32_t laser_startup_delay = 5000; 
+	
+	//higher laser_shutdown_delay values will keep the laser on longer between shutting down for power savings
+	//it may be 0 if we are operating without a shutter (immediate shutdown on request)	
+	uint32_t laser_shutdown_delay;
+	if (this_gun->servo_bypass)	laser_shutdown_delay = 0; 
+	else 						laser_shutdown_delay = 30000;  
+	
+	static uint32_t startup_complete_time = 0;
+	static uint32_t shutdown_complete_time = 0;
+	
+	//issue the startup command on request, and start the timer so we know when its done
+	if (laser_state == LASER_STATE_OFF && laser_request == true){
 		printf("Starting Laser Warmup...\n");
 		fprintf(bash_fp, "vcgencmd display_power 1 2 &\n");
 		fflush(bash_fp);
-		current_power_state = true;
-		event_complete_time = millis() + LASER_WARMUP_MS; //5 second laser warmup
+		laser_state = LASER_STATE_DELAYED_ON;
+		startup_complete_time = millis() + laser_startup_delay; //5 second laser warmup
 	}
 	
-	if (pwr == false && current_power_state == true ){ 
+	//delayed startup countdown
+	if (laser_state == LASER_STATE_DELAYED_ON){
+		uint32_t time_now = millis();
+		if (startup_complete_time > time_now) {
+			this_gun->laser_countdown = startup_complete_time - time_now;
+		} else {
+			this_gun->laser_countdown = 0;
+			laser_state = LASER_STATE_ON;
+		}
+	}
+	
+	//if we get a shutdown request during startup, shut down immediately
+	if (laser_state == LASER_STATE_DELAYED_ON && laser_request == false){
+		laser_state = LASER_STATE_OFF;
+		this_gun->laser_countdown = 0;
 		printf("Stopping Laser...\n");
 		fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
 		fflush(bash_fp);
-		current_power_state = false;
 	}
 	
-	if(current_power_state == false) return 0;;
+	//if we get a shutdown request during normal operation, delay the shutdown
+	if (laser_state == LASER_STATE_ON && laser_request == false){
+		laser_state = LASER_STATE_DELAYED_OFF;
+		shutdown_complete_time = millis() + laser_shutdown_delay;
+	}
 	
-	uint32_t current_time = millis();
-	if (event_complete_time < current_time) return 0;
-	return event_complete_time - current_time;
+	//delayed shutdown countdown
+	if (laser_state == LASER_STATE_DELAYED_OFF){
+		uint32_t time_now = millis();
+		if (shutdown_complete_time < time_now) {
+			printf("Stopping Laser...\n");
+			fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
+			fflush(bash_fp);
+			laser_state = LASER_STATE_OFF;
+		}
+	}
+	
+	//if we get a turnon request during shutdown, go right back to being on
+	if (laser_state == LASER_STATE_DELAYED_OFF && laser_request == true){
+		laser_state = LASER_STATE_ON;
+	}
 }
-
 
 void pipe_www_out(const struct gun_struct *this_gun )
 {
@@ -133,7 +189,7 @@ void pipe_www_out(const struct gun_struct *this_gun )
 	
 	//send full playlist for editing
 	webout_fp = fopen("/var/www/html/tmp/temp.txt", "w");
-	fprintf(webout_fp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d %d\n" ,\
+	fprintf(webout_fp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %.2f %.2f %.2f %.2f %d %d %d\n" ,\
 	this_gun->state_solo,this_gun->state_duo,this_gun->connected,this_gun->ir_pwm,\
 	this_gun->playlist_solo[0],this_gun->playlist_solo[1],this_gun->playlist_solo[2],this_gun->playlist_solo[3],\
 	this_gun->playlist_solo[4],this_gun->playlist_solo[5],this_gun->playlist_solo[6],this_gun->playlist_solo[7],\
@@ -142,7 +198,7 @@ void pipe_www_out(const struct gun_struct *this_gun )
 	this_gun->playlist_duo[4],this_gun->playlist_duo[5],this_gun->playlist_duo[6],this_gun->playlist_duo[7],\
 	this_gun->playlist_duo[8],this_gun->playlist_duo[9],this_gun->effect_duo,\
 	this_gun->battery_level_pretty,this_gun->temperature_pretty,this_gun->coretemp,\
-	this_gun->latency,web_packet_counter,this_gun->mode);
+	this_gun->latency,web_packet_counter,this_gun->mode,this_gun->servo_bypass);
 	fclose(webout_fp);
 	rename("/var/www/html/tmp/temp.txt","/var/www/html/tmp/portal.txt");
 
@@ -178,6 +234,10 @@ int pipe_www_in(struct gun_struct *this_gun)
 				//ir stuff
 				else if (tv[0] == 2 ) {
 					if (tv[1] >= 0 && tv[1] <= 1024) this_gun->ir_pwm = tv[1];
+				}
+				//shutter stuff
+				else if (tv[0] == 5 ) {
+					this_gun->servo_bypass = tv[1];
 				}
 			} else if (results == 11) {
 				//pad out playlist with repeat (-1)

@@ -101,6 +101,14 @@ Portal Type:
 </select>
 <br>
 <br>
+Shutter Bypass:
+<select id="shutter_select" onchange="shutter_onchange(this)">
+<option value="-">-</option>
+<option value="1">1</option>
+<option value="0">0</option>
+</select>
+<br>
+<br>
 WiFi Channel:
 <select id="wifi_channel_select" onchange="wifi_channel_onchange(this)">
 <option value="-">-</option>
@@ -110,7 +118,6 @@ WiFi Channel:
 <option value="157">157</option>
 <option value="165">165</option>
 </select><br><br>
-<input type="button" class="button_text" id="hdmifix" onclick="hdmifix()" value="HDMI Reset"/><br><br>
 <input type="button" class="button_text" id="rebootgun" onclick="reboot()" value="Reboot"/><br>
 </div>
 <div class="hidden_div" id="load_div"> 
@@ -322,6 +329,8 @@ var state_duo = -1;
 var state_duo_last = -1;
 var state_solo = -1;
 var state_solo_last = -1;
+var servo_bypass_last = -1;
+var servo_bypass = -1;
 
 var effect_solo_last = -22;
 var effect_duo_last = -22;
@@ -560,14 +569,6 @@ function menu(sel){
 		mode_set();
 	}
 }
-function hdmifix(){
-	var r = confirm("Are you sure?");
-		if (r == true) {
-			var request = new XMLHttpRequest();
-			request.open("GET", "hdmifix.php", true);
-			request.send(null);
-		}
-}
 function edit_change(inputnum){
 	var obj = custom_mode ? playlist_duo_select : playlist_solo_select;
 	var new_index = obj.selectedIndex + inputnum;
@@ -683,6 +684,12 @@ function ir_select_onchange(thing){
 		post_text("mode=2 " + number);
 	}	
 }
+function shutter_onchange(thing){
+	var number = parseInt(thing.value);
+	if (number >= 0 && number <= 1){
+		post_text("mode=5 " + number);
+	}	
+}
 function effect_name(a) {
 	switch(a) {
 	case -1:	return "RESTART";
@@ -772,12 +779,20 @@ function update_data() {
 					mode_toggle.value = "Solo"
 				}
 				
+				servo_bypass = parseInt(res[32]);
+				if (servo_bypass_last != servo_bypass){
+					//top option is current setting
+					shutter_select.options[0].text = servo_bypass;
+					shutter_select.value = "-";
+					servo_bypass_last = servo_bypass;
+				}
+				
 				var ir_pwm = parseInt(res[3]);
 				if (ir_pwm_last != ir_pwm){
 					//top option is current setting
 					ir_select.options[0].text = ir_pwm;
 					ir_select.value = "1025";
-					ir_pwm_last= ir_pwm;
+					ir_pwm_last = ir_pwm;
 				}
 				
 				var connected = parseInt(res[2]);
@@ -901,7 +916,6 @@ function update_data() {
 	request.open("GET", "/tmp/portal.txt", true);
 	request.send(null);
 }
-
 function update_portal_forground() {
 	if ((state_solo > 0 || state_duo > 0) && portal_color != 0){
 		if (portal_type == "GIF"){
