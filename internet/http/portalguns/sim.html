@@ -145,13 +145,17 @@ function button(this_gun,other_gun,button){
 			}
 		} else if (this_gun.mode == MODE_SOLO) {
 			if (this_gun.state_solo == 0) {  //off
-				this_gun.state_solo = 2;  //orange solo idle lights
+				this_gun.state_solo = 1;  //orange solo idle lights
+			} else if (this_gun.state_solo == 1) {  //orange solo idle lights
+				this_gun.state_solo = 2;  //orange start projector
 			} else if (this_gun.state_solo == 2) {  //orange solo idle lights
 				this_gun.state_solo = 3;  //orange start projector
 			} else if (this_gun.state_solo == 4) {  //orange closed portal
 				this_gun.state_solo = 5;   //orange open portal
 			} else if (this_gun.state_solo == 5) {  //orange open portal
 				this_gun.state_solo = 4;   //orange closed portal
+			} else if (this_gun.state_solo == -1) { //blue solo idle lights
+				this_gun.state_solo = -2;  //blue start projector
 			} else if (this_gun.state_solo == -2) { //blue solo idle lights
 				this_gun.state_solo = -3;  //blue start projector
 			} else if (this_gun.state_solo == -4) {  //blue closed portal
@@ -172,7 +176,7 @@ function button(this_gun,other_gun,button){
 			}
 		} else if (this_gun.mode == MODE_SOLO) {
 			if (this_gun.state_solo == 0) { //off
-				this_gun.state_solo = -2;  //blue solo idle
+				this_gun.state_solo = -1;  //blue solo idle
 			} else if(this_gun.state_solo >= 3) {//solo portal color change
 				this_gun.state_solo = -3; //should immediately transition to -4, could be set to -4
 			} else if(this_gun.state_solo <= -3) {//solo portal color change
