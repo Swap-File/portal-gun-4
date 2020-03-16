@@ -105,18 +105,20 @@ void pipe_audio(const char *filename)
 
 void pipe_laser_pwr(bool laser_request,struct gun_struct *this_gun)
 {
+	static uint8_t laser_state = LASER_STATE_OFF;
+		
 	if (this_gun == NULL){
 		if (laser_request == true){
 			fprintf(bash_fp, "vcgencmd display_power 1 2 &\n");
+			laser_state = LASER_STATE_ON;
 		}
 		else if (laser_request == false){
-			fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");;
+			fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
+			laser_state = LASER_STATE_OFF;
 		}
 		fflush(bash_fp);
 		return;
 	}
-	
-	static uint8_t laser_state = LASER_STATE_OFF;
 	
 	//this is fixed, laser_startup_delay is a function of the projector
 	static uint32_t laser_startup_delay = 5000; 

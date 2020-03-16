@@ -33,6 +33,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 	}
 
 	if (button == BUTTON_RESET) {
+		if (this_gun->state_solo == 0 && this_gun->state_duo == 0) pipe_laser_pwr(false,NULL);
 		this_gun->state_solo = 0; //reset self state
 		this_gun->state_duo = 0; //reset local state
 		this_gun->mode = MODE_DUO; //reset to duo mode for common use case
