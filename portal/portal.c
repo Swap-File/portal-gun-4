@@ -63,8 +63,7 @@ int main(void)
 		if (predicted_delay != 0){
 			/* Update servos at 20ms intervals assuming we have enough delay, otherwise skip it */
 			if (predicted_delay >= 2 && freq_50hz){
-			
-				predicted_delay -= io_servo(this_gun->servo_on);
+				predicted_delay -= io_servo(this_gun->servo_open);
 			}
 			delay(predicted_delay); 
 		} else {

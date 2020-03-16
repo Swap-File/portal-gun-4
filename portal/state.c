@@ -163,7 +163,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 	/* if the shutter is damaged, set use_servo_strat false to fall back to old method of waiting 5 seconds to toggle the laser */
 	if (this_gun->servo_bypass){
 		/* always keep servo open in bypass mode */
-		this_gun->servo_on = true;
+		this_gun->servo_open = true;
 		/* laser power states */
 		if ((abs(this_gun->state_solo) < 3 && this_gun->mode == MODE_SOLO) || (this_gun->state_duo < 3 && this_gun->mode == MODE_DUO)) {
 			pipe_laser_pwr(false,this_gun);
@@ -183,21 +183,30 @@ void state_engine(int button,struct gun_struct *this_gun)
 	/* laser states */
 	if (this_gun->state_solo == 3 || this_gun->state_solo == -3 || this_gun->state_duo == 3){
 
-		if (shutter_start_time == 0) shutter_start_time = millis();
+		if (this_gun->servo_open == false){
+			shutter_start_time = millis();
+			//open the shutter but delay the state change
+			this_gun->servo_open = true;  
+		}
 
-		if (shutter_start_time + SHUTTER_DELAY <= millis()) this_gun->servo_on = true;
-
-		if (this_gun->laser_on && this_gun->servo_on == true) {
+		if (this_gun->laser_on && (shutter_start_time + SHUTTER_DELAY <= millis())) {
 			if(this_gun->state_duo == 3)		this_gun->state_duo = 4;
 			else if(this_gun->state_solo == 3)	this_gun->state_solo = 4;
 			else if(this_gun->state_solo == -3)	this_gun->state_solo = -4;
 		}
 	} else {
-		if (this_gun->servo_bypass == false) this_gun->servo_on = false;
-		shutter_start_time = 0;
+	
+		//dont try to move shutter if we are bypassing
+		if (this_gun->servo_bypass == false){
+			//keep shutter open on projecting states
+			if ( abs(this_gun->state_solo) > 3 || this_gun->state_duo > 3)	this_gun->servo_open = true;
+			//close shutter on lower value states other than solo 3 & -3 & duo 3
+			//do we need a SHUTTER_DELAY here too?  probably not.
+			else 															this_gun->servo_open = false;
+		}
+	
 	}
-
-
+	
 	/* reset playlists to the start */
 	/* continually reload playlist if in state 0 to catch updates */
 	if (this_gun->state_duo == 0) {

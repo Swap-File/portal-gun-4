@@ -21,7 +21,6 @@
 #define LASER_STATE_DELAYED_ON	1
 #define LASER_STATE_OFF			2
 #define LASER_STATE_ON			3
-#define LASER_STATE_UNKNOWN		4
 
 static int temp_in;
 static int web_in;
@@ -114,9 +113,10 @@ void pipe_laser_pwr(bool laser_request,struct gun_struct *this_gun)
 			fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");;
 		}
 		fflush(bash_fp);
+		return;
 	}
 	
-	static uint8_t laser_state = LASER_STATE_UNKNOWN;
+	static uint8_t laser_state = LASER_STATE_OFF;
 	
 	//this is fixed, laser_startup_delay is a function of the projector
 	static uint32_t laser_startup_delay = 5000; 
@@ -180,6 +180,10 @@ void pipe_laser_pwr(bool laser_request,struct gun_struct *this_gun)
 	if (laser_state == LASER_STATE_DELAYED_OFF && laser_request == true){
 		laser_state = LASER_STATE_ON;
 	}
+	
+	if (laser_state == LASER_STATE_ON)			this_gun->laser_on = true;
+	else if (laser_state == LASER_STATE_OFF)	this_gun->laser_on = false;
+
 }
 
 void pipe_www_out(const struct gun_struct *this_gun )
