@@ -33,13 +33,9 @@ static void start_pipeline(void)
 		
 		//leaving a audio effect mode 
 		if (video_mode_current >= GST_LIBVISUAL_FIRST && video_mode_current <= GST_LIBVISUAL_LAST){
-			//only pause  if we are going to a non audio mode from a audio mode, otherwise switch it live
-			if (video_mode_requested < GST_LIBVISUAL_FIRST || video_mode_requested > GST_LIBVISUAL_LAST){
-				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
-				printf("Projector: Stopping alsa!\n");		
-			} else {
-				printf("Projector: Alsa hot swap!\n");	
-			}
+			//always NULL alsa because libvisual doesnt stop emitting properly if paused
+			gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_NULL);
+			printf("Projector: Stopping alsa!\n");		
 		}		
 		//leaving a movie mode 
 		else if (video_mode_current >= GST_MOVIE_FIRST && video_mode_current <= GST_MOVIE_LAST){
