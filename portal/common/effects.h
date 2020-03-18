@@ -26,7 +26,8 @@
 #define GST_RPICAMSRC 3
 #define GST_NORMAL 4
 
-#define GST_LIBVISUAL_FIRST 10
+#define GST_LIBVISUAL_FIRST 9
+#define GST_LIBVISUAL_CORONA 9
 #define GST_LIBVISUAL_JESS 10
 #define GST_LIBVISUAL_INFINITE 11
 #define GST_LIBVISUAL_JAKDAW 12
@@ -113,6 +114,7 @@ static char *const effectnames[GST_MOVIE_LAST+1] = {
 	[GST_RPICAMSRC] = "Rpicam",
 	[GST_NORMAL] = "Normal",
 	
+	[GST_LIBVISUAL_CORONA] = "Corona",	
 	[GST_LIBVISUAL_JESS] = "Jess",
 	[GST_LIBVISUAL_INFINITE] = "Infinite",
 	[GST_LIBVISUAL_JAKDAW] = "Jakdaw",

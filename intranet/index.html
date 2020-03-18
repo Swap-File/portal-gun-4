@@ -78,7 +78,6 @@ Camera Preview:
 <br>
 Projector Preview:
 <select id="preview_projection_select" onchange="preview_projection_onchange(this)">
-<option value="LIVE">LIVE</option>
 <option value="GIF">GIF</option>
 <option value="OFF">OFF</option>
 </select>
@@ -212,6 +211,7 @@ Select Item to Edit...<br><br>
 <option value="37">37</option>
 </optgroup> 
 <optgroup label="Audio">
+<option value="9">9</option>
 <option value="10">10</option>
 <option value="11">11</option>
 <option value="12">12</option>
@@ -244,6 +244,7 @@ Select Item to Edit...<br><br>
 <div id="playlist_solo_div"> 
 <select id="playlist_solo_select" onchange="playlist_onchange(this)">
 <optgroup label="Audio">
+<option value="9">9</option>
 <option value="10">10</option>
 <option value="11">11</option>
 <option value="12">12</option>
@@ -575,7 +576,7 @@ function edit_change(inputnum){
 	if (new_index < 0){
 		new_index = obj.length - 1;
 	}
-	if (new_index >=  obj.length){ 
+	if (new_index >= obj.length){ 
 		new_index = 0;
 	}
 	obj.selectedIndex = new_index;
@@ -698,6 +699,7 @@ function effect_name(a) {
 	case 2:		return "TEST_CUBE";	
 	case 3:		return "CAMERA";
 	case 4:		return "NORMAL";
+	case 9:		return "CORONA";
 	case 10:	return "JESS";
 	case 11:	return "INFINITE";
 	case 12:	return "JAKDAW";
@@ -959,26 +961,14 @@ function update_portal_background() {
 	}
 	else if (state_duo > 0){
 		portal_text.innerHTML = effect_name(effect_duo);
-		if (preview_project == "LIVE"){
-			if (effect_duo >= 10 && effect_duo < 19){
-				portal_back.src = "http://" + location.host + ":8080/?action=stream";
-			}else{
-				portal_back.src = effect_preview(effect_duo);
-			}
-		}else if (preview_project == "GIF"){
+		if (preview_project == "GIF"){
 			portal_back.src = effect_preview(effect_duo);
 		}else{
 			portal_back.src = "";
 		}
 	}else if (state_solo < 0 || state_solo > 0){
 		portal_text.innerHTML = effect_name(effect_solo);
-		if (preview_project == "LIVE"){
-			if (effect_solo >= 10 && effect_solo < 19){
-				portal_back.src = "http://" + location.host + ":8080/?action=stream";
-			}else{
-				portal_back.src = effect_preview(effect_solo);
-			}
-		}else if (preview_project == "GIF"){
+		if (preview_project == "GIF"){
 			portal_back.src = effect_preview(effect_solo);
 		}else{
 			portal_back.src = "";

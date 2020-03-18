@@ -10,7 +10,7 @@
 static volatile bool *video_done_flag = NULL;  //points to shared struct (if set)
 
 GstPipeline *pipeline[GST_LAST + 1],*pipeline_active;
-GstPad *outputpads[6];
+GstPad *outputpads[7];
 GstElement *outputselector;
 	
 static bool movie_is_playing = false;
@@ -101,7 +101,7 @@ void projector_logic_update(int gst_state, int portal_state){
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 				movie_is_playing = false;
 			}
-			if (portal_state != PORTAL_OPEN_ORANGE && portal_state != PORTAL_OPEN_BLUE ) {
+			if ((portal_state & PORTAL_OPEN_BIT) != PORTAL_OPEN_BIT ) {
 				printf("End EARLY!\n");
 				if (video_done_flag != NULL) *video_done_flag = true;
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
@@ -112,7 +112,7 @@ void projector_logic_update(int gst_state, int portal_state){
 
 	if (video_mode_requested != video_mode_current)	{
 		if (video_mode_requested >= GST_MOVIE_FIRST && video_mode_requested <= GST_MOVIE_LAST){
-			if (portal_state == PORTAL_OPEN_ORANGE || portal_state == PORTAL_OPEN_BLUE) { //wait until portal is opening to start video
+			if ((portal_state & PORTAL_OPEN_BIT) == PORTAL_OPEN_BIT) { //wait until portal is opening to start video
 				start_pipeline();
 			}
 		} else { //immediately change for all other pipelines to allow as much preloading as possible
@@ -166,6 +166,7 @@ void projector_logic_init(volatile bool *video_done_flag_p){
 	//audio format must match the movie output stuff, otherwise the I2S Soundcard will get slow and laggy when switching formats!
 	gstcontext_load_pipeline(GST_LIBVISUAL_FIRST,&pipeline[GST_LIBVISUAL_FIRST],GST_STATE_PAUSED,"alsasrc buffer-time=40000 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! "
 	"output-selector name=audioin pad-negotiation-mode=Active "
+	"audioin. ! libvisual_corona   ! videoflip video-direction=1 ! videosink. "
 	"audioin. ! libvisual_jess     ! videosink. "
 	"audioin. ! libvisual_infinite ! videosink. "
 	"audioin. ! libvisual_jakdaw   ! videosink. "
@@ -196,5 +197,5 @@ void projector_logic_init(volatile bool *video_done_flag_p){
 	outputpads[3] = gst_element_get_static_pad(outputselector,"src_3");
 	outputpads[4] = gst_element_get_static_pad(outputselector,"src_4");
 	outputpads[5] = gst_element_get_static_pad(outputselector,"src_5");
-
+	outputpads[6] = gst_element_get_static_pad(outputselector,"src_6");
 }
