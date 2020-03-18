@@ -203,6 +203,8 @@ void state_engine(int button,struct gun_struct *this_gun)
 			if ( abs(this_gun->state_solo) > 3 || this_gun->state_duo > 3)	this_gun->servo_open = true;
 			//close shutter on lower value states other than solo 3 & -3 & duo 3
 			//do we need a SHUTTER_DELAY here too?  probably not.
+			//extravagant shutter flourish here
+			//else if ( this_gun->state_solo == 0 && this_gun->state_duo == 0 && this_gun->laser_on == false)	this_gun->servo_open = true;
 			else 															this_gun->servo_open = false;
 		}
 	
