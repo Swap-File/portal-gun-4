@@ -103,6 +103,7 @@ Portal Type:
 Shutter Bypass:
 <select id="shutter_select" onchange="shutter_onchange(this)">
 <option value="-">-</option>
+<option value="2">2</option>
 <option value="1">1</option>
 <option value="0">0</option>
 </select>
@@ -211,6 +212,8 @@ Select Item to Edit...<br><br>
 <option value="37">37</option>
 </optgroup> 
 <optgroup label="Audio">
+<option value="7">7</option>
+<option value="8">8</option>
 <option value="9">9</option>
 <option value="10">10</option>
 <option value="11">11</option>
@@ -244,6 +247,8 @@ Select Item to Edit...<br><br>
 <div id="playlist_solo_div"> 
 <select id="playlist_solo_select" onchange="playlist_onchange(this)">
 <optgroup label="Audio">
+<option value="7">7</option>
+<option value="8">8</option>
 <option value="9">9</option>
 <option value="10">10</option>
 <option value="11">11</option>
@@ -699,6 +704,8 @@ function effect_name(a) {
 	case 2:		return "TEST_CUBE";	
 	case 3:		return "CAMERA";
 	case 4:		return "NORMAL";
+	case 7:		return "WAVE";
+	case 8:		return "SYNAE";	
 	case 9:		return "CORONA";
 	case 10:	return "JESS";
 	case 11:	return "INFINITE";

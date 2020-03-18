@@ -162,7 +162,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 	}
 
 	/* if the shutter is damaged, set use_servo_strat false to fall back to old method of waiting 5 seconds to toggle the laser */
-	if (this_gun->servo_bypass){
+	if (this_gun->servo_bypass == SERVO_BYPASS){
 		/* always keep servo open in bypass mode */
 		this_gun->servo_open = true;
 		/* laser power states */
@@ -198,14 +198,15 @@ void state_engine(int button,struct gun_struct *this_gun)
 	} else {
 	
 		//dont try to move shutter if we are bypassing
-		if (this_gun->servo_bypass == false){
+		if (this_gun->servo_bypass != SERVO_BYPASS){
 			//keep shutter open on projecting states
 			if ( abs(this_gun->state_solo) > 3 || this_gun->state_duo > 3)	this_gun->servo_open = true;
 			//close shutter on lower value states other than solo 3 & -3 & duo 3
 			//do we need a SHUTTER_DELAY here too?  probably not.
 			//extravagant shutter flourish here
-			//else if ( this_gun->state_solo == 0 && this_gun->state_duo == 0 && this_gun->laser_on == false)	this_gun->servo_open = true;
-			else 															this_gun->servo_open = false;
+			else if (this_gun->servo_bypass == SERVO_FANCY && this_gun->state_solo == 0 && this_gun->state_duo == 0 && this_gun->laser_on == false)
+				this_gun->servo_open = true;
+			else this_gun->servo_open = false;
 		}
 	
 	}

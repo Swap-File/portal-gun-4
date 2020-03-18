@@ -126,8 +126,8 @@ void pipe_laser_pwr(bool laser_request,struct gun_struct *this_gun)
 	//higher laser_shutdown_delay values will keep the laser on longer between shutting down for power savings
 	//it may be 0 if we are operating without a shutter (immediate shutdown on request)	
 	uint32_t laser_shutdown_delay;
-	if (this_gun->servo_bypass)	laser_shutdown_delay = 0; 
-	else 						laser_shutdown_delay = 30000;  
+	if (this_gun->servo_bypass == SERVO_BYPASS)	laser_shutdown_delay = 0; 
+	else 										laser_shutdown_delay = 30000;  
 	
 	static uint32_t startup_complete_time = 0;
 	static uint32_t shutdown_complete_time = 0;

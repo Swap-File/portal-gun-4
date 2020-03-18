@@ -48,7 +48,7 @@ struct gun_struct {
 	uint32_t laser_countdown;
 	bool laser_on;
 	bool servo_open;
-	bool servo_bypass;
+	int8_t servo_bypass;
 	
 	int adc[4];
 	float particle_offset[720];

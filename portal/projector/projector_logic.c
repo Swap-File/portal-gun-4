@@ -10,8 +10,6 @@
 static volatile bool *video_done_flag = NULL;  //points to shared struct (if set)
 
 GstPipeline *pipeline[GST_LAST + 1],*pipeline_active;
-GstPad *outputpads[7];
-GstElement *outputselector;
 	
 static bool movie_is_playing = false;
 static int video_mode_requested = 0;
@@ -25,20 +23,12 @@ static void seek_to_time(gint64 time_nanoseconds)
 }
 
 static void start_pipeline(void)
-{	
+{
 	uint32_t start_time = millis();
-	
 	//stop the old pipeline
 	if (GST_IS_ELEMENT(pipeline_active)) {
-		
-		//leaving a audio effect mode 
-		if (video_mode_current >= GST_LIBVISUAL_FIRST && video_mode_current <= GST_LIBVISUAL_LAST){
-			//always NULL alsa because libvisual doesnt stop emitting properly if paused
-			gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_NULL);
-			printf("Projector: Stopping alsa!\n");		
-		}		
 		//leaving a movie mode 
-		else if (video_mode_current >= GST_MOVIE_FIRST && video_mode_current <= GST_MOVIE_LAST){
+		if (video_mode_current >= GST_MOVIE_FIRST && video_mode_current <= GST_MOVIE_LAST){
 			if (video_mode_requested < GST_MOVIE_FIRST || video_mode_requested > GST_MOVIE_LAST){
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 				printf("Projector: Stopping video!\n");			
@@ -61,10 +51,7 @@ static void start_pipeline(void)
 		movie_is_playing = true;
 		
 	}
-	else if (video_mode_requested >= GST_LIBVISUAL_FIRST && video_mode_requested <= GST_LIBVISUAL_LAST){
-		g_object_set (outputselector, "active-pad",  outputpads[video_mode_requested - GST_LIBVISUAL_FIRST], NULL);
-		pipeline_active = pipeline[GST_LIBVISUAL_FIRST]; 
-	} else {
+	else {
 		pipeline_active = pipeline[video_mode_requested]; 
 	}
 	
@@ -161,41 +148,27 @@ void projector_logic_init(volatile bool *video_done_flag_p){
 	gstcontext_load_pipeline(GST_GLBULGE,		&pipeline[GST_GLBULGE]		,GST_STATE_NULL,"udpsrc port=9000 caps=application/x-rtp retrieve-sender-address=false ! rtpjpegdepay ! queue ! jpegdec ! glupload ! glcolorconvert ! gleffects_bulge   ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false");
 	gstcontext_load_pipeline(GST_GLHEAT,		&pipeline[GST_GLHEAT]		,GST_STATE_NULL,"udpsrc port=9000 caps=application/x-rtp retrieve-sender-address=false ! rtpjpegdepay ! queue ! jpegdec ! glupload ! glcolorconvert ! gleffects_heat    ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false");
 
-	//audio effects - alsasrc takes a second or so to init, so here a output-selector is used
-	//effect order matters since pads on the output selector can't easily be named in advance 
-	//audio format must match the movie output stuff, otherwise the I2S Soundcard will get slow and laggy when switching formats!
-	gstcontext_load_pipeline(GST_LIBVISUAL_FIRST,&pipeline[GST_LIBVISUAL_FIRST],GST_STATE_PAUSED,"alsasrc buffer-time=40000 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! "
-	"output-selector name=audioin pad-negotiation-mode=Active "
-	"audioin. ! libvisual_corona   ! videoflip video-direction=1 ! videosink. "
-	"audioin. ! libvisual_jess     ! videosink. "
-	"audioin. ! libvisual_infinite ! videosink. "
-	"audioin. ! libvisual_jakdaw   ! videosink. "
-	"audioin. ! libvisual_oinksie  ! videosink. "
-	"audioin. ! goom               ! videosink. "
-	"audioin. ! goom2k1            ! videosink. "
-	"funnel name=videosink ! video/x-raw,width=400,height=320,framerate=30/1 ! "
-	"glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! "
-	"glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	//spawn audio udp loopback to prevent re-init issues (bringing it back from portal gun v1.0)	
+	system("gst-launch-1.0 alsasrc buffer-time=40000 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! udpsink host=127.0.0.1 port=5000 sync=false &");
+	g_usleep(1000000);
+	
+	gstcontext_load_pipeline(GST_LIBVISUAL_WAVE,	&pipeline[GST_LIBVISUAL_WAVE]		,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  wavescope style=3   							  		! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_SYNAE,	&pipeline[GST_LIBVISUAL_SYNAE]		,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  synaescope shader=2	! videoflip video-direction=1 	! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_CORONA,	&pipeline[GST_LIBVISUAL_CORONA]		,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  libvisual_corona ! videoflip video-direction=1 		! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_JESS,	&pipeline[GST_LIBVISUAL_JESS]		,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  libvisual_jess      							  		! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_INFINITE,&pipeline[GST_LIBVISUAL_INFINITE]	,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  libvisual_infinite  							  		! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_JAKDAW,	&pipeline[GST_LIBVISUAL_JAKDAW]		,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  libvisual_jakdaw    							  		! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_OINKSIE,	&pipeline[GST_LIBVISUAL_OINKSIE]	,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  libvisual_oinksie   							  		! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
+	gstcontext_load_pipeline(GST_GOOM,				&pipeline[GST_GOOM]					,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  goom                							  		! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
+	gstcontext_load_pipeline(GST_GOOM2K1,			&pipeline[GST_GOOM2K1]				,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  goom2k1             							  		! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
 	
 	//movie pipeline, has all videos as long long video, chapter start and end times stored in gstvideo.h
-	//it doesnt work well to load and unload various input files due to the 
+	//it doesnt work well to load and unload various input files
 	//audio format must match the visual input stuff, otherwise the I2S Soundcard will get slow and laggy when switching formats! 
+	//lag may not still happen in buster - untested since current implementation still works fine
 	gstcontext_load_pipeline(GST_MOVIE_FIRST,&pipeline[GST_MOVIE_FIRST],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/all.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true async=false "
 	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true async=false device=dmix");
 	//"dmux.audio_0 ! fakesink");  //disable sound for testing on the workbench
-
-	//save the output pads from the visualization pipelines
-	//get the output-selector element
-	outputselector = gst_bin_get_by_name (GST_BIN (pipeline[GST_LIBVISUAL_FIRST]), "audioin");
-	
-	//save each output pad for later
-	outputpads[0] = gst_element_get_static_pad(outputselector,"src_0");
-	outputpads[1] = gst_element_get_static_pad(outputselector,"src_1");
-	outputpads[2] = gst_element_get_static_pad(outputselector,"src_2");
-	outputpads[3] = gst_element_get_static_pad(outputselector,"src_3");
-	outputpads[4] = gst_element_get_static_pad(outputselector,"src_4");
-	outputpads[5] = gst_element_get_static_pad(outputselector,"src_5");
-	outputpads[6] = gst_element_get_static_pad(outputselector,"src_6");
 }
