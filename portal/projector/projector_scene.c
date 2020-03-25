@@ -145,7 +145,7 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 	
 	//zoom on request
 	if(portal_state_requested != PORTAL_CLOSED && zoom_displayed > ZOOM_MAX){
-		zoom_displayed -= delta / 10;  //This sets zoom speed
+		zoom_displayed -= delta / 2.0;  //This sets zoom speed
 		if (zoom_displayed < ZOOM_MAX) zoom_displayed = ZOOM_MAX;
 		//printf("zooming %f \n",zoom_displayed);
 		if ((portal_state_requested & PORTAL_ORANGE_BIT) != 0) 

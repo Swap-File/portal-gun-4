@@ -81,6 +81,40 @@ static void slide_to(float r_target, float g_target, float b_target)
 	glClearColor(r_now,g_now,b_now,0.0); 
 }
 
+static void draw_emitter(int line){
+	char temp[20];	
+
+	if ( this_gun->laser_countdown != 0 ) {
+		static uint32_t last_update = 0;
+		static uint32_t animation = 0;
+		
+		int milliseconds = (this_gun->laser_countdown % 1000);
+		int seconds      = (this_gun->laser_countdown / 1000) % 60;
+		
+		if (millis() - last_update > 50){
+			animation++;
+			if (animation > 3) animation = 0;
+			last_update = millis();
+		}
+		
+		if (animation == 0) sprintf(temp,">  -%02d:%03d  <", seconds,milliseconds);
+		if (animation == 1) sprintf(temp," > -%02d:%03d < ", seconds,milliseconds);
+		if (animation == 2) sprintf(temp,"  >-%02d:%03d<  ", seconds,milliseconds);
+		if (animation == 3) sprintf(temp,"   -%02d:%03d   ", seconds,milliseconds);
+	
+	}else if ( abs(this_gun->state_solo) > 3 || this_gun->state_duo > 3 ) {
+		sprintf(temp,"Emitting");
+	}else if (this_gun->state_duo < -1) {
+		sprintf(temp,"Capturing");
+	}else{
+		if (this_gun->laser_on)
+		sprintf(temp,"Warm");
+		else
+		sprintf(temp,"Idle");
+	}
+	center_text(&a64,temp, line);
+}
+
 static void draw_scene(unsigned i,char *debug_msg)
 {
 	if (debug_msg[0] != '\0'){
@@ -134,10 +168,90 @@ static void draw_scene(unsigned i,char *debug_msg)
 		
 		if (this_gun->ui_mode == UI_SIMPLE){
 			
-			center_text(&a64,"TRAINER", 8);
-			center_text(&a64,"GUI", 7);
-			center_text(&a64,"PLACE", 6);
-			center_text(&a64,"HOLDER", 5);
+			if (this_gun->mode == MODE_SOLO){
+				if (this_gun->state_solo == 0 && this_gun->state_duo == 0) {
+					center_text(&a64,"1 1P Orange", 8);
+					center_text(&a64,"2 1P Blue  ", 7);
+					center_text(&a64,"3 -> Duo   ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}
+				if (abs(this_gun->state_solo) > 0 && abs(this_gun->state_solo) < 3 && this_gun->state_duo == 0) {
+					center_text(&a64,"1 Next Solo", 8);
+					center_text(&a64,"2          ", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}
+				if (abs(this_gun->state_solo) == 3 && this_gun->state_duo == 0) {
+					center_text(&a64,"1 Waiting  ", 8);
+					center_text(&a64,"2          ", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}
+				if (abs(this_gun->state_solo) == 4 && this_gun->state_duo == 0) {
+					center_text(&a64,"1 Next FX  ", 8);
+					center_text(&a64,"2 ColorSwap", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}
+				if (abs(this_gun->state_solo) == 5 && this_gun->state_duo == 0) {
+					center_text(&a64,"1 Open Solo", 8);
+					center_text(&a64,"2 Color Sw ", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}
+			} else {
+				if (this_gun->state_duo == 0 && this_gun->state_solo == 0) {
+					center_text(&a64,"1 Projector", 8);
+					center_text(&a64,"2 Camera   ", 7);
+					center_text(&a64,"3 -> Solo  ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}
+				if ((this_gun->state_duo == -1 || this_gun->state_duo == -2) && this_gun->state_solo == 0) {
+					center_text(&a64,"1 Camera   ", 8);
+					center_text(&a64,"2          ", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}
+				if (this_gun->state_duo == -3 && this_gun->state_solo == 0 ) {
+					center_text(&a64,"1 Waiting  ", 8);
+					center_text(&a64,"2          ", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}
+				if (this_gun->state_solo == -4 && this_gun->state_solo == 0 ) {
+					center_text(&a64,"1          ", 8);
+					center_text(&a64,"2 Projector", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}					
+				if ((this_gun->state_duo == 1 || this_gun->state_duo == 2) && this_gun->state_solo == 0 ) {
+					center_text(&a64,"1 Projector", 8);
+					center_text(&a64,"2          ", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}	
+				if ((this_gun->state_duo == 3 || this_gun->state_duo == 4) && this_gun->state_solo == 0 ) {
+					center_text(&a64,"1 Waiting  ", 8);
+					center_text(&a64,"2          ", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}
+				if ((this_gun->state_duo == 5) && this_gun->state_solo == 0 ) {
+					center_text(&a64,"1          ", 8);
+					center_text(&a64,"2 Next FX  ", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}	
+				if ((this_gun->state_duo == 6) && this_gun->state_solo == 0 ) {
+					center_text(&a64,"1 Open     ", 8);
+					center_text(&a64,"2          ", 7);
+					center_text(&a64,"3 -> UI    ", 6);
+					center_text(&a64,"4 Reset    ", 5);
+				}	
+	
+			}
+			
+			draw_emitter(3);
 			
 		} else {
 			sprintf(temp,"%.0f/%.0f\260F",this_gun->temperature_pretty ,this_gun->coretemp);	
@@ -147,33 +261,7 @@ static void draw_scene(unsigned i,char *debug_msg)
 			else  sprintf(temp,"Sync Err");	
 			center_text(&a64,temp, 7);
 
-			if ( abs(this_gun->state_solo) > 2 || this_gun->state_duo > 2 ) {
-				sprintf(temp,"Emitting");
-			}
-			else if ( abs(this_gun->state_solo) == 2 || this_gun->state_duo == 2 ) {
-				static uint32_t last_update = 0;
-				static uint32_t animation = 0;
-				
-				int milliseconds = (this_gun->laser_countdown % 1000);
-				int seconds      = (this_gun->laser_countdown / 1000) % 60;
-				
-				if (millis() - last_update > 50){
-					animation++;
-					if (animation > 3) animation = 0;
-					last_update = millis();
-				}
-				
-				if (animation == 0) sprintf(temp,">  -%02d:%03d  <", seconds,milliseconds);
-				if (animation == 1) sprintf(temp," > -%02d:%03d < ", seconds,milliseconds);
-				if (animation == 2) sprintf(temp,"  >-%02d:%03d<  ", seconds,milliseconds);
-				if (animation == 3) sprintf(temp,"   -%02d:%03d   ", seconds,milliseconds);
-				
-			}else if (this_gun->state_duo < -1) {
-				sprintf(temp,"Capturing");
-			}else{
-				sprintf(temp,"Idle");
-			}
-			center_text(&a64,temp, 6);
+			draw_emitter(6);
 			
 			int kbits = this_gun->kbytes_wlan;
 			if (this_gun->kbytes_bnep > 0)  kbits += this_gun->kbytes_bnep;
@@ -188,12 +276,14 @@ static void draw_scene(unsigned i,char *debug_msg)
 			else  sprintf(temp,"%.1fV %.2fms",this_gun->battery_level_pretty,this_gun->latency );
 			center_text(&a64,temp, 3);
 			
-			if (this_gun->mode == MODE_DUO) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
-			else					sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
-			center_text(&a64,temp, 2);
+
 			
 		}
 		
+		if (this_gun->mode == MODE_DUO) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
+		else							sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
+		center_text(&a64,temp, 2);
+			
 		uint32_t current_time;	
 		if (this_gun->mode == MODE_DUO)  {
 			sprintf(temp,"Duo Mode");	
