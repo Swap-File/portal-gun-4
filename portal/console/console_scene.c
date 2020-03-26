@@ -101,7 +101,7 @@ static void draw_emitter(int line){
 		if (animation == 1) sprintf(temp," > -%02d:%03d < ", seconds,milliseconds);
 		if (animation == 2) sprintf(temp,"  >-%02d:%03d<  ", seconds,milliseconds);
 		if (animation == 3) sprintf(temp,"   -%02d:%03d   ", seconds,milliseconds);
-	
+		
 	}else if ( abs(this_gun->state_solo) > 3 || this_gun->state_duo > 3 ) {
 		sprintf(temp,"Emitting");
 	}else if (this_gun->state_duo < -1) {
@@ -167,90 +167,100 @@ static void draw_scene(unsigned i,char *debug_msg)
 		else 					center_text(&a64b,"Chell", 9);
 		
 		if (this_gun->ui_mode == UI_SIMPLE){
-			
 			if (this_gun->mode == MODE_SOLO){
-				if (this_gun->state_solo == 0 && this_gun->state_duo == 0) {
+				switch (this_gun->state_solo) { 
+				case 0:
 					center_text(&a64,"1 1P Orange", 8);
 					center_text(&a64,"2 1P Blue  ", 7);
 					center_text(&a64,"3 -> Duo   ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}
-				if (abs(this_gun->state_solo) > 0 && abs(this_gun->state_solo) < 3 && this_gun->state_duo == 0) {
-					center_text(&a64,"1 Next Solo", 8);
-					center_text(&a64,"2          ", 7);
-					center_text(&a64,"3 -> UI    ", 6);
+					break;
+				case 1:
+				case 2:
+				case -1:
+				case -2:
+					center_text(&a64,"1 1P Orange", 8);
+					center_text(&a64,"2 1P Blue  ", 7);
+					center_text(&a64,"3 -> Duo   ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}
-				if (abs(this_gun->state_solo) == 3 && this_gun->state_duo == 0) {
+					break;
+				case 3:
+				case -3:
 					center_text(&a64,"1 Waiting  ", 8);
 					center_text(&a64,"2          ", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}
-				if (abs(this_gun->state_solo) == 4 && this_gun->state_duo == 0) {
+					break;
+				case 4:
+				case -4:
 					center_text(&a64,"1 Next FX  ", 8);
 					center_text(&a64,"2 ColorSwap", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}
-				if (abs(this_gun->state_solo) == 5 && this_gun->state_duo == 0) {
+					break;
+				case 5:
+				case -5:
 					center_text(&a64,"1 Open Solo", 8);
 					center_text(&a64,"2 Color Sw ", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
+					break;	
 				}
 			} else {
-				if (this_gun->state_duo == 0 && this_gun->state_solo == 0) {
+				switch (this_gun->state_duo) { 
+				case 0:
 					center_text(&a64,"1 Projector", 8);
 					center_text(&a64,"2 Camera   ", 7);
 					center_text(&a64,"3 -> Solo  ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}
-				if ((this_gun->state_duo == -1 || this_gun->state_duo == -2) && this_gun->state_solo == 0) {
+					break;
+				case -1:
+				case -2:
 					center_text(&a64,"1 Camera   ", 8);
 					center_text(&a64,"2          ", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}
-				if (this_gun->state_duo == -3 && this_gun->state_solo == 0 ) {
+					break;
+				case -3:
 					center_text(&a64,"1 Waiting  ", 8);
 					center_text(&a64,"2          ", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}
-				if (this_gun->state_solo == -4 && this_gun->state_solo == 0 ) {
+					break;					
+				case -4:
 					center_text(&a64,"1          ", 8);
 					center_text(&a64,"2 Projector", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}					
-				if ((this_gun->state_duo == 1 || this_gun->state_duo == 2) && this_gun->state_solo == 0 ) {
+					break;	
+				case 1:
+				case 2:
 					center_text(&a64,"1 Projector", 8);
 					center_text(&a64,"2          ", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}	
-				if ((this_gun->state_duo == 3 || this_gun->state_duo == 4) && this_gun->state_solo == 0 ) {
+					break;	
+				case 3:
+				case 4:
 					center_text(&a64,"1 Waiting  ", 8);
 					center_text(&a64,"2          ", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}
-				if ((this_gun->state_duo == 5) && this_gun->state_solo == 0 ) {
+					break;	
+				case 5:
 					center_text(&a64,"1          ", 8);
 					center_text(&a64,"2 Next FX  ", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}	
-				if ((this_gun->state_duo == 6) && this_gun->state_solo == 0 ) {
+					break;	
+				case 6:
 					center_text(&a64,"1 Open     ", 8);
 					center_text(&a64,"2          ", 7);
 					center_text(&a64,"3 -> UI    ", 6);
 					center_text(&a64,"4 Reset    ", 5);
-				}	
-	
+					break;
+				}				
 			}
-			
 			draw_emitter(3);
 			
 		} else {
@@ -283,7 +293,7 @@ static void draw_scene(unsigned i,char *debug_msg)
 		if (this_gun->mode == MODE_DUO) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
 		else							sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
 		center_text(&a64,temp, 2);
-			
+		
 		uint32_t current_time;	
 		if (this_gun->mode == MODE_DUO)  {
 			sprintf(temp,"Duo Mode");	
