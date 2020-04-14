@@ -108,7 +108,7 @@ static void draw_emitter(int line){
 		sprintf(temp,"Capturing");
 	}else{
 		if (this_gun->laser_on)
-		sprintf(temp,"Warm");
+		sprintf(temp,"Ready");
 		else
 		sprintf(temp,"Idle");
 	}
@@ -162,9 +162,16 @@ static void draw_scene(unsigned i,char *debug_msg)
 		GLfloat white[4] = { 1, 1, 1, 1 };
 		text_color(white); 
 		
-		char temp[20];	
-		if (this_gun->gordon)	center_text(&a64b,"Gordon", 9);
-		else 					center_text(&a64b,"Chell", 9);
+		char temp[20];				
+		char temp2[10];
+
+		if (this_gun->gordon){
+			if (this_gun->connected) center_text(&a64b,"Gordon Synced", 9);
+		    else  center_text(&a64b,"Gordon Err", 9);
+		} else {
+			if (this_gun->connected) center_text(&a64b,"Chell Synced", 9);
+		    else  center_text(&a64b,"Chell Err", 9);
+		}
 		
 		if (this_gun->ui_mode == UI_SIMPLE){
 			if (this_gun->mode == MODE_SOLO){
@@ -267,8 +274,13 @@ static void draw_scene(unsigned i,char *debug_msg)
 			sprintf(temp,"%.0f/%.0f\260F",this_gun->temperature_pretty ,this_gun->coretemp);	
 			center_text(&a64,temp, 8);
 			
-			if (this_gun->connected) sprintf(temp,"Synced");	
-			else  sprintf(temp,"Sync Err");	
+			float watts = this_gun->current_pretty * this_gun->battery_level_pretty;
+			
+			
+			sprintf(temp2," %.1fW", watts);
+			if (strlen(temp2) > 5) sprintf(temp2,"%.1fW", watts);
+	
+			sprintf(temp,"%.2fA %s",this_gun->current_pretty, temp2);	
 			center_text(&a64,temp, 7);
 
 			draw_emitter(6);
@@ -281,13 +293,14 @@ static void draw_scene(unsigned i,char *debug_msg)
 			sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
 			center_text(&a64,temp, 4);
 			
-			if (this_gun->latency > 99) sprintf(temp,"%.1fV %.0fms",this_gun->battery_level_pretty,this_gun->latency );	
-			else if (this_gun->latency > 9) sprintf(temp,"%.1fV %.1fms",this_gun->battery_level_pretty,this_gun->latency );
-			else  sprintf(temp,"%.1fV %.2fms",this_gun->battery_level_pretty,this_gun->latency );
+			float num = this_gun->latency;
+			sprintf(temp2,"%.2fms", num);
+			if (strlen(temp2) > 6) sprintf(temp2,"%.1fms", num);
+			if (strlen(temp2) > 6) sprintf(temp2,"%.0fms", num);
+			
+			sprintf(temp,"%.1fV %s",this_gun->battery_level_pretty,temp2);
 			center_text(&a64,temp, 3);
-			
-
-			
+				
 		}
 		
 		if (this_gun->mode == MODE_DUO) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
