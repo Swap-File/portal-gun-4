@@ -54,9 +54,8 @@ void pipe_init(const struct gun_struct *this_gun)
 	while(this_gun->console_loaded == false){
 		sleep(1);
 	}
-	system("LD_LIBRARY_PATH=/usr/local/lib mjpg_streamer -i 'input_file.so -f /var/www/html/tmp -n snapshot.jpg' -o 'output_http.so -w /usr/local/www' &");
+
 	//kick the core logic up to realtime for faster bit banging
-	
 	//piHiPri(40);
 	
 	bash_fp = popen("bash", "w");
