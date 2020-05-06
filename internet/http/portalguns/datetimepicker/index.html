@@ -78,7 +78,9 @@
 	<input type="text" id="datetimepicker_format" class="input input-wide"/>
 </body>
 <script src="./jquery.js"></script>
-<script src="build/jquery.datetimepicker.full.js"></script>
+<script src="node_modules/php-date-formatter/js/php-date-formatter.min.js"></script>
+<script src="node_modules/jquery-mousewheel/jquery.mousewheel.js"></script>
+<script src="jquery.datetimepicker.js"></script>
 <script>/*
 window.onerror = function(errorMsg) {
 	$('#console').html($('#console').html()+'<br>'+errorMsg)
@@ -102,7 +104,7 @@ lang:'en',
 disabledDates:['1986/01/08','1986/01/09','1986/01/10'],
 startDate:	'1986/01/05'
 });
-$('#datetimepicker').datetimepicker({value:'2015/04/15 05:03',step:10});
+$('#datetimepicker').datetimepicker({value:'2015/04/15 05:03', step:10});
 
 $('.some_class').datetimepicker();
 
