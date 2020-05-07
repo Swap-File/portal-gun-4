@@ -9,8 +9,6 @@
 
 #define UI_ADVANCED 0
 #define UI_SIMPLE   1
-#define UI_HIDDEN_ADVANCED	2
-#define UI_HIDDEN_SIMPLE	3
 
 #define PLAYLIST_SIZE 10
 

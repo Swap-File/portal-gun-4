@@ -49,10 +49,6 @@ void state_engine(int button,struct gun_struct *this_gun)
 				this_gun->ui_mode = UI_SIMPLE;
 			} else if (this_gun->ui_mode == UI_SIMPLE) {
 				this_gun->ui_mode = UI_ADVANCED;
-			} else if (this_gun->ui_mode == UI_HIDDEN_SIMPLE) {
-				this_gun->ui_mode = UI_SIMPLE;
-			} else if (this_gun->ui_mode == UI_HIDDEN_ADVANCED) {
-				this_gun->ui_mode = UI_ADVANCED;
 			}
 		}
 	} else if (button == BUTTON_PRIMARY_FIRE) {
@@ -255,12 +251,6 @@ void state_engine(int button,struct gun_struct *this_gun)
 	else if (this_gun->state_solo != 0)	this_gun->gst_state = this_gun->effect_solo;
 	else								this_gun->gst_state = GST_BLANK;
 
-	//Auto change UI to aiming preview
-	if (this_gun->state_duo < -2 && this_gun->state_duo_previous >= -2){
-		if(this_gun->ui_mode == UI_SIMPLE) this_gun->ui_mode = UI_HIDDEN_SIMPLE;
-		else if(this_gun->ui_mode == UI_ADVANCED) this_gun->ui_mode = UI_HIDDEN_ADVANCED;
-	}
-
 	/* PORTALGL ARPETURE */
 	/* Reminder: These variables are shared and may be read at ANY time */
 	/* for networked modes */
@@ -279,15 +269,6 @@ void state_engine(int button,struct gun_struct *this_gun)
 		else								 this_gun->portal_state = PORTAL_CLOSED;
 	} else {
 		this_gun->portal_state = PORTAL_CLOSED;
-	}
-
-	//Restore UI on portal closing
-	if (this_gun->portal_state == PORTAL_CLOSED){
-		if (this_gun->ui_mode == UI_HIDDEN_SIMPLE) {
-			this_gun->ui_mode = UI_SIMPLE;
-		} else if (this_gun->ui_mode == UI_HIDDEN_ADVANCED) {
-			this_gun->ui_mode = UI_ADVANCED;
-		}
 	}
 
 	/* DUO 0 OR SOLO 0 CLOSE */
