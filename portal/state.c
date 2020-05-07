@@ -173,7 +173,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 		}
 	} else {
 		/* laser power states */
-		if ((abs(this_gun->state_solo) < 2 && this_gun->mode == MODE_SOLO) || (this_gun->state_duo < 1 && this_gun->mode == MODE_DUO)) {
+		if ((abs(this_gun->state_solo) < 2 && this_gun->mode == MODE_SOLO) || (this_gun->state_duo == 0 && this_gun->mode == MODE_DUO)) {
 			pipe_laser_pwr(false,this_gun);
 		} else {
 			pipe_laser_pwr(true,this_gun);

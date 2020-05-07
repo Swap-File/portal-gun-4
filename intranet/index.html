@@ -692,7 +692,7 @@ function ir_select_onchange(thing){
 }
 function shutter_onchange(thing){
 	var number = parseInt(thing.value);
-	if (number >= 0 && number <= 1){
+	if (number >= 0 && number <= 2){
 		post_text("mode=5 " + number);
 	}	
 }
