@@ -139,10 +139,7 @@ static void draw_scene(unsigned i,char *debug_msg)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
-	
-	
 	if (this_gun->gst_state == GST_RPICAMSRC){
-	
 		ESMatrix modelviewprojection;
 		esMatrixLoadIdentity(&modelviewprojection);
 		esOrtho(&modelviewprojection, -640/2, 640/2,-480/2, 480/2, -1,1);
@@ -159,177 +156,181 @@ static void draw_scene(unsigned i,char *debug_msg)
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glDisableVertexAttribArray(basic_in_Position);
 		glDisableVertexAttribArray(basic_in_TexCoord);
-
-		GLfloat color[4] = { 0.0, 0.75, 1.0, 1 };
-		text_color(color); 
+		
 	} else {
-		GLfloat color[4] = { 1, 1, 1, 1 };
-		text_color(color); 
-	}
-	
-	char temp[20];				
-	char temp2[10];
 
-	if (this_gun->gordon){
-		if (this_gun->connected) center_text(&a64b,"Gordon Synced", 9);
-		else  center_text(&a64b,"Gordon Err", 9);
-	} else {
-		if (this_gun->connected) center_text(&a64b,"Chell Synced", 9);
-		else  center_text(&a64b,"Chell Err", 9);
-	}
-	
-	if (this_gun->ui_mode == UI_SIMPLE){
-		if (this_gun->mode == MODE_SOLO){
-			switch (this_gun->state_solo) { 
-			case 0:
-				center_text(&a64,"1 1P Orange", 8);
-				center_text(&a64,"2 1P Blue  ", 7);
-				center_text(&a64,"3 -> Duo   ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;
-			case 1:
-			case 2:
-			case -1:
-			case -2:
-				center_text(&a64,"1 1P Orange", 8);
-				center_text(&a64,"2 1P Blue  ", 7);
-				center_text(&a64,"3 -> Duo   ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;
-			case 3:
-			case -3:
-				center_text(&a64,"1 Waiting  ", 8);
-				center_text(&a64,"2          ", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;
-			case 4:
-			case -4:
-				center_text(&a64,"1 Next FX  ", 8);
-				center_text(&a64,"2 ColorSwap", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;
-			case 5:
-			case -5:
-				center_text(&a64,"1 Open Solo", 8);
-				center_text(&a64,"2 Color Sw ", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;	
-			}
+		GLfloat white[4] = { 1, 1, 1, 1 };
+		text_color(white); 
+		
+		char temp[20];				
+		char temp2[9];
+		char temp3[9];
+		
+		if (this_gun->gordon){
+			if (this_gun->connected) center_text(&a64b,"Gordon Synced", 9);
+		    else  center_text(&a64b,"Gordon Err", 9);
 		} else {
-			switch (this_gun->state_duo) { 
-			case 0:
-				center_text(&a64,"1 Projector", 8);
-				center_text(&a64,"2 Camera   ", 7);
-				center_text(&a64,"3 -> Solo  ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;
-			case -1:
-			case -2:
-				center_text(&a64,"1 Camera   ", 8);
-				center_text(&a64,"2          ", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;
-			case -3:
-				center_text(&a64,"1 Waiting  ", 8);
-				center_text(&a64,"2          ", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;					
-			case -4:
-				center_text(&a64,"1          ", 8);
-				center_text(&a64,"2 Projector", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;	
-			case 1:
-			case 2:
-				center_text(&a64,"1 Projector", 8);
-				center_text(&a64,"2          ", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;	
-			case 3:
-			case 4:
-				center_text(&a64,"1 Waiting  ", 8);
-				center_text(&a64,"2          ", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;	
-			case 5:
-				center_text(&a64,"1          ", 8);
-				center_text(&a64,"2 Next FX  ", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;	
-			case 6:
-				center_text(&a64,"1 Open     ", 8);
-				center_text(&a64,"2          ", 7);
-				center_text(&a64,"3 -> UI    ", 6);
-				center_text(&a64,"4 Reset    ", 5);
-				break;
-			}				
+			if (this_gun->connected) center_text(&a64b,"Chell Synced", 9);
+		    else  center_text(&a64b,"Chell Err", 9);
 		}
+		
+		if (this_gun->ui_mode == UI_SIMPLE){
+			if (this_gun->mode == MODE_SOLO){
+				switch (this_gun->state_solo) { 
+				case 0:
+					center_text(&a64,"1 1P Orange", 7.5);
+					center_text(&a64,"2 1P Blue  ", 6.5);
+					center_text(&a64,"3 -> Duo   ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;
+				case 1:
+				case 2:
+				case -1:
+				case -2:
+					center_text(&a64,"1 1P Orange", 7.5);
+					center_text(&a64,"2 1P Blue  ", 6.5);
+					center_text(&a64,"3 -> Duo   ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;
+				case 3:
+				case -3:
+					center_text(&a64,"1 Waiting  ", 7.5);
+					center_text(&a64,"2          ", 6.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;
+				case 4:
+				case -4:
+					center_text(&a64,"1 Next FX  ", 7.5);
+					center_text(&a64,"2 ColorSwap", 6.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;
+				case 5:
+				case -5:
+					center_text(&a64,"1 Open Solo", 7.5);
+					center_text(&a64,"2 Color Sw ", 7.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;	
+				}
+			} else {
+				switch (this_gun->state_duo) { 
+				case 0:
+					center_text(&a64,"1 Projector", 7.5);
+					center_text(&a64,"2 Camera   ", 6.5);
+					center_text(&a64,"3 -> Solo  ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;
+				case -1:
+				case -2:
+					center_text(&a64,"1 Camera   ", 7.5);
+					center_text(&a64,"2          ", 6.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;
+				case -3:
+					center_text(&a64,"1 Waiting  ", 7.5);
+					center_text(&a64,"2          ", 6.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;					
+				case -4:
+					center_text(&a64,"1          ", 7.5);
+					center_text(&a64,"2 Projector", 6.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;	
+				case 1:
+				case 2:
+					center_text(&a64,"1 Projector", 7.5);
+					center_text(&a64,"2          ", 6.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;	
+				case 3:
+				case 4:
+					center_text(&a64,"1 Waiting  ", 7.5);
+					center_text(&a64,"2          ", 6.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;	
+				case 5:
+					center_text(&a64,"1          ", 7.5);
+					center_text(&a64,"2 Next FX  ", 6.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;	
+				case 6:
+					center_text(&a64,"1 Open     ", 7.5);
+					center_text(&a64,"2          ", 6.5);
+					center_text(&a64,"3 -> UI    ", 5.5);
+					center_text(&a64,"4 Reset    ", 4.5);
+					break;
+				}				
+			}
+			
+		} else {
+					
+			char spin = '+';
+			if (this_gun->acces_counter % 2) spin = '~';
+
+			sprintf(temp,"Bt%c %.0f/%.0f\260F",spin, this_gun->temperature_pretty ,this_gun->coretemp);	
+			center_text(&a64,temp, 8);
+		
+	
+			sprintf(temp,"%.1fV %.2fA",this_gun->battery_level_pretty,this_gun->current_pretty);
+			center_text(&a64,temp, 7);
+
+			
+			
+			int kbits = this_gun->kbytes_wlan;
+			if (this_gun->kbytes_bnep > 0) kbits += this_gun->kbytes_bnep;
+			sprintf(temp,"%dKb/s",kbits);	
+			center_text(&a64,temp, 4);
+			
+			sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
+			center_text(&a64,temp, 5);
+			
+			float num = this_gun->latency;
+			sprintf(temp2,"%.2fms", num);
+			if (strlen(temp2) > 6) sprintf(temp2,"%.1fms", num);
+			if (strlen(temp2) > 6) sprintf(temp2,"%.0fms", num);
+			
+			float watts = this_gun->current_pretty * this_gun->battery_level_pretty;		
+			sprintf(temp3," %.1fW", watts);
+			if (strlen(temp3) > 5) sprintf(temp3,"%.1fW", watts);			
+
+			sprintf(temp,"%s %s",temp3,temp2);
+			center_text(&a64,temp, 6);
+				
+		}
+		
 		draw_emitter(3);
 		
-	} else {
-		sprintf(temp,"%.0f/%.0f\260F",this_gun->temperature_pretty ,this_gun->coretemp);	
-		center_text(&a64,temp, 8);
+		if (this_gun->mode == MODE_DUO) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
+		else							sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
+		center_text(&a64,temp, 2);
 		
-		float watts = this_gun->current_pretty * this_gun->battery_level_pretty;
+		uint32_t current_time;	
+		if (this_gun->mode == MODE_DUO)  {
+			sprintf(temp,"Duo Mode");	
+			if (this_gun->connected) current_time = (millis() + this_gun->other_gun_clock)/2;
+			else current_time = millis();  
+		}
+		else   {  
+			sprintf(temp,"Solo Mode");	
+			current_time = millis();
+		}
+		center_text(&a64,temp, 1);
 		
-		
-		sprintf(temp2," %.1fW", watts);
-		if (strlen(temp2) > 5) sprintf(temp2,"%.1fW", watts);
-
-		sprintf(temp,"%.2fA %s",this_gun->current_pretty, temp2);	
-		center_text(&a64,temp, 7);
-
-		draw_emitter(6);
-		
-		int kbits = this_gun->kbytes_wlan;
-		if (this_gun->kbytes_bnep > 0)  kbits += this_gun->kbytes_bnep;
-		sprintf(temp,"%dKb/s",kbits);	
-		center_text(&a64,temp, 5);
-		
-		sprintf(temp,"%ddB %dMB/s",this_gun->dbm ,this_gun->tx_bitrate);	 
-		center_text(&a64,temp, 4);
-		
-		float num = this_gun->latency;
-		sprintf(temp2,"%.2fms", num);
-		if (strlen(temp2) > 6) sprintf(temp2,"%.1fms", num);
-		if (strlen(temp2) > 6) sprintf(temp2,"%.0fms", num);
-		
-		sprintf(temp,"%.1fV %s",this_gun->battery_level_pretty,temp2);
-		center_text(&a64,temp, 3);
-			
+		int milliseconds = (current_time % 1000);
+		int seconds      = (current_time / 1000) % 60;
+		int minutes      = (current_time / (1000*60)) % 60;
+		int hours        = (current_time / (1000*60*60)) % 24;
+		sprintf(temp,"%.2d:%.2d:%.2d.%.3d",hours,minutes,seconds,milliseconds);	
+		center_text(&a64,temp, 0);
 	}
-	
-	if (this_gun->mode == MODE_DUO) sprintf(temp,"%s",effectnames[this_gun->effect_duo]);
-	else							sprintf(temp,"%s",effectnames[this_gun->effect_solo]);		
-	center_text(&a64,temp, 2);
-	
-	uint32_t current_time;	
-	if (this_gun->mode == MODE_DUO)  {
-		sprintf(temp,"Duo Mode");	
-		if (this_gun->connected) current_time = (millis() + this_gun->other_gun_clock)/2;
-		else current_time = millis();  
-	}
-	else   {  
-		sprintf(temp,"Solo Mode");	
-		current_time = millis();
-	}
-	center_text(&a64,temp, 1);
-	
-	int milliseconds = (current_time % 1000);
-	int seconds      = (current_time / 1000) % 60;
-	int minutes      = (current_time / (1000*60)) % 60;
-	int hours        = (current_time / (1000*60*60)) % 24;
-	sprintf(temp,"%.2d:%.2d:%.2d.%.3d",hours,minutes,seconds,milliseconds);	
-	center_text(&a64,temp, 0);
 	
 	/* FPS counter */
 	glFinish();

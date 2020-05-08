@@ -225,7 +225,11 @@ int pipe_www_in(struct gun_struct *this_gun)
 			printf("MAIN Web Command: '%s'\n",buffer);
 			int results = sscanf(buffer,"%d %d %d %d %d %d %d %d %d %d %d",\
 			&tv[0],&tv[1],&tv[2],&tv[3],&tv[4],&tv[5],&tv[6],&tv[7],&tv[8],&tv[9],&tv[10]);
-			if (results == 2) {
+			if (results == 1) {
+				if (tv[0] == 6) {
+					this_gun->acces_counter++;
+				}
+			} else if (results == 2) {
 				//button stuff
 				if (tv[0] == 1) {
 					switch (tv[1]){

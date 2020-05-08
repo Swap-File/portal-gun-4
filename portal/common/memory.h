@@ -68,6 +68,8 @@ struct gun_struct {
 
 	uint32_t other_gun_last_seen;
 	uint32_t other_gun_clock;
+	
+	uint8_t acces_counter;
 };
 
 void shared_init(struct gun_struct **this_gun,bool init);
