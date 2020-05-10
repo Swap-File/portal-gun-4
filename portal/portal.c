@@ -84,6 +84,7 @@ int main(void)
 	
 		/* Read Physical Buttons */
 		int button_event = io_update(this_gun);
+		if (button_event == BUTTON_LONG_RESET) system("reboot");
 
 		/* Otherwise Read Web Buttons */
 		if (button_event == BUTTON_NONE) button_event = pipe_www_in(this_gun);

@@ -84,12 +84,20 @@ static void slide_to(float r_target, float g_target, float b_target)
 static void draw_emitter(int line){
 	char temp[20];	
 
-	if ( this_gun->laser_countdown != 0 ) {
+	uint32_t countdown = 0;
+	
+	if ( this_gun->reset_countdown != 0 ) {
+		countdown = this_gun->reset_countdown;
+	} else if ( this_gun->laser_countdown != 0 ) {
+		countdown = this_gun->laser_countdown;
+	}
+		
+	if ( countdown != 0 ) {
 		static uint32_t last_update = 0;
 		static uint32_t animation = 0;
 		
-		int milliseconds = (this_gun->laser_countdown % 1000);
-		int seconds      = (this_gun->laser_countdown / 1000) % 60;
+		int milliseconds = (countdown % 1000);
+		int seconds      = (countdown / 1000) % 60;
 		
 		if (millis() - last_update > 50){
 			animation++;

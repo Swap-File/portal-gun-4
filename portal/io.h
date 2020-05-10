@@ -28,7 +28,7 @@
 #define SERVO_NUM_PULSES 10
 
 void io_init(void);
-int io_update(const struct gun_struct *this_gun);
+int io_update(struct gun_struct *this_gun);
 int io_servo(bool closed);
 
 #endif

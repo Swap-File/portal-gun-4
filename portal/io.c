@@ -2,6 +2,11 @@
 #include <bcm2835.h>
 #include <stdio.h>
 
+#define DEBOUNCE_COUNT 3
+	
+#define RESET_HOLD_DELAY 2000
+#define RESET_COUNTDOWN 10000
+
 void io_init(void)
 {
 	bcm2835_gpio_fsel(PIN_SERVO_SOFT_PWM, BCM2835_GPIO_FSEL_OUTP);
@@ -62,72 +67,80 @@ int io_servo(bool servo_open){
 	return 0;
 }
 
-int io_update(const struct gun_struct *this_gun)
+int io_update(struct gun_struct *this_gun)
 {
 	bcm2835_pwm_set_data(FAN_PWM_CHANNEL, this_gun->fan_pwm);
 	
 	if (this_gun->state_duo < -1)	bcm2835_pwm_set_data(IR_PWM_CHANNEL, this_gun->ir_pwm);
 	else							bcm2835_pwm_set_data(IR_PWM_CHANNEL, 0);
 	
+	//buckets for debounce
 	static uint_fast8_t primary_bucket = 0;
 	static uint_fast8_t alt_bucket = 0;
 	static uint_fast8_t mode_bucket = 0;
 	static uint_fast8_t reset_bucket = 0;
 	
-	static bool primary_cleared = true;
-	static bool alt_cleared = true;
-	static bool mode_cleared = true;
-	static bool reset_cleared = true;
+	static uint32_t reset_hold_time = 0;
 	
-	#define DEBOUNCE_MAX 3
-	//basic bucket debounce
-	if(bcm2835_gpio_lev(PIN_PRIMARY) == 0) {
-		if (primary_bucket < DEBOUNCE_MAX) {
-			primary_bucket++;
-			if (primary_bucket == DEBOUNCE_MAX && primary_cleared) return BUTTON_PRIMARY_FIRE;
-		}
-	} else {
-		if (primary_bucket > 0) {
-			primary_bucket--;
-			if (primary_bucket == 0) primary_cleared = true;
-		}
-	}
+	uint8_t button = BUTTON_NONE;
 	
-	if(bcm2835_gpio_lev(PIN_ALT) == 0) {
-		if (alt_bucket < DEBOUNCE_MAX) {
-			alt_bucket++;
-			if (alt_bucket == DEBOUNCE_MAX && alt_cleared) return BUTTON_ALT_FIRE;
-		}
-	} else {
-		if (alt_bucket > 0) {
-			alt_bucket--;
-			if (alt_bucket == 0) alt_cleared = true;
-		}
-	}
-	
-	if(bcm2835_gpio_lev(PIN_MODE) == 0) {
-		if (mode_bucket < DEBOUNCE_MAX) {
-			mode_bucket++;
-			if (mode_bucket == DEBOUNCE_MAX && mode_cleared) return BUTTON_MODE_TOGGLE;
-		}
-	} else {
-		if (mode_bucket > 0){
-			mode_bucket--;
-			if (mode_bucket == 0) mode_cleared = true;
-		}
-	}
-	
+	//BUTTON_RESET (lowest priority)
 	if(bcm2835_gpio_lev(PIN_RESET) == 0) {
-		if (reset_bucket < DEBOUNCE_MAX) {
+		if (reset_bucket < DEBOUNCE_COUNT) {
 			reset_bucket++;
-			if (reset_bucket == DEBOUNCE_MAX && reset_cleared) return BUTTON_RESET;
+			if (reset_bucket == DEBOUNCE_COUNT) {
+				reset_hold_time = millis();
+				return BUTTON_RESET;
+			}
 		}
 	} else {
-		if (reset_bucket > 0) {
-			reset_bucket--;
-			if (reset_bucket == 0) reset_cleared = true;
-		}
+		reset_hold_time = 0;
+		reset_bucket = 0;
 	}
 	
-	return BUTTON_NONE;	
+	//BUTTON_LONG_RESET calculate countdown and bypass all others priority with immediate return
+	if (reset_hold_time != 0){
+		if (millis() - reset_hold_time > RESET_HOLD_DELAY){
+			this_gun->reset_countdown = RESET_COUNTDOWN - ((millis() - reset_hold_time) - RESET_HOLD_DELAY);
+			if (this_gun->reset_countdown < 0) {
+				return BUTTON_LONG_RESET;
+			}
+		} else {
+		this_gun->reset_countdown = 0;
+		}
+	} else {
+		this_gun->reset_countdown = 0;
+	}
+	
+	//BUTTON_MODE_TOGGLE
+	if(bcm2835_gpio_lev(PIN_MODE) == 0) {
+		if (mode_bucket < DEBOUNCE_COUNT) {
+			mode_bucket++;
+			if (mode_bucket == DEBOUNCE_COUNT) button = BUTTON_MODE_TOGGLE;
+		}
+	} else {
+		mode_bucket = 0;
+	}
+	
+	//BUTTON_ALT_FIRE
+	if(bcm2835_gpio_lev(PIN_ALT) == 0) {
+		if (alt_bucket < DEBOUNCE_COUNT) {
+			alt_bucket++;
+			if (alt_bucket == DEBOUNCE_COUNT) button = BUTTON_ALT_FIRE;
+		}
+	} else {
+		alt_bucket = 0;
+	}
+	
+	//BUTTON_PRIMARY_FIRE (highest priority)
+	if(bcm2835_gpio_lev(PIN_PRIMARY) == 0) {
+		if (primary_bucket < DEBOUNCE_COUNT) {
+			primary_bucket++;
+			if (primary_bucket == DEBOUNCE_COUNT) button = BUTTON_PRIMARY_FIRE;
+		}
+	} else {
+		primary_bucket = 0;
+	}
+	
+	return button;	
 }
