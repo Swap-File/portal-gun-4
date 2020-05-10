@@ -67,7 +67,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 			else if (this_gun->state_duo == -1) {  //blue idle lights
 				this_gun->state_duo = -3;  //camera start
 			} else if (this_gun->state_duo == -2) {  //blue dialed lights
-				this_gun->state_duo = -4;  //camera start
+				this_gun->state_duo = -3;  //camera start
 			}
 		} else if (this_gun->mode == MODE_SOLO) {
 			if (this_gun->state_solo == 0) {  //off
@@ -130,7 +130,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 			}
 			if (this_gun->other_gun_state == 3 || this_gun->other_gun_state == 4) {
 				if (this_gun->state_duo == 5 || this_gun->state_duo == 6)
-				this_gun->state_duo = -4;  //go directly to 4 to skip -3 sound
+				this_gun->state_duo = -3;  //go directly to 4 to skip -3 sound
 			}
 			if (this_gun->other_gun_state == 5 || this_gun->other_gun_state == 6) {
 				if (this_gun->state_duo == -3)

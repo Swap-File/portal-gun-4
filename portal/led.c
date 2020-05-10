@@ -253,11 +253,9 @@ uint8_t led_update(const struct gun_struct *this_gun){
 	//set width
 	int width_request = 20; //default is full fill
 
-	if (this_gun->state_duo == 1 || this_gun->state_solo == -1 || this_gun->state_solo == 1 || this_gun->state_duo == -3 ) {
+	if (this_gun->state_duo == 1 || this_gun->state_solo == -1 || this_gun->state_solo == 1 || this_gun->state_duo == -1 ) {
 		width_request = 10;
 	}
-	else if(this_gun->state_duo == -1)	width_request = 1;	
-	else if(this_gun->state_duo == -2)	width_request = 5;	
 	
 	//set width update speed
 	int width_update_speed = 200; //update every .2 seconds
