@@ -35,7 +35,7 @@
 <br>
 <div class="hidden_div" id="imageWrapper"> 
 <br>
-<img class="portal_image" id="portal_back" alt="" onclick="capture_keyframe()" src="black.png">
+<img class="portal_image" id="portal_back" alt="" src="black.png">
 <img class="portal_image" id="portal_front" alt="" src="black.png">
 <svg id="portal_svg" width="240" height="240" viewBox="0 0 900 900" xmlns="http://www.w3.org/2000/svg">
 <path id="portal_svg1" d="M 756.40902,784.0783 C 616.0042,905.68214 406.7082,935.38868 255.32421,855.20018 95.456062,770.51755 -14.28054,574.63033 1.5088513,402.12233 c 0.7212765,-7.88061 9.9179217,27.56439 18.6659637,71.94121 7.144324,36.24178 13.115668,58.30906 24.861546,78.0185 6.269958,10.5211 6.05171,10.08558 4.01957,2.16031 C -39.956792,207.09946 264.09254,-88.248872 593.22907,24.359284 914.50598,134.27856 1007.3874,566.70754 756.40902,784.0783 Z m 26.3128,-101.80801 c 11.1115,-16.00214 19.61599,-29.92739 25.06045,-43.92576 3.42873,-8.81569 2.62855,-9.94171 -9.91798,4.42425 -97.29734,111.40648 -241.34032,149.46671 -369.73254,95.95989 -10.90363,-4.54408 -10.40659,-4.79062 3.83466,-1.90211 178.69635,36.24486 346.73752,-71.53617 372.99635,-239.23868 28.98311,-185.10091 -131.06343,-382.66985 -337.576,-416.719266 -15.40391,-2.539801 -15.60922,-2.237873 -1.99385,2.93177 92.94107,35.289056 159.2535,96.896116 168.65244,156.684996 1.19408,7.59634 1.00593,10.8979 -0.36128,6.337 C 621.1429,204.98718 547.70656,146.46123 479.0548,123.58889 201.7575,31.203709 19.725511,327.98554 183.57947,605.32674 c 128.859,218.10822 375.55268,273.9781 554.84391,126.02091 4.36065,-3.59853 15.70861,-14.3553 16.66543,-15.57231 5.38114,-6.84445 21.44862,-24.59842 27.63301,-33.50505 z" fill="orange" stroke-width="0" />
@@ -67,17 +67,8 @@ Nightvision Brightness:
 </select>
 <br>
 <br>
-Camera Preview:
-<select id="preview_camera_select" onchange="preview_camera_onchange(this)">
-<option value="LIVE">LIVE</option>
-<option value="GIF">GIF</option>
-<option value="OFF">OFF</option>
-</select>
-</select>
-<br>
-<br>
-Projector Preview:
-<select id="preview_projection_select" onchange="preview_projection_onchange(this)">
+Preview Mode:
+<select id="preview_mode_select" onchange="preview_mode_onchange(this)">
 <option value="GIF">GIF</option>
 <option value="OFF">OFF</option>
 </select>
@@ -289,19 +280,12 @@ Select Item to Edit...<br><br>
 var interval_obj;
 
 //load cookie stuff
-var preview_camera = getCookie("preview_camera");
-if (preview_camera == ""){
-	setCookie("preview_camera", "LIVE", 365);
-	preview_camera = "LIVE";
+var preview_mode = getCookie("preview_mode");
+if (preview_mode == ""){
+	setCookie("preview_mode", "GIF", 365);
+	preview_mode = "GIF";
 }
-preview_camera_select.value = preview_camera;
-
-var preview_project = getCookie("preview_project");
-if (preview_project == ""){
-	setCookie("preview_project", "LIVE", 365);
-	preview_project = "LIVE";
-}
-preview_projection_select.value = preview_project;
+preview_mode_select.value = preview_mode;
 
 var update_rate = getCookie("update_rate");
 if (update_rate == ""){
@@ -371,38 +355,6 @@ else if (location.host.indexOf(":8021") > 0){gun_name_div.innerHTML = "Chell";}
 update_data();
 var clicktime = 0;
 
-function capture_keyframe(){
-	if (Date.now() - clicktime < 500){
-		var request = new XMLHttpRequest();
-		request.onerror = function() {
-			setTimeout(capture_keyframe,400);
-		}
-		request.onload = function() {
-			if (parseInt(this.response) == 1){
-				portal_back.src = "/assets/shutter.png";
-				setTimeout(check_if_keyframe_complete,300);
-			}
-		}
-		request.open("GET", "http://127.0.0.1:9000/set", true);
-		request.send(null);
-	}
-	clicktime = Date.now();
-}
-function check_if_keyframe_complete(){
-	var request = new XMLHttpRequest();
-	request.onerror = function() {
-		setTimeout(check_if_keyframe_complete,400);
-	}
-	request.onload = function() {
-		if (parseInt(this.response) == 0){
-			update_portal_background();
-		}else{
-			setTimeout(check_if_keyframe_complete,400);
-		}
-	}
-	request.open("GET", "http://127.0.0.1:9000", true);
-	request.send(null);
-}
 function playlist_load(num){
 	switch(num) {
 	case 1:
@@ -468,14 +420,9 @@ function portal_type_onchange(object){
 	portal_type = object.options[object.selectedIndex].value;
 	setCookie("portal_type", portal_type, 365);
 }
-function preview_camera_onchange(object){
-	preview_camera = object.options[object.selectedIndex].value;
-	setCookie("preview_camera", preview_camera, 365);
-	update_portal_background();
-}
-function preview_projection_onchange(object){
-	preview_project = object.options[object.selectedIndex].value;
-	setCookie("preview_project", preview_project, 365);
+function preview_mode_onchange(object){
+	preview_mode = object.options[object.selectedIndex].value;
+	setCookie("preview_mode", preview_mode, 365);
 	update_portal_background();
 }
 function update_speed_onchange(object){
@@ -958,9 +905,7 @@ function update_portal_forground() {
 function update_portal_background() {
 	if (state_duo < 0){
 		portal_text.innerHTML = effect_name(3);
-		if (preview_camera == "LIVE"){
-			portal_back.src = "http://" + location.host + ":8080/?action=stream";
-		}else if (preview_camera == "GIF"){
+		if (preview_mode == "GIF"){
 			portal_back.src = effect_preview(3);
 		}else{
 			portal_back.src = "";
@@ -968,14 +913,14 @@ function update_portal_background() {
 	}
 	else if (state_duo > 0){
 		portal_text.innerHTML = effect_name(effect_duo);
-		if (preview_project == "GIF"){
+		if (preview_mode == "GIF"){
 			portal_back.src = effect_preview(effect_duo);
 		}else{
 			portal_back.src = "";
 		}
 	}else if (state_solo < 0 || state_solo > 0){
 		portal_text.innerHTML = effect_name(effect_solo);
-		if (preview_project == "GIF"){
+		if (preview_mode == "GIF"){
 			portal_back.src = effect_preview(effect_solo);
 		}else{
 			portal_back.src = "";
