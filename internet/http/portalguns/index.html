@@ -276,7 +276,7 @@ function request_data(number) {
 				}
 			}
 			
-			if (g_state < 0 ){
+			if (g_state < -3){
 				if (portal_color_saved != 0){
 					portal_color_saved = 0;
 					if (transform_support){
@@ -289,7 +289,7 @@ function request_data(number) {
 					$(".menu ul.dropit-submenu a").removeClass("orange");
 				}
 				portal_back.src = "getimage.php?id=" +id;
-			}else if (c_state < 0){
+			}else if (c_state < -3){
 				if (portal_color_saved != 1){
 					portal_color_saved = 1;
 					if (transform_support){

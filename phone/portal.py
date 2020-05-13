@@ -2,18 +2,14 @@ import pprint
 import time
 from datetime import datetime
 import requests
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import _thread
 import re
 
-hostName = "localhost"
-hostPort = 9000
-req_to_do = 0
+delay = 2
 
 auth = ('', '')
-url_upload = 'https://swapfile.duckdns.org/portalguns/add.php'
-url_gordon_data ='http://192.168.1.20/tmp/portal.txt'
-url_chell_data ='http://192.168.1.21/tmp/portal.txt'
+url_upload = 'https://71dc079247c3.sn.mynetname.net/portalguns/add.php'
+url_gordon_data = 'http://192.168.1.20/portal.php'
+url_chell_data = 'http://192.168.1.21/portal.php'
 url_gordon_image = 'http://192.168.1.20/tmp/snapshot.jpg'
 url_chell_image = 'http://192.168.1.21/tmp/snapshot.jpg'
 
@@ -26,46 +22,31 @@ session_gordon = requests.Session()
 session_chell = requests.Session()
 session_upload = requests.Session()
 
+chell_last_state = 0
+gordon_last_state = 0
+
 cycle = 0
 
-class MyServer(BaseHTTPRequestHandler):
-	def do_GET(self):
-		global req_to_do
-		temp = -2
-		lock.acquire()
-		try:
-			if self.path == "/set":
-				req_to_do = 1
-			temp = req_to_do	
-		finally:
-			lock.release()
-			
-		self.send_response(200)
-		self.send_header("Content-type", "text/plain")
-		self.send_header("Access-Control-Allow-Origin", "*")
-		self.end_headers()
-		self.wfile.write(bytes("%s" % temp, "utf-8"))
+requests.packages.urllib3.disable_warnings()
+ip = ""
 
-def start_server():
-	myServer = HTTPServer((hostName, hostPort), MyServer)
-	print(time.asctime(), "Server Starts - %s:%s" % (hostName, hostPort))
-	myServer.serve_forever()
-	  
-
-def upload_data(keyframe):
+def upload_data():
 	global cycle
 	global session_gordon
 	global session_chell
 	global session_upload
+
 	global gordon_packet_id_last
 	global chell_packet_id_last
 	global gordon_last_seen_time
 	global chell_last_seen_time
 
-	
+	global chell_last_state
+	global gordon_last_state
+
 	payload = {}
-	payload['keyframe'] = keyframe
-	
+	payload['keyframe'] = 0
+
 	retries = 0
 	while retries < 2:
 		try:
@@ -90,7 +71,7 @@ def upload_data(keyframe):
 				payload['g_temp2'] = 0
 				payload['g_lag'] = 0
 				payload['g_live'] = 0
-			gordon_packet_id_last = gordon_packet_counter	
+			gordon_packet_id_last = gordon_packet_counter
 			retries = 99;
 		except:
 			print ("Gordon Failed")
@@ -101,14 +82,14 @@ def upload_data(keyframe):
 			payload['g_temp2'] = 0
 			payload['g_lag'] = 0
 			payload['g_live'] = 0
-		
+
 	retries = 0
 	while retries < 2:
 		try:
-			retries = retries + 1	
+			retries = retries + 1
 			#get file from gun 2
 			chell_text = session_chell.get(url_chell_data,timeout=1).content.split( )
-			
+
 			chell_packet_counter = int(chell_text[30])
 			if (chell_packet_counter != chell_packet_id_last and chell_packet_id_last != -1):
 				payload['c_state'] = int(chell_text[1])
@@ -137,41 +118,49 @@ def upload_data(keyframe):
 			payload['c_temp2'] = 0
 			payload['c_lag'] = 0
 			payload['c_live'] = 0
-		
+
 	if (chell_synced == 1 and gordon_syned == 1):
 		payload['synced'] = 1
+
+		if (payload['c_state'] < -3 and chell_last_state >= -3):
+			payload['keyframe'] = 1
+
+		if (payload['g_state'] < -3 and gordon_last_state >= -3):
+			payload['keyframe'] = 1
+		
 	else:
 		payload['synced'] = 0
-	
+		chell_last_state = 0
+		gordon_last_state = 0
+
 	retries = 0
 	while retries < 2:
 		try:
 			retries = retries + 1
 			#determine which gun if any to get image from
 			files = {};
-			if payload['c_state'] < -1:
+			if payload['c_state'] < -2:
 				files['img'] = ('i.jpg', session_chell.get(url_chell_image,timeout=1).content)
-					
-			if payload['g_state'] < -1:
+
+			if payload['g_state'] < -2:
 				files['img'] = ('i.jpg', session_gordon.get(url_gordon_image,timeout=1).content)
 			retries = 99;
 		except:
 			print("Img get Failed")
-		
+
 	#supress warmup cycle
 	if cycle > 0:
 		try:
 			upload_result = session_upload.post(url_upload,data=payload, auth=auth,files=files, verify=False)
-			upload_result = str( upload_result.content, encoding=upload_result.encoding ) 
+			upload_result = str( upload_result.content, encoding=upload_result.encoding )
+			gordon_last_state = payload['g_state']
+			chell_last_state = payload['c_state']
 		except:
 			print ("Upload Failed")
 	else:
 		print("Warming...")
-		
+
 	cycle = cycle + 1
-	
-requests.packages.urllib3.disable_warnings()	
-ip = ""
 
 try:
 	requests.get(url_gordon_data,timeout=.1)
@@ -192,7 +181,7 @@ except:
 				print ("Found Gordon")
 				ip = item
 				break
-				
+
 			print ("Trying Chell at " + item)
 			try:
 				requests.get("http://" + item + ":8021/tmp/portal.txt",timeout=1)
@@ -207,68 +196,43 @@ else:
 	print ("LAN Mode Active")
 	print ('Gordon: http://192.168.1.20')
 	print ('Chell: http://192.168.1.21')
-	
-	
 
 if (ip != ""):
-	print ("Building URLs...")		
-	url_gordon_data ='http://' + ip + ':8020/tmp/portal.txt'
-	url_chell_data ='http://' + ip + ':8021/tmp/portal.txt'
+	print ("Building URLs...")
+	url_gordon_data = 'http://' + ip + ':8020/portal.php'
+	url_chell_data = 'http://' + ip + ':8021/portal.php'
 	url_gordon_image = 'http://' + ip + ':8020/tmp/snapshot.jpg'
 	url_chell_image = 'http://' + ip + ':8021/tmp/snapshot.jpg'
 	print ('Gordon: http://' + ip +':8020')
 	print ('Chell: http://' + ip +':8021')
 
 print("Warming")
-upload_data(0)
-time.sleep(2)
-upload_data(0)
+upload_data()
+time.sleep(delay)
+upload_data()
 print("Warmup Complete")
-
-lock = _thread.allocate_lock()
-_thread.start_new_thread(start_server,())
 
 frames = 0
 start_time = time.time()
 fps_time = time.time()
+
 while 1:
-	#check if work to do flag is set
-	work_to_do = 0
-	lock.acquire()
-	try:
-		if req_to_do > 0:
-			work_to_do = 1
-	finally:
-		lock.release()	
-		
-	#rush datapoint
-	if (work_to_do > 0):
-		print("Keyframe!")
-		upload_data(1)
-		work_to_do = 0
-		#set work as being done
-		lock.acquire()
-		try:
-			req_to_do = 0
-		finally:
-			lock.release()	
-		
+
 	#fps (minutes) display
 	if (time.time() - fps_time > 60):
 		print ("FPM: " + str(frames))
 		frames = 0
 		fps_time = time.time()
-		
+
 	#normal datapoint
-	 
-	if (time.time() >= start_time + 3):
+	if (time.time() >= start_time + delay):
 		#do a frame
-		upload_data(0)
+		upload_data()
 		frames += 1
-		#upload every 3 seconds
-		start_time = start_time + 3;
+		#upload every delay seconds
+		start_time = start_time + delay;
 		#make sure next deadline is possible
-		if (start_time + 3 <= time.time()):
+		if (start_time + delay <= time.time()):
 			print("Skipping Delay")
 			start_time = time.time()
 	else:
