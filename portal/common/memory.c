@@ -18,33 +18,47 @@ static void shared_init_gun(struct gun_struct *this_gun)
 	this_gun->ir_pwm = 1024;
 	this_gun->fan_pwm = 1024;
 	
-	this_gun->playlist_solo[0]=GST_VIDEOTESTSRC;
-	this_gun->playlist_solo[1]=GST_LIBVISUAL_JESS;
-	this_gun->playlist_solo[2]=GST_GOOM;
-	this_gun->playlist_solo[3]=GST_GOOM2K1;
-	this_gun->playlist_solo[4]=GST_LIBVISUAL_JAKDAW;
-	this_gun->playlist_solo[5]=GST_LIBVISUAL_OINKSIE;
-	this_gun->playlist_solo[6]=-1;
-	this_gun->playlist_solo[7]=-1;
-	this_gun->playlist_solo[8]=-1;
-	this_gun->playlist_solo[9]=-1;
+	if (this_gun->gordon){
+		this_gun->playlist_solo[0] = GST_MOVIE1;
+		this_gun->playlist_solo[1] = GST_MOVIE2;
+		this_gun->playlist_solo[2] = GST_MOVIE3;
+		this_gun->playlist_solo[3] = GST_MOVIE4;
+		this_gun->playlist_solo[4] = GST_MOVIE5;
+		this_gun->playlist_solo[5] = GST_MOVIE6;
+		this_gun->playlist_solo[6] = GST_MOVIE7;
+		this_gun->playlist_solo[7] = GST_MOVIE8;
+		this_gun->playlist_solo[8] = GST_MOVIE9;
+		this_gun->playlist_solo[9] = GST_MOVIE10;
+	} else {
+		this_gun->playlist_solo[0] = GST_MOVIE5;
+		this_gun->playlist_solo[1] = GST_MOVIE4;
+		this_gun->playlist_solo[2] = GST_MOVIE3;
+		this_gun->playlist_solo[3] = GST_MOVIE2;
+		this_gun->playlist_solo[4] = GST_MOVIE1;
+		this_gun->playlist_solo[5] = GST_MOVIE10;
+		this_gun->playlist_solo[6] = GST_MOVIE9;
+		this_gun->playlist_solo[7] = GST_MOVIE8;
+		this_gun->playlist_solo[8] = GST_MOVIE7;
+		this_gun->playlist_solo[9] = GST_MOVIE6;
+	}
 	
 	this_gun->playlist_solo_index = 1;
-	this_gun->effect_solo = GST_VIDEOTESTSRC;
+	this_gun->effect_solo = this_gun->playlist_solo[0];
 
-	this_gun->playlist_duo[0]=GST_NORMAL;
-	this_gun->playlist_duo[1]=GST_EDGETV;
-	this_gun->playlist_duo[2]=GST_GLHEAT;
-	this_gun->playlist_duo[3]=GST_REVTV;
-	this_gun->playlist_duo[4]=GST_GLCUBE;
-	this_gun->playlist_duo[5]=GST_AGINGTV;
-	this_gun->playlist_duo[6]=-1;
-	this_gun->playlist_duo[7]=-1;
-	this_gun->playlist_duo[8]=-1;
-	this_gun->playlist_duo[9]=-1;
+	this_gun->playlist_duo[0] = GST_NORMAL;
+	this_gun->playlist_duo[1] = GST_GLHEAT;
+	this_gun->playlist_duo[2] = GST_EDGETV;
+	this_gun->playlist_duo[3] = GST_REVTV;
+	this_gun->playlist_duo[4] = GST_AATV;
+	this_gun->playlist_duo[5] = GST_AGINGTV;
+	this_gun->playlist_duo[6] = GST_CACATV;
+	this_gun->playlist_duo[7] = GST_GLMIRROR;
+	this_gun->playlist_duo[8] = GST_RIPPLETV;
+	this_gun->playlist_duo[9] = GST_RADIOACTV;
 
 	this_gun->playlist_duo_index = 1;
-	this_gun->effect_duo = GST_NORMAL;
+	this_gun->effect_duo = this_gun->playlist_duo[0];
+	
 	this_gun->servo_bypass = SERVO_NORMAL;
 }
 
@@ -162,5 +176,5 @@ void fps_counter(char * title,uint32_t start_time,int skip)
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 
 float map(float x, float in_min, float in_max, float out_min, float out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
