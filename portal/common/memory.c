@@ -18,7 +18,7 @@ static void shared_init_gun(struct gun_struct *this_gun)
 	this_gun->ir_pwm = 1024;
 	this_gun->fan_pwm = 1024;
 	
-	if (this_gun->gordon){
+	if(getenv("GORDON")) {
 		this_gun->playlist_solo[0] = GST_MOVIE1;
 		this_gun->playlist_solo[1] = GST_MOVIE2;
 		this_gun->playlist_solo[2] = GST_MOVIE3;
@@ -30,16 +30,16 @@ static void shared_init_gun(struct gun_struct *this_gun)
 		this_gun->playlist_solo[8] = GST_MOVIE9;
 		this_gun->playlist_solo[9] = GST_MOVIE10;
 	} else {
-		this_gun->playlist_solo[0] = GST_MOVIE5;
-		this_gun->playlist_solo[1] = GST_MOVIE4;
-		this_gun->playlist_solo[2] = GST_MOVIE3;
-		this_gun->playlist_solo[3] = GST_MOVIE2;
-		this_gun->playlist_solo[4] = GST_MOVIE1;
-		this_gun->playlist_solo[5] = GST_MOVIE10;
-		this_gun->playlist_solo[6] = GST_MOVIE9;
-		this_gun->playlist_solo[7] = GST_MOVIE8;
-		this_gun->playlist_solo[8] = GST_MOVIE7;
-		this_gun->playlist_solo[9] = GST_MOVIE6;
+		this_gun->playlist_solo[0] = GST_MOVIE10;
+		this_gun->playlist_solo[1] = GST_MOVIE9;
+		this_gun->playlist_solo[2] = GST_MOVIE8;
+		this_gun->playlist_solo[3] = GST_MOVIE7;
+		this_gun->playlist_solo[4] = GST_MOVIE6;
+		this_gun->playlist_solo[5] = GST_MOVIE5;
+		this_gun->playlist_solo[6] = GST_MOVIE4;
+		this_gun->playlist_solo[7] = GST_MOVIE3;
+		this_gun->playlist_solo[8] = GST_MOVIE2;
+		this_gun->playlist_solo[9] = GST_MOVIE1;
 	}
 	
 	this_gun->playlist_solo_index = 1;
