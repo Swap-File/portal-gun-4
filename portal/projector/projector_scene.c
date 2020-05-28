@@ -70,10 +70,10 @@ static const GLfloat vVertices[] = {
 
 static GLfloat vTexCoords[] = {
 	// video
-	1.0f, 1.0f,
-	0.0f, 1.0f,
 	1.0f, 0.0f,
 	0.0f, 0.0f,
+	1.0f, 1.0f,
+	0.0f, 1.0f,
 	// puddle
 	0.5f, 0.5f,
 	-0.5f, 0.5f,

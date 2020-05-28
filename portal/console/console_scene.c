@@ -41,10 +41,10 @@ static const GLfloat vVertices[] = {
 
 GLfloat vTexCoords[] = {
 	//front
-	1.0f, 1.0f,
-	0.0f, 1.0f,
 	1.0f, 0.0f,
 	0.0f, 0.0f,
+	1.0f, 1.0f,
+	0.0f, 1.0f,
 };
 
 //each char is 0.145833 wide, screen is 2 wide, .05 on either side
