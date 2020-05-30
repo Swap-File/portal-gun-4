@@ -1,5 +1,5 @@
 # portal-gun-4
-Portal Gun IV: The Voyage Home
+Portal Gun IV: Cake is My Weakness
 
 
 Gun:
@@ -25,3 +25,17 @@ Phone:
 Website:
 
 [Apache](http://httpd.apache.org/) + [PHP](http://php.net/) + [mySQL](https://www.mysql.com/) on [Ubuntu](http://www.ubuntu.com/)
+
+OS:
+
+Raspberry Pi OS (32-bit) Lite
+Minimal image based on Debian Buster
+Version: May 2020
+Release date: 2020-05-27
+Kernel version: 4.19
+Size: 432 MB
+Release notes
+Download Torrent
+Download ZIP
+
+SHA-256: f5786604be4b41e292c5b3c711e2efa64b25a5b51869ea8313d58da0b46afc64
