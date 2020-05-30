@@ -147,10 +147,6 @@ void projector_logic_init(volatile bool *video_done_flag_p){
 	gstcontext_load_pipeline(GST_GLTWIRL,		&pipeline[GST_GLTWIRL]		,GST_STATE_NULL,"udpsrc port=9000 caps=application/x-rtp retrieve-sender-address=false ! rtpjpegdepay ! queue ! jpegdec ! glupload ! glcolorconvert ! gleffects_twirl   ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false");
 	gstcontext_load_pipeline(GST_GLBULGE,		&pipeline[GST_GLBULGE]		,GST_STATE_NULL,"udpsrc port=9000 caps=application/x-rtp retrieve-sender-address=false ! rtpjpegdepay ! queue ! jpegdec ! glupload ! glcolorconvert ! gleffects_bulge   ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false");
 	gstcontext_load_pipeline(GST_GLHEAT,		&pipeline[GST_GLHEAT]		,GST_STATE_NULL,"udpsrc port=9000 caps=application/x-rtp retrieve-sender-address=false ! rtpjpegdepay ! queue ! jpegdec ! glupload ! glcolorconvert ! gleffects_heat    ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false");
-
-	//spawn audio udp loopback to prevent re-init issues (bringing it back from portal gun v1.0)	
-	system("gst-launch-1.0 alsasrc buffer-time=40000 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! udpsink host=127.0.0.1 port=5000 sync=false &");
-	g_usleep(1000000);
 	
 	gstcontext_load_pipeline(GST_LIBVISUAL_WAVE,	&pipeline[GST_LIBVISUAL_WAVE]		,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  wavescope style=3   							  		! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
 	gstcontext_load_pipeline(GST_LIBVISUAL_SYNAE,	&pipeline[GST_LIBVISUAL_SYNAE]		,GST_STATE_NULL,"udpsrc buffer-size=1 port=5000 ! audio/x-raw,rate=48000,channels=2,format=S32LE ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  synaescope shader=2	! videoflip video-direction=1 	! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
@@ -171,4 +167,8 @@ void projector_logic_init(volatile bool *video_done_flag_p){
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true async=false "
 	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true async=false device=dmix");
 	//"dmux.audio_0 ! fakesink");  //disable sound for testing on the workbench
+	
+	//spawn audio udp loopback to prevent re-init issues (bringing it back from portal gun v1.0)	
+	system("gst-launch-1.0 alsasrc buffer-time=40000 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! udpsink host=127.0.0.1 port=5000 sync=false &");
+	g_usleep(1000000);
 }
