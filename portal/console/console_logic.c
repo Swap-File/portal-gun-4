@@ -4,8 +4,6 @@
 #include <gst/gst.h>
 #include "../common/gstcontext.h"
 #include "../common/effects.h"
-#include <sys/resource.h> //setpriority
-#include <unistd.h> //getpid
 
 GstPipeline *pipeline;
 
@@ -28,10 +26,6 @@ void console_logic(int gst_state){
 
 void console_logic_init(bool gordon){
 
-	//let this priority get inherited to the children
-	//camera must be priortized over other stuff or it can lock up
-	setpriority(PRIO_PROCESS, getpid(), -10);
-	
 	if(gordon){
 		gstcontext_load_pipeline(GST_RPICAMSRC,&pipeline,GST_STATE_PAUSED,"rpicamsrc preview=0 awb-mode=10 ! image/jpeg,width=640,height=480,framerate=30/1 ! "
 		"queue max-size-time=50000000 leaky=upstream ! jpegparse ! tee name=t "
