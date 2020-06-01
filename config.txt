@@ -78,3 +78,4 @@ start_x=1
 dtoverlay=pwm-2chan,pin=12,pin2=13,func=4,func2=4
 disable-bt=1
 disable_splash=1
+boot_delay=0
