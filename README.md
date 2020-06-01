@@ -27,15 +27,46 @@ Website:
 [Apache](http://httpd.apache.org/) + [PHP](http://php.net/) + [mySQL](https://www.mysql.com/) on [Ubuntu](http://www.ubuntu.com/)
 
 OS:
-
+```
 Raspberry Pi OS (32-bit) Lite
-Minimal image based on Debian Buster
 Version: May 2020
 Release date: 2020-05-27
 Kernel version: 4.19
 Size: 432 MB
-Release notes
-Download Torrent
-Download ZIP
-
 SHA-256: f5786604be4b41e292c5b3c711e2efa64b25a5b51869ea8313d58da0b46afc64
+```
+Packages:
+
+```
+gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
+libvisual-0.4-plugins gstreamer1.0-tools gstreamer1.0-plugins-ugly 
+libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev gstreamer1.0-alsa gstreamer1.0-libav
+```
+```
+apache2 php libapache2-mod-php
+```
+```
+dos2unix libdrm-dev libgles2-mesa-dev libgbm-dev ifstat python-dbus apt-file libbluetooth-dev
+```
+Services:
+
+```
+apt install bluez=5.50-1.2~deb10u1
+apt-mark hold bluez
+```
+```
+systemctl unmask hostapd
+systemctl enable hostapd
+systemctl start hostapd
+```
+```
+systemctl mask systemd-rfkill.socket systemd-rfkill.service
+```
+```
+systemctl disable apt-daily.service
+systemctl disable apt-daily.timer
+```
+```
+systemctl disable apt-daily-upgrade.timer
+systemctl disable apt-daily-upgrade.service
+```
