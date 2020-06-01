@@ -325,10 +325,12 @@ function request_data(number) {
 				histpage.style.display = 'inline'; 
 				subtext.innerHTML = "Archives"
 			}
-			rotate_running_man();
-			setTimeout(function(){
-				$( "#loading_txt" ).fadeOut("slow");
-			},300);			
+			if (document.visibilityState == "visible"){
+				rotate_running_man();
+				setTimeout(function(){
+					$( "#loading_txt" ).fadeOut("slow");
+				},300);
+			}
 		}		
 	});
 }
