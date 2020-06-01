@@ -21,15 +21,6 @@ if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
 fi
 
-if [ -z "$(ifconfig | grep wlan0)" ]
-then
-    echo "wlan0 is down - rebooting in  10 sec"
-	sleep 10
-    sudo reboot
-else
-    echo "wlan0 is up"
-fi
-
 if [ "$(pidof portal)" ]
 then
 	echo "Portal is running already!"
