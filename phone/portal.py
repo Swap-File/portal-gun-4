@@ -1,8 +1,10 @@
-import pprint
+from androidhelper import Android
 import time
 from datetime import datetime
 import requests
 import re
+
+droid = Android() 
 
 delay = 2
 
@@ -211,7 +213,7 @@ upload_data()
 time.sleep(delay)
 upload_data()
 print("Warmup Complete")
-
+droid.startActivity('android.intent.action.VIEW' , 'http://' + ip + ':8020')
 frames = 0
 start_time = time.time()
 fps_time = time.time()
