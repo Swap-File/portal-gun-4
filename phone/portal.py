@@ -1,19 +1,15 @@
 from androidhelper import Android
 import time
-from datetime import datetime
 import requests
 import re
 
 droid = Android() 
+droid.wakeLockAcquirePartial()
 
-delay = 2
+delay = 1
 
 auth = ('', '')
 url_upload = 'https://71dc079247c3.sn.mynetname.net/portalguns/add.php'
-url_gordon_data = 'http://192.168.1.20/portal.php'
-url_chell_data = 'http://192.168.1.21/portal.php'
-url_gordon_image = 'http://192.168.1.20/tmp/snapshot.jpg'
-url_chell_image = 'http://192.168.1.21/tmp/snapshot.jpg'
 
 gordon_packet_id_last = -1
 chell_packet_id_last = -1
@@ -164,55 +160,49 @@ def upload_data():
 
 	cycle = cycle + 1
 
-try:
-	requests.get(url_gordon_data,timeout=.1)
-	requests.get(url_chell_data,timeout=.1)
-except:
-	print ("BT Scan Active")
-	while (ip == ""):
-		fullfile = open('/proc/net/arp', 'r').read()
-		results = re.findall( r'[0-9]+(?:\.[0-9]+){3}', fullfile )
 
-		for item in results:
-			print ("Trying Gordon at " + item)
-			try:
-				requests.get("http://" + item + ":8020/tmp/portal.txt",timeout=1)
-			except:
-				print ("Gordon Failed")
-			else:
-				print ("Found Gordon")
-				ip = item
-				break
+print ("BT Scan Active")
+while (ip == ""):
+    fullfile = open('/proc/net/arp', 'r').read()
+    results = re.findall( r'[0-9]+(?:\.[0-9]+){3}', fullfile )
 
-			print ("Trying Chell at " + item)
-			try:
-				requests.get("http://" + item + ":8021/tmp/portal.txt",timeout=1)
-			except:
-				print ("Chell Failed")
-			else:
-				print ("Found Chell")
-				ip = item
-				break
-		time.sleep(10)
-else:
-	print ("LAN Mode Active")
-	print ('Gordon: http://192.168.1.20')
-	print ('Chell: http://192.168.1.21')
+    for item in results:
+        print ("Trying Gordon at " + item)
+        try:
+            requests.get("http://" + item + ":8020/tmp/portal.txt",timeout=1)
+        except:
+            print ("Gordon Failed")
+        else:
+            print ("Found Gordon")
+            ip = item
+            break
 
-if (ip != ""):
-	print ("Building URLs...")
-	url_gordon_data = 'http://' + ip + ':8020/portal.php'
-	url_chell_data = 'http://' + ip + ':8021/portal.php'
-	url_gordon_image = 'http://' + ip + ':8020/tmp/snapshot.jpg'
-	url_chell_image = 'http://' + ip + ':8021/tmp/snapshot.jpg'
-	print ('Gordon: http://' + ip +':8020')
-	print ('Chell: http://' + ip +':8021')
+        print ("Trying Chell at " + item)
+        try:
+            requests.get("http://" + item + ":8021/tmp/portal.txt",timeout=1)
+        except:
+            print ("Chell Failed")
+        else:
+            print ("Found Chell")
+            ip = item
+            break
+    time.sleep(5)
+
+
+print ("Building URLs...")
+url_gordon_data = 'http://' + ip + ':8020/portal.php'
+url_chell_data = 'http://' + ip + ':8021/portal.php'
+url_gordon_image = 'http://' + ip + ':8020/tmp/snapshot.jpg'
+url_chell_image = 'http://' + ip + ':8021/tmp/snapshot.jpg'
+print ('Gordon: http://' + ip +':8020')
+print ('Chell: http://' + ip +':8021')
 
 print("Warming")
 upload_data()
 time.sleep(delay)
 upload_data()
 print("Warmup Complete")
+
 droid.startActivity('android.intent.action.VIEW' , 'http://' + ip + ':8020')
 frames = 0
 start_time = time.time()
