@@ -1,4 +1,4 @@
-OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) common/memory.o
+OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) $(patsubst i2c/%.c, i2c/%.o, $(wildcard i2c/*.c)) common/memory.o 
 DEPs := $(OBJs:%.o=%.d)
 BIN  := portal
 CC  = gcc
