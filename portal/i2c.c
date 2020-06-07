@@ -79,6 +79,37 @@ void i2c_init(void)
 	
 	//ads1115 setup
 	ads1115_setup(0x48,ADS1115_GAIN_4,ADS1115_DR_128);
+	
+	// set I2S_IN -> Dac & ADC -> DAP -> I2S_OUT
+	// DAP will pass through until AVC turned on
+	sgtl5000_audioPreProcessorEnable();
+	
+	// 0-1, 1 is max
+	sgtl5000_dacVolume(.6);
+	// 31-13, 13 is max
+	sgtl5000_lineOutLevel(31);
+
+	// AUDIO_INPUT_LINEIN or AUDIO_INPUT_MIC
+	sgtl5000_inputSelect(AUDIO_INPUT_LINEIN);
+	// ADC Gain  0-15, 15 is loudest, match to input voltage
+	sgtl5000_lineInLevel(3);
+
+	// set DAP input mixer
+	sgtl5000_dapMix(0.5,0);
+	
+	// set up DAP AVC
+	sgtl5000_autoVolumeControl(2,1,0,-80,50,20);
+	// turn on AVC in the DAP
+	sgtl5000_autoVolumeEnable();
+	
+	// turn on DAP eqBands
+	//sgtl5000_eqSelect(3);
+	// each band adjusted by signed percentage -100/+100
+	//sgtl5000_eqBands_5(0.0,0.0,0.0,0.0,0.0);
+		
+	// disable DAP bass boost but use High Pass Filter
+	// 0 is lowest cutoff, 6 is highest
+	//sgtl5000_enhanceBass_adv(0.0,0.0,0.0,6);
 }
 
 void i2c_update(struct gun_struct *this_gun)
