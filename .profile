@@ -27,7 +27,6 @@ then
 else
 # set up in sudo nano /etc/dhcpcd.conf
 	export GORDON="1" #or CHELL
-	sudo sysctl -w net.ipv4.ip_forward=1
 	sudo iptables -t nat -A PREROUTING -i bnep0 -p tcp --dport 8020 -j DNAT --to-destination 192.168.3.20:80
 	sudo iptables -t nat -A PREROUTING -i bnep0 -p tcp --dport 8021 -j DNAT --to-destination 192.168.3.21:80
 	sudo iptables -t nat -A POSTROUTING -j MASQUERADE
