@@ -317,7 +317,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 	else if (this_gun->state_duo_previous == 6 && this_gun->state_duo == 5)
 	pipe_audio("/home/pi/assets/portalgun/portal_open1.wav");
 	/* SOLO 1 & -1 (Not used!) */
-	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 1 || this_gun->state_solo == -2))
+	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 1 || this_gun->state_solo == -1))
 	pipe_audio("/home/pi/assets/physcannon/physcannon_charge1.wav");
 	/* SOLO 2 & -2 */
 	else if ((this_gun->state_solo_previous != this_gun->state_solo) && (this_gun->state_solo == 2 || this_gun->state_solo == -2))

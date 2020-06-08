@@ -98,7 +98,7 @@ void pipe_init(const struct gun_struct *this_gun)
 void pipe_audio(const char *filename)
 {
 	//use dmix for alsa so sounds can play over each other
-	fprintf(bash_fp, "aplay -D plug:dmix %s &\n",filename);
+	fprintf(bash_fp, "aplay -D dsp0 %s &\n",filename);
 	fflush(bash_fp);
 }
 

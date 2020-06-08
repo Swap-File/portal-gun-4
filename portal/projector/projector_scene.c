@@ -119,7 +119,7 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 	//have gstreamer update based on last cycles values
 	//this ensures the portal will close before gstreamer changes
 	//this is pass by value on purpose, it prevents gst_state from changing during execution
-	projector_logic_update(this_gun->gst_state,portal_state_displayed);  
+	projector_logic_update(this_gun->gst_state,portal_state_requested);  
 	
 	//calculate the delta between frames
 	const int speed = 10000;
@@ -149,9 +149,9 @@ static void projector_scene_draw(unsigned i,char *debug_msg)
 		if (zoom_displayed < ZOOM_MAX) zoom_displayed = ZOOM_MAX;
 		//printf("zooming %f \n",zoom_displayed);
 		if ((portal_state_requested & PORTAL_ORANGE_BIT) != 0) 
-		portal_state_displayed = PORTAL_CLOSED_ORANGE;
+			portal_state_displayed = PORTAL_CLOSED_ORANGE;
 		else if ((portal_state_requested & PORTAL_BLUE_BIT) != 0) 
-		portal_state_displayed = PORTAL_CLOSED_BLUE;	
+			portal_state_displayed = PORTAL_CLOSED_BLUE;	
 	}
 	//if fully zoomed, fade shimmer on request
 	if((portal_state_requested & PORTAL_OPEN_BIT) != 0){

@@ -20,7 +20,7 @@ fi
 if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
 fi
-
+cat /home/pi/arpeture.txt
 if [ "$(pidof portal)" ]
 then
 	echo "Portal is running already!"
