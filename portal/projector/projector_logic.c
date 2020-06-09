@@ -12,9 +12,11 @@ static volatile bool *video_done_flag = NULL;  //points to shared struct (if set
 GstPipeline *pipeline[GST_LAST + 1],*pipeline_active;
 	
 static bool movie_is_playing = false;
-static bool movie_is_ready = false;
+static bool movie_is_loaded = false;
+static bool movie_is_primed = false;
 static int video_mode_requested = 0;
 static int video_mode_current = -1;
+uint32_t movie_start_time = 0;
 
 static void seek_to_time(gint64 time_nanoseconds,GstPipeline **pipeline)
 {
@@ -31,6 +33,10 @@ gint64 get_position(GstPipeline **pipeline)
 	return pos;
 }
 
+void mute_pipeline( bool state, GstPipeline **pipeline){
+	GstElement *outputselector = gst_bin_get_by_name (GST_BIN (*pipeline), "vol");
+	g_object_set (outputselector, "mute",  state, NULL);
+}
 
 static void start_pipeline(void)
 {
@@ -41,7 +47,6 @@ static void start_pipeline(void)
 	if (GST_IS_ELEMENT(pipeline_active)) {
 		if (video_mode_current >= GST_MOVIE_FIRST && video_mode_current <= GST_MOVIE_LAST){
 			printf("Projector: Pause & Rewind Video Pipeline!\n");
-			
 			seek_to_time(0,&pipeline_active); //please be kind rewind
 			gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 		}else{
@@ -58,12 +63,15 @@ static void start_pipeline(void)
 	
 	//start the show
 	if (video_mode_requested >= GST_MOVIE_FIRST && video_mode_requested <= GST_MOVIE_LAST){
+		mute_pipeline(true, &pipeline_active);
+		movie_start_time = millis();
 		printf("GST_STATE_PAUSED!\n");
-		gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
-		movie_is_ready = true;
-	} else {
-		gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PLAYING);
+		movie_is_loaded = true;
+		movie_is_primed = false;
 	}
+	
+	gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PLAYING);
+	
 	video_mode_current = video_mode_requested;
 
 	printf("Pipeline changed to %d - %s in %d milliseconds!\n",video_mode_current,effectnames[video_mode_current],millis() - start_time);
@@ -73,15 +81,27 @@ void projector_logic_update(int gst_state, int portal_state){
 
 	video_mode_requested = gst_state;
 	
-	if (movie_is_ready){
+	//if a movie is loaded and the portal is open, start it playing
+	if (movie_is_loaded){
 		if ((portal_state & PORTAL_OPEN_BIT) == PORTAL_OPEN_BIT) { //wait until portal is opening to start video
-			     printf("                                         PORTAL_OPEN_BIT!\n");
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PLAYING);
-				movie_is_ready = false;
+				movie_is_loaded = false;
 				movie_is_playing = true;
+				//if we didnt get primed in time, unmute it now
+				if (!movie_is_primed) mute_pipeline(false, &pipeline_active);
 		}
 	}
 	
+	//let loaded movies play for 50ms to prime a few frames, then unmute
+	if (movie_is_loaded && !movie_is_primed){
+		if (millis() - movie_start_time > 50){
+			gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
+			movie_is_primed = true;
+			mute_pipeline(false, &pipeline_active);
+		}
+	}
+	
+	//detect the end of a movie 
 	if (movie_is_playing){
 	
 		static gint64 last_pos = ULONG_MAX;
@@ -91,6 +111,7 @@ void projector_logic_update(int gst_state, int portal_state){
 		else frame_count = 0;
 		last_pos = new_pos;
 		
+		//if the video has 3 frames the same, set the video_done_flag and the app will request the portal to close
 		if (frame_count > 2){
 			printf("Video is EoF\n");
 			gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
@@ -98,13 +119,15 @@ void projector_logic_update(int gst_state, int portal_state){
 			if (video_done_flag != NULL) *video_done_flag = true;
 		}
 		
-		if ((portal_state & PORTAL_OPEN_BIT) != PORTAL_OPEN_BIT) { //wait until portal is opening to start video
+		//if the portal closes, stop the video
+		if ((portal_state & PORTAL_OPEN_BIT) != PORTAL_OPEN_BIT) { 
 				gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
 				movie_is_playing = false;
 				printf("Video done\n");
 		}
 	}
 	
+	//always immediately switch to new pipelines to be ready
 	if (video_mode_requested != video_mode_current)
 		start_pipeline();
 }
@@ -171,41 +194,41 @@ void projector_logic_init(volatile bool *video_done_flag_p){
 	gstcontext_load_pipeline(GST_MOVIE1,&pipeline[GST_MOVIE1],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/1.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume name=vol  ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
 	gstcontext_load_pipeline(GST_MOVIE2,&pipeline[GST_MOVIE2],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/2.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume  name=vol ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
 	gstcontext_load_pipeline(GST_MOVIE3,&pipeline[GST_MOVIE3],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/3.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume  name=vol ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
 	gstcontext_load_pipeline(GST_MOVIE4,&pipeline[GST_MOVIE4],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/4.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume name=vol  ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
 	gstcontext_load_pipeline(GST_MOVIE5,&pipeline[GST_MOVIE5],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/5.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume name=vol  ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
 	gstcontext_load_pipeline(GST_MOVIE6,&pipeline[GST_MOVIE6],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/6.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume name=vol  ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
 	gstcontext_load_pipeline(GST_MOVIE7,&pipeline[GST_MOVIE7],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/7.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume  name=vol ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
 	gstcontext_load_pipeline(GST_MOVIE8,&pipeline[GST_MOVIE8],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/8.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume name=vol  ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
 	gstcontext_load_pipeline(GST_MOVIE9,&pipeline[GST_MOVIE9],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/9.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume name=vol  ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true  device=dsp0");
 	gstcontext_load_pipeline(GST_MOVIE10,&pipeline[GST_MOVIE10],GST_STATE_PAUSED,"filesrc location=/home/pi/assets/movies/down/10.mp4 ! qtdemux name=dmux "
 	"dmux.video_0 ! queue ! avdec_h264 ! queue ! videoconvert ! "
 	"glupload ! glcolorscale ! glcolorconvert ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA  ! glfilterapp name=grabtexture ! fakesink sync=true  "
-	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true device=dsp0");
+	"dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume name=vol ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! alsasink sync=true device=dsp0");
 }	
