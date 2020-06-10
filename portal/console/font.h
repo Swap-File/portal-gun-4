@@ -13,25 +13,25 @@
  *
  * After the constructor is run, you don't need to use any FreeType functions anymore.
  */
- struct atlas {
-	GLuint tex;		// texture object
+struct atlas {
+    GLuint tex;		// texture object
 
-	unsigned int w;			// width of texture in pixels
-	unsigned int h;			// height of texture in pixels
+    unsigned int w;			// width of texture in pixels
+    unsigned int h;			// height of texture in pixels
 
-	struct {
-		float ax;	// advance.x
-		float ay;	// advance.y
+    struct {
+        float ax;	// advance.x
+        float ay;	// advance.y
 
-		float bw;	// bitmap.width;
-		float bh;	// bitmap.height;
+        float bw;	// bitmap.width;
+        float bh;	// bitmap.height;
 
-		float bl;	// bitmap_left;
-		float bt;	// bitmap_top;
+        float bl;	// bitmap_left;
+        float bt;	// bitmap_top;
 
-		float tx;	// x offset of glyph in texture coordinates
-		float ty;	// y offset of glyph in texture coordinates
-	}c[128];
+        float tx;	// x offset of glyph in texture coordinates
+        float ty;	// y offset of glyph in texture coordinates
+    } c[128];
 };
 float font_length(const char *text, struct atlas * a, float sx, float sy);
 int font_init(char *fontfilename);

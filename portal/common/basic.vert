@@ -5,6 +5,6 @@ in vec2 in_TexCoord;
 out vec2 vTexCoord;
 void main()
 {
-	gl_Position = u_mvpMatrix * in_Position;
-	vTexCoord = in_TexCoord;
+    gl_Position = u_mvpMatrix * in_Position;
+    vTexCoord = in_TexCoord;
 }

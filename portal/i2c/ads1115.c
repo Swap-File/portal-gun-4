@@ -121,12 +121,12 @@ static uint8_t i2cAddr;
 
 static const uint16_t dataRates [8] =
 {
-	CONFIG_DR_8SPS, CONFIG_DR_16SPS, CONFIG_DR_32SPS, CONFIG_DR_64SPS, CONFIG_DR_128SPS, CONFIG_DR_475SPS, CONFIG_DR_860SPS
+    CONFIG_DR_8SPS, CONFIG_DR_16SPS, CONFIG_DR_32SPS, CONFIG_DR_64SPS, CONFIG_DR_128SPS, CONFIG_DR_475SPS, CONFIG_DR_860SPS
 } ;
 
 static const uint16_t gains [6] =
 {
-	CONFIG_PGA_6_144V, CONFIG_PGA_4_096V, CONFIG_PGA_2_048V, CONFIG_PGA_1_024V, CONFIG_PGA_0_512V, CONFIG_PGA_0_256V
+    CONFIG_PGA_6_144V, CONFIG_PGA_4_096V, CONFIG_PGA_2_048V, CONFIG_PGA_1_024V, CONFIG_PGA_0_512V, CONFIG_PGA_0_256V
 } ;
 
 
@@ -140,77 +140,78 @@ static const uint16_t gains [6] =
 
 static void adc_start (int chan)
 {
-	uint16_t config = CONFIG_DEFAULT;
+    uint16_t config = CONFIG_DEFAULT;
 
-	// Setup the configuration register
+    // Setup the configuration register
 
-	//	Set PGA/voltage range
+    //	Set PGA/voltage range
 
-	config &= ~CONFIG_PGA_MASK;
-	config |= global_gain;
+    config &= ~CONFIG_PGA_MASK;
+    config |= global_gain;
 
-	//	Set sample speed
+    //	Set sample speed
 
-	config &= ~CONFIG_DR_MASK;
-	config |= global_dr;
+    config &= ~CONFIG_DR_MASK;
+    config |= global_dr;
 
-	//	Set single-ended channel or differential mode
+    //	Set single-ended channel or differential mode
 
-	config &= ~CONFIG_MUX_MASK;
+    config &= ~CONFIG_MUX_MASK;
 
-	switch (chan)
-	{
-	case 0: config |= CONFIG_MUX_SINGLE_0 ; break ;
-	case 1: config |= CONFIG_MUX_SINGLE_1 ; break ;
-	case 2: config |= CONFIG_MUX_SINGLE_2 ; break ;
-	case 3: config |= CONFIG_MUX_SINGLE_3 ; break ;
+    switch (chan)
+    {
+    case 0: config |= CONFIG_MUX_SINGLE_0 ; break ;
+    case 1: config |= CONFIG_MUX_SINGLE_1 ; break ;
+    case 2: config |= CONFIG_MUX_SINGLE_2 ; break ;
+    case 3: config |= CONFIG_MUX_SINGLE_3 ; break ;
 
-	case 4: config |= CONFIG_MUX_DIFF_0_1 ; break ;
-	case 5: config |= CONFIG_MUX_DIFF_2_3 ; break ;
-	case 6: config |= CONFIG_MUX_DIFF_0_3 ; break ;
-	case 7: config |= CONFIG_MUX_DIFF_1_3 ; break ;
-	}
+    case 4: config |= CONFIG_MUX_DIFF_0_1 ; break ;
+    case 5: config |= CONFIG_MUX_DIFF_2_3 ; break ;
+    case 6: config |= CONFIG_MUX_DIFF_0_3 ; break ;
+    case 7: config |= CONFIG_MUX_DIFF_1_3 ; break ;
+    }
 
-	//	Start a single conversion
-	char temp[3];
-	temp[0] = 1;
-	temp[1] = (config >> 8);
-	temp[2] = (config & 0xFF);
-	
-	bcm2835_i2c_setSlaveAddress(i2cAddr); 
-	bcm2835_i2c_write(temp,3);
+
+    //	Start a single conversion
+    char temp[3];
+    temp[0] = 1;
+    temp[1] = (config >> 8);
+    temp[2] = (config & 0xFF);
+
+    bcm2835_i2c_setSlaveAddress(i2cAddr);
+    bcm2835_i2c_write(temp,3);
 
 }
 
 static int16_t i2c_read16(uint8_t reg)
 {
-	char temp[2];
-	temp[0] = reg;
-	bcm2835_i2c_write(temp,1);
-	bcm2835_i2c_read(temp,2);
-	return temp[1] | temp[0] << 8;
+    char temp[2];
+    temp[0] = reg;
+    bcm2835_i2c_write(temp,1);
+    bcm2835_i2c_read(temp,2);
+    return temp[1] | temp[0] << 8;
 }
 
 static bool adc_ready(void)
 {
-	bcm2835_i2c_setSlaveAddress(i2cAddr); 
-	int16_t result = i2c_read16(1);
+    bcm2835_i2c_setSlaveAddress(i2cAddr);
+    int16_t result = i2c_read16(1);
 
-	if ((result & CONFIG_OS_MASK) != 0) return true;
-	return false;
+    if ((result & CONFIG_OS_MASK) != 0) return true;
+    return false;
 }
 
 static void adc_finish(int chan,int * adc_data)
 {
-	bcm2835_i2c_setSlaveAddress(i2cAddr); 
-	int16_t result = i2c_read16(0);
-	
-	//Sometimes with a 0v input on a single-ended channel the internal 0v reference
-	//can be higher than the input, so you get a negative result...
-	if (result < 0) result = 0;
-	
-	/* save data and move to next channel */
-	adc_data[chan] = result;
+    bcm2835_i2c_setSlaveAddress(i2cAddr);
+    int16_t result = i2c_read16(0);
+
+    //Sometimes with a 0v input on a single-ended channel the internal 0v reference
+    //can be higher than the input, so you get a negative result...
+    if (result < 0) result = 0;
+
+    /* save data and move to next channel */
+    adc_data[chan] = result;
 
 }
 
@@ -253,35 +254,35 @@ void myAnalogWrite (int chan, int data)
 
 void ads1115_setup(uint8_t address,int gain_idx,int dr_idx )
 {
-	i2cAddr = address;
-	if (dr_idx > 7) dr_idx = 7;   // Use default if out of range
-	if (gain_idx > 5) gain_idx = 2 ;  // Use default if out of range
-		
-	global_dr = dataRates[dr_idx];	
-	global_gain = gains[gain_idx];
+    i2cAddr = address;
+    if (dr_idx > 7) dr_idx = 7;   // Use default if out of range
+    if (gain_idx > 5) gain_idx = 2 ;  // Use default if out of range
+
+    global_dr = dataRates[dr_idx];
+    global_gain = gains[gain_idx];
 }
 
 
-int * ads1115_update(void){
+int * ads1115_update(void) {
 
-	static bool adc_busy = false;
-	static int adc_active_channel = 0; //what channel we are working on
-	
-	static int adc_data[4];
-	
-	if (adc_busy) { 
-		if (adc_ready()){  //superfulous
-			adc_finish(adc_active_channel,adc_data);
-			adc_busy = false;
-			adc_active_channel++;
-			if (adc_active_channel > 3) adc_active_channel = 0;
-		} else {
-			/* under normal i2c update cadence calling this should never happen */
-			printf("Waiting on ADC....\n"); 
-		}
-	} else {
-		adc_busy = true;
-		adc_start(adc_active_channel);
-	}
-	return adc_data;
+    static bool adc_busy = false;
+    static int adc_active_channel = 0; //what channel we are working on
+
+    static int adc_data[4];
+
+    if (adc_busy) {
+        if (adc_ready()) { //superfulous
+            adc_finish(adc_active_channel,adc_data);
+            adc_busy = false;
+            adc_active_channel++;
+            if (adc_active_channel > 3) adc_active_channel = 0;
+        } else {
+            /* under normal i2c update cadence calling this should never happen */
+            printf("Waiting on ADC....\n");
+        }
+    } else {
+        adc_busy = true;
+        adc_start(adc_active_channel);
+    }
+    return adc_data;
 }

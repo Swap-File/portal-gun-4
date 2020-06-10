@@ -10,5 +10,5 @@ out vec4 color;
 
 void main()  //gl_PointCoord
 {
-	 color = v_color * texture( u_Texture, gl_PointCoord );
-}  
+    color = v_color * texture( u_Texture, gl_PointCoord );
+}

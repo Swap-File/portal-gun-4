@@ -1,4 +1,4 @@
-#ifndef _IO_H 
+#ifndef _IO_H
 #define _IO_H
 
 #include "common/memory.h"
@@ -12,7 +12,7 @@
 
 #define PIN_PRIMARY 24
 #define PIN_ALT     23
-#define PIN_MODE    22 
+#define PIN_MODE    22
 #define PIN_RESET   27
 
 #define BUTTON_PRIMARY_FIRE 0

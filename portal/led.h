@@ -11,8 +11,8 @@ void led_wipe(void);
 //Representation of an RGB pixel (Red, Green, Blue)
 
 struct CRGB {
-	union {
-		struct {
+    union {
+        struct {
             union {
                 uint8_t r;
                 uint8_t red;
@@ -26,8 +26,8 @@ struct CRGB {
                 uint8_t blue;
             };
         };
-		uint8_t raw[3];
-	};
+        uint8_t raw[3];
+    };
 };
 
 #endif

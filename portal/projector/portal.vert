@@ -5,6 +5,6 @@ in vec2 in_TexCoord;
 out vec2 p;
 void main()
 {
-	p = u_size * (-1.0 + 2.0 * in_TexCoord);
-	gl_Position = in_Position;
+    p = u_size * (-1.0 + 2.0 * in_TexCoord);
+    gl_Position = in_Position;
 }

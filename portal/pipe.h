@@ -1,4 +1,4 @@
-#ifndef _PIPE_H 
+#ifndef _PIPE_H
 #define _PIPE_H
 
 #include "common/memory.h"

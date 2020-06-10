@@ -26,99 +26,88 @@ char address;
 
 static int testReg(char address, char reg)
 {
-	char temp;
-	bcm2835_i2c_setSlaveAddress(address); 
-	bcm2835_i2c_write((char *)&reg,1);
-	bcm2835_i2c_read(&temp,1);
-	return temp;
+    char temp;
+    bcm2835_i2c_setSlaveAddress(address);
+    bcm2835_i2c_write((char *)&reg,1);
+    bcm2835_i2c_read(&temp,1);
+    return temp;
 }
 
 // Writes a gyro register
 static void writeReg(char reg, char value)
 {
-	char temp[2];
-	temp[0] = reg;
-	temp[1] = value;
-	bcm2835_i2c_setSlaveAddress(address);
-	bcm2835_i2c_write(temp,2);
+    char temp[2];
+    temp[0] = reg;
+    temp[1] = value;
+    bcm2835_i2c_setSlaveAddress(address);
+    bcm2835_i2c_write(temp,2);
 }
 
 bool L3G_init(enum deviceType device,enum sa0State sa0)
 {
-	int id;
+    int id;
 
-	// perform auto-detection unless device type and SA0 state were both specified
-	if (device == device_auto || sa0 == sa0_auto)
-	{
-		// check for L3GD20H, D20 if device is unidentified or was specified to be one of these types
-		if (device == device_auto || device == device_D20H || device == device_D20)
-		{
-			// check SA0 high address unless SA0 was specified to be low
-			if (sa0 != sa0_low && (id = testReg(D20_SA0_HIGH_ADDRESS, WHO_AM_I)) != TEST_REG_ERROR)
-			{
-				// device responds to address 1101011; it's a D20H or D20 with SA0 high     
-				sa0 = sa0_high;
-				if (device == device_auto)
-				{
-					// use ID from WHO_AM_I register to determine device type
-					device = (id == D20H_WHO_ID) ? device_D20H : device_D20;
-				}
-			}
-			// check SA0 low address unless SA0 was specified to be high
-			else if (sa0 != sa0_high && (id = testReg(D20_SA0_LOW_ADDRESS, WHO_AM_I)) != TEST_REG_ERROR)
-			{
-				// device responds to address 1101010; it's a D20H or D20 with SA0 low      
-				sa0 = sa0_low;
-				if (device == device_auto)
-				{
-					// use ID from WHO_AM_I register to determine device type
-					device = (id == D20H_WHO_ID) ? device_D20H : device_D20;
-				}
-			}
-		}
-		
-		// check for L3G4200D if device is still unidentified or was specified to be this type
-		if (device == device_auto || device == device_4200D)
-		{
-			if (sa0 != sa0_low && testReg(L3G4200D_SA0_HIGH_ADDRESS, WHO_AM_I) == L3G4200D_WHO_ID)
-			{
-				// device responds to address 1101001; it's a 4200D with SA0 high
-				device = device_4200D;
-				sa0 = sa0_high;
-			}
-			else if (sa0 != sa0_high && testReg(L3G4200D_SA0_LOW_ADDRESS, WHO_AM_I) == L3G4200D_WHO_ID)
-			{
-				// device responds to address 1101000; it's a 4200D with SA0 low
-				device = device_4200D;
-				sa0 = sa0_low;
-			}
-		}
-		
-		// make sure device and SA0 were successfully detected; otherwise, indicate failure
-		if (device == device_auto || sa0 == sa0_auto)
-		{
-			return false;
-		}
-	}
+    // perform auto-detection unless device type and SA0 state were both specified
+    if (device == device_auto || sa0 == sa0_auto) {
+        // check for L3GD20H, D20 if device is unidentified or was specified to be one of these types
+        if (device == device_auto || device == device_D20H || device == device_D20) {
+            // check SA0 high address unless SA0 was specified to be low
+            if (sa0 != sa0_low && (id = testReg(D20_SA0_HIGH_ADDRESS, WHO_AM_I)) != TEST_REG_ERROR) {
+                // device responds to address 1101011; it's a D20H or D20 with SA0 high
+                sa0 = sa0_high;
+                if (device == device_auto) {
+                    // use ID from WHO_AM_I register to determine device type
+                    device = (id == D20H_WHO_ID) ? device_D20H : device_D20;
+                }
+            }
+            // check SA0 low address unless SA0 was specified to be high
+            else if (sa0 != sa0_high && (id = testReg(D20_SA0_LOW_ADDRESS, WHO_AM_I)) != TEST_REG_ERROR) {
+                // device responds to address 1101010; it's a D20H or D20 with SA0 low
+                sa0 = sa0_low;
+                if (device == device_auto) {
+                    // use ID from WHO_AM_I register to determine device type
+                    device = (id == D20H_WHO_ID) ? device_D20H : device_D20;
+                }
+            }
+        }
 
-	_device = device;
+        // check for L3G4200D if device is still unidentified or was specified to be this type
+        if (device == device_auto || device == device_4200D) {
+            if (sa0 != sa0_low && testReg(L3G4200D_SA0_HIGH_ADDRESS, WHO_AM_I) == L3G4200D_WHO_ID) {
+                // device responds to address 1101001; it's a 4200D with SA0 high
+                device = device_4200D;
+                sa0 = sa0_high;
+            }
+            else if (sa0 != sa0_high && testReg(L3G4200D_SA0_LOW_ADDRESS, WHO_AM_I) == L3G4200D_WHO_ID) {
+                // device responds to address 1101000; it's a 4200D with SA0 low
+                device = device_4200D;
+                sa0 = sa0_low;
+            }
+        }
 
-	// set device address
-	switch (device)
-	{
-	case device_D20H:
-	case device_D20:
-		address = (sa0 == sa0_high) ? D20_SA0_HIGH_ADDRESS : D20_SA0_LOW_ADDRESS;
-		break;
+        // make sure device and SA0 were successfully detected; otherwise, indicate failure
+        if (device == device_auto || sa0 == sa0_auto) {
+            return false;
+        }
+    }
 
-	case device_4200D:
-		address = (sa0 == sa0_high) ? L3G4200D_SA0_HIGH_ADDRESS : L3G4200D_SA0_LOW_ADDRESS;
-		break;
-	case device_auto:
-		break;
-	}
+    _device = device;
 
-	return true;
+    // set device address
+    switch (device)    {
+    case device_D20H:
+    case device_D20:
+        address = (sa0 == sa0_high) ? D20_SA0_HIGH_ADDRESS : D20_SA0_LOW_ADDRESS;
+        break;
+
+    case device_4200D:
+        address = (sa0 == sa0_high) ? L3G4200D_SA0_HIGH_ADDRESS : L3G4200D_SA0_LOW_ADDRESS;
+        break;
+    case device_auto:
+        break;
+    }
+
+    return true;
 }
 
 /*
@@ -132,34 +121,33 @@ the registers it writes to.
 */
 void L3G_enableDefault(void)
 {
-	if (_device == device_D20H)
-	{
-		// 0x00 = 0b00000000
-		// Low_ODR = 0 (low speed ODR disabled)
-		writeReg(LOW_ODR, 0x00);
-	}
+    if (_device == device_D20H) {
+        // 0x00 = 0b00000000
+        // Low_ODR = 0 (low speed ODR disabled)
+        writeReg(LOW_ODR, 0x00);
+    }
 
-	// 0x20 = 0b00100000
-	// FS = 10 (+/- 2000 dps full scale)
-	writeReg(CTRL_REG4, 0x20);
+    // 0x20 = 0b00100000
+    // FS = 10 (+/- 2000 dps full scale)
+    writeReg(CTRL_REG4, 0x20);
 
-	// 0x0F = 0b00001111
-	// DR = 00 (100 Hz ODR); BW = 00 (12.5 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
-	writeReg(CTRL_REG1, 0x0F);
+    // 0x0F = 0b00001111
+    // DR = 00 (100 Hz ODR); BW = 00 (12.5 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+    writeReg(CTRL_REG1, 0x0F);
 }
 
 // Reads the 3 gyro channels and stores them in vector g
 void L3G_read(int * gyro_data)
 {
-	char temp[6];
-	temp[0] = OUT_X_L | (1 << 7);
+    char temp[6];
+    temp[0] = OUT_X_L | (1 << 7);
 
-	bcm2835_i2c_setSlaveAddress(address); 	
-	bcm2835_i2c_write(temp,1);
-	bcm2835_i2c_read(temp,6);
-	
-	gyro_data[0] = (int16_t)(temp[0] | (uint16_t)temp[1] << 8);
-	gyro_data[1] = (int16_t)(temp[2] | (uint16_t)temp[3] << 8);
-	gyro_data[2] = (int16_t)(temp[4] | (uint16_t)temp[5] << 8);
+    bcm2835_i2c_setSlaveAddress(address);
+    bcm2835_i2c_write(temp,1);
+    bcm2835_i2c_read(temp,6);
+
+    gyro_data[0] = (int16_t)(temp[0] | (uint16_t)temp[1] << 8);
+    gyro_data[1] = (int16_t)(temp[2] | (uint16_t)temp[3] << 8);
+    gyro_data[2] = (int16_t)(temp[4] | (uint16_t)temp[5] << 8);
 
 }
