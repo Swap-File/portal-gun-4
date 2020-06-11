@@ -33,10 +33,10 @@ int main(void)
     struct gun_struct *this_gun;
     shared_init(&this_gun,true);
 
-    /* catch broken pipes */
-    signal(SIGPIPE, SIG_IGN);
     /* catch ctrl+c for exit */
     signal(SIGINT, INThandler);
+    /* catch kill for exit */	
+    signal(SIGTERM, INThandler);
 
     /* setup libraries */
     pipe_www_out(this_gun); //output initial data now to let website load during gun init
