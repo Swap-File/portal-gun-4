@@ -20,18 +20,26 @@ fi
 if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
 fi
+
+# set PATH so it includes user's private bin if it exists
+if [ -d "$HOME/.local/bin" ] ; then
+    PATH="$HOME/.local/bin:$PATH"
+fi
+
 cat /home/pi/arpeture.txt
-if [ "$(pidof portal)" ]
-then
+
+export GORDON="1" #or CHELL
+
+if [ "$(pidof portal)" ]; then
 	echo "Portal is running already!"
 else
 # set up in sudo nano /etc/dhcpcd.conf
-	export GORDON="1" #or CHELL
 	sudo sysctl -w net.ipv4.ip_forward=1
 	sudo iptables -t nat -A PREROUTING -i bnep0 -p tcp --dport 8020 -j DNAT --to-destination 192.168.3.20:80
 	sudo iptables -t nat -A PREROUTING -i bnep0 -p tcp --dport 8021 -j DNAT --to-destination 192.168.3.21:80
 	sudo iptables -t nat -A POSTROUTING -j MASQUERADE
 	sudo ifconfig wlan0 192.168.3.20  #or 192.168.3.21
 	cd /home/pi/portal
-	sudo ./portal
+	sudo -E ./portal
+	sudo -E screen -S portal
 fi

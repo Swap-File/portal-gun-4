@@ -1,9 +1,9 @@
 OBJs := $(patsubst %.c, %.o, $(wildcard *.c)) $(patsubst i2c/%.c, i2c/%.o, $(wildcard i2c/*.c)) common/memory.o
 DEPs := $(OBJs:%.o=%.d)
 BIN  := portal
-CC  = gcc
+CC  = gcc -fdiagnostics-color
 # -I/usr/include/libdrm must be included here even though it isnt used so higher than j1 works
-CFLAGS += --std=gnu18 -Wall -Werror -O2 -I/usr/include/libdrm
+CFLAGS += --std=gnu18 -Wall -Werror -O2 -I/usr/include/libdrm -fdiagnostics-color=always
 LDFLAGS += -lm
 MAKEFLAGS += -j4
 
