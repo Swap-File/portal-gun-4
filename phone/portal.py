@@ -2,14 +2,14 @@ from androidhelper import Android
 import time
 import requests
 import re
-
+requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = "ALL"
 droid = Android() 
 droid.wakeLockAcquirePartial()
 
-delay = 1
+delay = 2
 
 auth = ('', '')
-url_upload = 'https://71dc079247c3.sn.mynetname.net/portalguns/add.php'
+url_upload = 'https://upload.portalguns.com/add.php'
 
 gordon_packet_id_last = -1
 chell_packet_id_last = -1
@@ -160,7 +160,6 @@ def upload_data():
 
 	cycle = cycle + 1
 
-
 print ("BT Scan Active")
 while (ip == ""):
     fullfile = open('/proc/net/arp', 'r').read()
@@ -187,7 +186,6 @@ while (ip == ""):
             ip = item
             break
     time.sleep(5)
-
 
 print ("Building URLs...")
 url_gordon_data = 'http://' + ip + ':8020/portal.php'
