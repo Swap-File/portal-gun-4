@@ -347,7 +347,7 @@ static void draw_scene(unsigned i,char *debug_msg)
 }
 
 
-const struct egl * init_scene(const struct gbm *gbm, int samples)
+const struct egl * scene_init(const struct gbm *gbm, int samples)
 {
     shared_init(&this_gun,false);
 

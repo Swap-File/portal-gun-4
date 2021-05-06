@@ -109,7 +109,9 @@ WiFi Channel:
 <option value="157">157</option>
 <option value="165">165</option>
 </select><br><br>
-<input type="button" class="button_text" id="rebootgun" onclick="reboot()" value="Reboot"/><br>
+<input type="button" class="button_text" onclick="get_page('reboot.php')" value="Reboot"/><br>
+<input type="button" class="button_text" onclick="get_page('restart.php')" value="Restart"/><br>
+<input type="button" class="button_text" onclick="get_page('rebuild.php')" value="Rebuild"/><br>
 </div>
 <div class="hidden_div" id="load_div"> 
 <br>
@@ -352,6 +354,11 @@ else if (location.host.indexOf(":8021") > 0){gun_name_div.innerHTML = "Chell";}
 update_data();
 var clicktime = 0;
 
+function get_page(page){
+	var request = new XMLHttpRequest();
+	request.open("GET", page, true);
+	request.send(null);
+}
 function playlist_load(num){
 	switch(num) {
 	case 10:
@@ -497,9 +504,7 @@ function menu(sel){
 			if (r == true) {
 				missed_packets = 999;
 				update_data();
-				var request = new XMLHttpRequest();
-				request.open("GET", "reboot.php", true);
-				request.send(null);
+				get_page("reboot.php");
 			}
 			sel = "preview";
 		}

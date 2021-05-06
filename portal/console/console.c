@@ -14,7 +14,7 @@ static const struct drm *drm;
 int main()
 {
     const char *device = "/dev/dri/card1";
-    char mode_str[DRM_DISPLAY_MODE_LEN] = "640x480";
+    char mode_str[DRM_DISPLAY_MODE_LEN] = "";
     uint32_t format = DRM_FORMAT_XRGB8888;
     uint64_t modifier = DRM_FORMAT_MOD_LINEAR;
     int samples = 0;
@@ -32,7 +32,7 @@ int main()
         return -1;
     }
 
-    egl = init_scene(gbm, samples);
+    egl = scene_init(gbm, samples);
     if (!egl) {
         printf("failed to initialize EGL\n");
         return -1;
