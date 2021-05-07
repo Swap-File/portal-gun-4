@@ -11,38 +11,40 @@
 #define EFFECT_RESOLUTION 400
 #define BREATHING_RATE 2000
 
-static struct CRGB main_buffer_step1[EFFECT_LENGTH];
-static struct CRGB main_buffer_step2[EFFECT_LENGTH];
-static int timearray[EFFECT_LENGTH];
-
 static struct CRGB color1;
 static struct CRGB color2;
-static struct CRGB color1_previous;
 
-static uint8_t overlay = 0;
-
-static bool overlay_primer = true;
-static bool overlay_enabled = false;
 static int overlay_timer;
 
-static int timeoffset = 0;
-
-static int led_index = 0;
-static int led_width_actual = 0;
-static int led_width_requested = 0	;
-static int color_update_index = 0;
-static int width_update_speed;
-static int total_offset_previous = 0;
-
-static int cooldown_time = 0;
-
-static float effect_array[EFFECT_RESOLUTION];
-static int ticks_since_overlay_enable = 0; //disabled overlay on bootup
 static int width_update_speed_last_update = 0;
+static float effect_array[EFFECT_RESOLUTION];
 static uint8_t brightnesslookup[256][EFFECT_RESOLUTION];
 
 float led_update_internal(int width_temp,int width_update_speed_temp,int overlay_temp,int total_offset)
 {
+    static struct CRGB main_buffer_step1[EFFECT_LENGTH];
+    static struct CRGB main_buffer_step2[EFFECT_LENGTH];
+    static int timearray[EFFECT_LENGTH];
+    static struct CRGB color1_previous;
+
+    static uint8_t overlay = 0;
+
+    static bool overlay_primer = true;
+    static bool overlay_enabled = false;
+
+    static int timeoffset = 0;
+
+    static int led_index = 0;
+    static int led_width_actual = 0;
+    static int led_width_requested = 0	;
+    static int color_update_index = 0;
+    static int width_update_speed;
+    static int total_offset_previous = 0;
+
+    static int cooldown_time = 0;
+
+    static int ticks_since_overlay_enable = 0; //disabled overlay on bootup
+
     //int start_time = micros();
 
     if (total_offset_previous > 200 && total_offset < 200 && led_width_actual == 20) {
@@ -298,7 +300,8 @@ uint8_t led_update(const struct gun_struct *this_gun) {
 void led_init(void) {
 
     bcm2835_spi_begin();
-
+    bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);
+ 
     overlay_timer =  millis();
 
     printf("LED_Control: Building Lookup Table...\n");
