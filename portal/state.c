@@ -137,12 +137,12 @@ void state_engine(int button,struct gun_struct *this_gun)
                     this_gun->state_duo = -4;
             }
         } else if (this_gun->mode == MODE_SOLO) {  //code to pull out of solo states
-            if (this_gun->other_gun_state == 3 || this_gun->other_gun_state == 4) {
+            if (this_gun->other_gun_state >= 3) {
                 this_gun->state_solo = 0;
                 this_gun->state_duo = -2;
                 this_gun->mode = MODE_DUO;
             }
-            if (this_gun->other_gun_state == -3) {
+            if (this_gun->other_gun_state <= -3) {
                 if (this_gun->state_solo >= -2 && this_gun->state_solo <= 2) {
                     this_gun->state_solo = 0;
                     this_gun->state_duo = 2;
