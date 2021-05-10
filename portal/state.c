@@ -10,6 +10,8 @@
 
 void state_engine(int button,struct gun_struct *this_gun)
 {
+    static uint32_t shutter_ready_time = 0;
+
     /* force video mode to change if a video ends-> */
     if (this_gun->video_done) {
         if (this_gun->state_solo == 5) this_gun->state_solo = 4;
@@ -152,6 +154,7 @@ void state_engine(int button,struct gun_struct *this_gun)
                     this_gun->state_solo = 0;
                     this_gun->state_duo = 3;
                     this_gun->mode = MODE_DUO;
+                    shutter_ready_time = millis() + SHUTTER_DELAY;
                 }
             }
         }
@@ -176,17 +179,16 @@ void state_engine(int button,struct gun_struct *this_gun)
         }
     }
 
-    static uint32_t shutter_start_time = 0;
     /* laser states */
     if (this_gun->state_solo == 3 || this_gun->state_solo == -3 || this_gun->state_duo == 3) {
 
         if (this_gun->servo_open == false) {
-            shutter_start_time = millis();
+            shutter_ready_time = millis() + SHUTTER_DELAY;
             //open the shutter but delay the state change
             this_gun->servo_open = true;
         }
 
-        if (this_gun->laser_on && (shutter_start_time + SHUTTER_DELAY <= millis())) {
+        if (this_gun->laser_on && millis() > shutter_ready_time) {
             if(this_gun->state_duo == 3)		this_gun->state_duo = 4;
             else if(this_gun->state_solo == 3)	this_gun->state_solo = 4;
             else if(this_gun->state_solo == -3)	this_gun->state_solo = -4;
