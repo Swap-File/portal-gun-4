@@ -41,7 +41,7 @@ int main(void)
     /* setup libraries */
     pipe_www_out(this_gun); //output initial data now to let website load during gun init
     bcm2835_init();
-    led_init();
+    led_init(this_gun->gordon);
     io_init();
     i2c_init();
     udp_init(this_gun->gordon);

@@ -515,6 +515,7 @@ void automate_3(uint8_t dap, uint8_t eq, uint8_t filterCount);
 
 static uint16_t read(uint16_t reg)
 {
+    bcm2835_i2c_setSlaveAddress(SGTL5000_I2C_ADDR_CS_LOW);
     char val[2];
     val[0] = reg >> 8;
     val[1] = reg;
@@ -525,6 +526,7 @@ static uint16_t read(uint16_t reg)
 
 static bool write(uint16_t reg, uint16_t val)
 {
+    bcm2835_i2c_setSlaveAddress(SGTL5000_I2C_ADDR_CS_LOW);
     char tmp[4];
     tmp[0] = reg >> 8;
     tmp[1] = reg;
