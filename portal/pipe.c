@@ -216,6 +216,7 @@ int pipe_button_out(int button,bool gordon){
 	if (button > BUTTON_NONE){
 		if (button_last != button){
 			button_last = button;
+			printf("Remote Button %d\n",button);
 			if(gordon){
 				if (button == BUTTON_REMOTE_PRIMARY_FIRE)
 					fprintf(bash_fp, "curl -d \"mode=1 101\" -X POST http://192.168.3.21/index_post.php &\n");

@@ -26,11 +26,13 @@ void io_init(void)
 	bcm2835_gpio_fsel(PIN_ALT, BCM2835_GPIO_FSEL_INPT);
 	bcm2835_gpio_fsel(PIN_MODE, BCM2835_GPIO_FSEL_INPT);
 	bcm2835_gpio_fsel(PIN_RESET, BCM2835_GPIO_FSEL_INPT);
-
+	bcm2835_gpio_fsel(PIN_REMOTE, BCM2835_GPIO_FSEL_INPT);
+	
 	bcm2835_gpio_set_pud(PIN_PRIMARY, BCM2835_GPIO_PUD_UP);
 	bcm2835_gpio_set_pud(PIN_ALT, BCM2835_GPIO_PUD_UP);
 	bcm2835_gpio_set_pud(PIN_MODE, BCM2835_GPIO_PUD_UP);
 	bcm2835_gpio_set_pud(PIN_RESET, BCM2835_GPIO_PUD_UP);
+    bcm2835_gpio_set_pud(PIN_REMOTE, BCM2835_GPIO_PUD_UP);
 }
 
 int io_servo(bool servo_open) {
@@ -99,13 +101,12 @@ int io_update(struct gun_struct *this_gun)
 		reset_bucket = 0;
 	}
 
-	//Remote_button
-	if(bcm2835_gpio_lev(PIN_REMOTE) == 0) {
-		if (remote_bucket < DEBOUNCE_COUNT) {
+	//Remote_button trigger
+	bool remote_button = bcm2835_gpio_lev(PIN_REMOTE);
+	
+	if(remote_button == 0) {
+		if (remote_bucket < DEBOUNCE_COUNT) 
 			remote_bucket++;
-		}
-	} else {
-		remote_bucket = 0;
 	}
 	
 
@@ -152,7 +153,12 @@ int io_update(struct gun_struct *this_gun)
 	} else {
 		this_gun->reset_countdown = 0;
 	}
-
+	
+	// only clear remote bucket if nothing is pressed
+	if (button == BUTTON_NONE && remote_button != 0){
+		remote_bucket = 0;
+	}
+	
 	if (remote_bucket == DEBOUNCE_COUNT){
 		if (button == BUTTON_PRIMARY_FIRE)
 		button = BUTTON_REMOTE_PRIMARY_FIRE;
