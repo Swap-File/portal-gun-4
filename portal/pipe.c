@@ -219,24 +219,24 @@ int pipe_button_out(int button,bool gordon){
 			printf("Remote Button %d\n",button);
 			if(gordon){
 				if (button == BUTTON_REMOTE_PRIMARY_FIRE)
-					fprintf(bash_fp, "curl -d \"mode=1 101\" -X POST http://192.168.3.21/index_post.php &\n");
+					fprintf(bash_fp, "curl -d \"mode=1 100\" -X POST http://192.168.3.21/index_post.php &\n");
 				if (button == BUTTON_REMOTE_ALT_FIRE)
-					fprintf(bash_fp, "curl -d \"mode=1 102\" -X POST http://192.168.3.21/index_post.php &\n");
+					fprintf(bash_fp, "curl -d \"mode=1 101\" -X POST http://192.168.3.21/index_post.php &\n");
 				if (button == BUTTON_REMOTE_MODE_TOGGLE)
-					fprintf(bash_fp, "curl -d \"mode=1 103\" -X POST http://192.168.3.21/index_post.php &\n");	
+					fprintf(bash_fp, "curl -d \"mode=1 102\" -X POST http://192.168.3.21/index_post.php &\n");	
 				if (button == BUTTON_REMOTE_RESET)
-					fprintf(bash_fp, "curl -d \"mode=1 104\" -X POST http://192.168.3.21/index_post.php &\n");		
+					fprintf(bash_fp, "curl -d \"mode=1 103\" -X POST http://192.168.3.21/index_post.php &\n");		
 				if (button == BUTTON_REMOTE_LONG_RESET)
 					fprintf(bash_fp, "curl http://192.168.3.21/reboot.php &\n");
 			}else{
 				if (button == BUTTON_REMOTE_PRIMARY_FIRE)
-					fprintf(bash_fp, "curl -d \"mode=1 101\" -X POST http://192.168.3.20/index_post.php &\n");
+					fprintf(bash_fp, "curl -d \"mode=1 100\" -X POST http://192.168.3.20/index_post.php &\n");
 				if (button == BUTTON_REMOTE_ALT_FIRE)
-					fprintf(bash_fp, "curl -d \"mode=1 102\" -X POST http://192.168.3.20/index_post.php &\n");
+					fprintf(bash_fp, "curl -d \"mode=1 101\" -X POST http://192.168.3.20/index_post.php &\n");
 				if (button == BUTTON_REMOTE_MODE_TOGGLE)
-					fprintf(bash_fp, "curl -d \"mode=1 103\" -X POST http://192.168.3.20/index_post.php &\n");
+					fprintf(bash_fp, "curl -d \"mode=1 102\" -X POST http://192.168.3.20/index_post.php &\n");
 				if (button == BUTTON_REMOTE_RESET)
-					fprintf(bash_fp, "curl -d \"mode=1 104\" -X POST http://192.168.3.20/index_post.php &\n");
+					fprintf(bash_fp, "curl -d \"mode=1 103\" -X POST http://192.168.3.20/index_post.php &\n");
 				if (button == BUTTON_REMOTE_LONG_RESET)
 					fprintf(bash_fp, "curl http://192.168.3.20/reboot.php &\n");
 			}
