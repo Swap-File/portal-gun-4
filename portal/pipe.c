@@ -244,6 +244,7 @@ int pipe_button_out(int button,bool gordon){
 		}
 		return BUTTON_NONE;
 	}
+	button_last = button;
 	return button;
 }
 

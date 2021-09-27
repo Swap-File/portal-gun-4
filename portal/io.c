@@ -93,7 +93,7 @@ int io_update(struct gun_struct *this_gun)
 			reset_bucket++;
 			if (reset_bucket == DEBOUNCE_COUNT) {
 				reset_hold_time = millis();
-				return BUTTON_RESET;
+				button = BUTTON_RESET;
 			}
 		}
 	} else {
