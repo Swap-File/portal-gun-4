@@ -285,7 +285,7 @@ static void draw_scene(unsigned i,char *debug_msg)
         char spin = '+';
         if (this_gun->acces_counter % 2) spin = '~';
 
-        sprintf(temp,"Bt%c %.0f/%.0f\260F",spin, this_gun->temperature_pretty,this_gun->coretemp);
+        sprintf(temp,"Bt%c %.0f/%.0f\260F",spin, this_gun->temperature_pretty,this_gun->coretemp);
         center_text(&a64,temp, 8);
 
 
@@ -296,10 +296,10 @@ static void draw_scene(unsigned i,char *debug_msg)
 
         int kbits = this_gun->kbytes_wlan;
         if (this_gun->kbytes_bnep > 0) kbits += this_gun->kbytes_bnep;
-        sprintf(temp,"%dKb/s",kbits);
+        sprintf(temp,"%dKbps",kbits);
         center_text(&a64,temp, 4);
 
-        sprintf(temp,"%d/%d MB/s",this_gun->rx_bitrate,this_gun->tx_bitrate);
+        sprintf(temp,"%d %d Mbps",this_gun->rx_bitrate,this_gun->tx_bitrate);
         center_text(&a64,temp, 5);
 
         float num = this_gun->latency;

@@ -122,9 +122,17 @@ void font_atlas_init(int height,struct atlas *input)
     memset(input->c, 0, sizeof (input->c));
 
     /* Find minimum size for a texture holding all visible ASCII characters */
-    for (int i = 32; i < 128; i++) {
-        if (FT_Load_Char(face, i, FT_LOAD_RENDER)) {
-            fprintf(stderr, "Loading character %c failed!\n", i);
+    for (int i = 1; i < 128; i++) {
+		int i_temp = i;
+		if (i < 32){
+			if (i < 7)
+				i_temp += 8592-1;
+			else
+				i_temp = 176;
+		}
+		
+        if (FT_Load_Char(face, i_temp, FT_LOAD_RENDER)) {
+            fprintf(stderr, "Loading character %c failed!\n", i_temp);
             continue;
         }
         if (roww + g->bitmap.width + 1 >= MAXWIDTH) {
@@ -165,9 +173,17 @@ void font_atlas_init(int height,struct atlas *input)
 
     rowh = 0;
 
-    for (int i = 32; i < 128; i++) {
-        if (FT_Load_Char(face, i, FT_LOAD_RENDER)) {
-            fprintf(stderr, "Loading character %c failed!\n", i);
+    for (int i = 1; i < 128; i++) {
+		int i_temp = i;
+		if (i < 32){
+			if (i < 7)
+				i_temp += 8592-1;
+			else
+				i_temp = 176;
+		}
+		
+        if (FT_Load_Char(face, i_temp, FT_LOAD_RENDER)) {
+            fprintf(stderr, "Loading character %c failed!\n", i_temp);
             continue;
         }
 
