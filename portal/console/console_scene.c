@@ -299,7 +299,7 @@ static void draw_scene(unsigned i,char *debug_msg)
         sprintf(temp,"%dKb/s",kbits);
         center_text(&a64,temp, 4);
 
-        sprintf(temp,"%ddB %dMB/s",this_gun->dbm,this_gun->tx_bitrate);
+        sprintf(temp,"%d/%d MB/s",this_gun->rx_bitrate,this_gun->tx_bitrate);
         center_text(&a64,temp, 5);
 
         float num = this_gun->latency;

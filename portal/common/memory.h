@@ -37,7 +37,7 @@ struct gun_struct {
 
     float latency;
     float coretemp;
-    int dbm;
+    int rx_bitrate;
     int tx_bitrate;
     int kbytes_wlan;
     int kbytes_bnep;

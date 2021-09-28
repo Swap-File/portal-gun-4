@@ -1,0 +1,16 @@
+cat << '_EOF_' > disable_hdmi_audio.dts
+/dts-v1/;
+/plugin/;
+/ {
+	compatible = "brcm,bcm2835";
+	fragment@0 {
+		target = <&audio>;
+		__overlay__ {
+			brcm,disable-hdmi = <1>;
+			brcm,disable-headphones = <1>;
+		};
+	};
+};
+_EOF_
+sudo dtc -I dts -O dtb -o /boot/overlays/disable_hdmi_audio.dtbo disable_hdmi_audio.dts
+sudo echo 'dtoverlay=disable_hdmi_audio' >> /boot/config.txt

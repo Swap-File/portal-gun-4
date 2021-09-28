@@ -394,17 +394,17 @@ static void update_temp(float * temp) {
 	lseek(temp_in,0,SEEK_SET);
 }
 
-static void update_iw(int * dbm, int * tx_bitrate) {
+static void update_iw(int * rx_bitrate, int * tx_bitrate) {
 	static uint8_t bad_count = 0;
 	int count = 1;
 	char buffer[1000];
 	count = read(fileno(iw_fp), buffer, sizeof(buffer)-1);
 	if (count > 2) { // full message is 370 char
-		char * signal_pointer = strstr(buffer,"signal:") + 7;
+		char * rx_pointer = strstr(buffer,"rx bitrate:") + 11;
 		char * tx_pointer = strstr(buffer,"tx bitrate:") + 11;
-		char * end_pointer1 = strstr(signal_pointer,"\n");
-		char * end_pointer2 = strstr(tx_pointer,"\n");
-		if (signal_pointer != NULL && signal_pointer <  buffer + 1000 && \
+		char * end_pointer2 = strstr(rx_pointer,"\n");
+		char * end_pointer1 = strstr(tx_pointer,"\n");
+		if (rx_pointer != NULL && rx_pointer <  buffer + 1000 && \
 				tx_pointer != NULL && tx_pointer < buffer + 1000 && \
 				end_pointer1 != NULL && end_pointer1 < buffer + 1000 && \
 				end_pointer2 != NULL && end_pointer2 < buffer + 1000 ) {
@@ -412,10 +412,10 @@ static void update_iw(int * dbm, int * tx_bitrate) {
 			*end_pointer2 = '\0';
 			int temp_dbm=0;
 			int temp_tx_bitrate=0;
-			int result1 = sscanf(signal_pointer,"%d", &temp_dbm);
+			int result1 = sscanf(rx_pointer,"%d", &temp_dbm);
 			int result2 = sscanf(tx_pointer,"%d", &temp_tx_bitrate);
 			if (result1 == 1 && result2 == 1) {
-				*dbm = temp_dbm;
+				*rx_bitrate = temp_dbm;
 				*tx_bitrate = temp_tx_bitrate;
 				bad_count = 0;
 			} else {
@@ -426,7 +426,7 @@ static void update_iw(int * dbm, int * tx_bitrate) {
 		bad_count++;
 	}
 	if (bad_count > 3) {
-		*dbm = 0;
+		*rx_bitrate = 0;
 		*tx_bitrate = 0;
 	}
 }
@@ -436,5 +436,5 @@ void pipe_update(struct gun_struct *this_gun) {
 	update_ping(&(this_gun->latency));
 	update_ifstat(&(this_gun->kbytes_wlan),IFSTAT_WLAN);
 	update_ifstat(&(this_gun->kbytes_bnep),IFSTAT_BNEP);
-	update_iw(&(this_gun->dbm), &(this_gun->tx_bitrate));
+	update_iw(&(this_gun->rx_bitrate), &(this_gun->tx_bitrate));
 }

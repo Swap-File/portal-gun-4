@@ -28,12 +28,11 @@ Website:
 
 OS:
 ```
-Raspberry Pi OS (32-bit) Lite
-Version: May 2020
-Release date: 2020-05-27
-Kernel version: 4.19
-Size: 432 MB
-SHA-256: f5786604be4b41e292c5b3c711e2efa64b25a5b51869ea8313d58da0b46afc64
+Raspberry Pi OS Lite
+Release date: May 7th 2021
+Kernel version: 5.10
+Size: 444 MB
+SHA-256: c5dad159a2775c687e9281b1a0e586f7471690ae28f2f2282c90e7d59f64273c
 ```
 Packages:
 
@@ -51,10 +50,6 @@ dos2unix libdrm-dev libgles2-mesa-dev libgbm-dev ifstat python-dbus apt-file lib
 Services:
 
 ```
-apt install bluez=5.50-1.2~deb10u1
-apt-mark hold bluez
-```
-```
 systemctl unmask hostapd
 systemctl enable hostapd
 systemctl start hostapd
@@ -63,10 +58,9 @@ systemctl start hostapd
 systemctl mask systemd-rfkill.socket systemd-rfkill.service
 ```
 ```
+systemctl mask rpi-eeprom-update
 systemctl disable apt-daily.service
 systemctl disable apt-daily.timer
-```
-```
 systemctl disable apt-daily-upgrade.timer
 systemctl disable apt-daily-upgrade.service
 ```
