@@ -34,7 +34,7 @@ if [ "$(pidof portal)" ]; then
 	echo "Portal is running already!"
 else
 # set up in sudo nano /etc/dhcpcd.conf
-	sudo iwconfig wlan0 power off
+	sudo iw wlan0 set power_save off
 	sudo sysctl -w net.ipv4.ip_forward=1
 	sudo iptables -t nat -A PREROUTING -i bnep0 -p tcp --dport 8020 -j DNAT --to-destination 192.168.3.20:80
 	sudo iptables -t nat -A PREROUTING -i bnep0 -p tcp --dport 8021 -j DNAT --to-destination 192.168.3.21:80
