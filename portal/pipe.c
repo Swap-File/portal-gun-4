@@ -34,10 +34,10 @@ static FILE *ping_fp;
 void pipe_cleanup(void)
 {
 	printf("Killing old processes...\n");
-	system("pkill gst*");
 	system("pkill console");
 	system("pkill projector");
 	system("pkill mjpeg*");
+	system("pkill gst*");
 }
 
 void pipe_init(const struct gun_struct *this_gun)
@@ -108,14 +108,16 @@ void pipe_laser_pwr(bool laser_request,struct gun_struct *this_gun)
 
 	if (this_gun == NULL) {
 		if (laser_request == true) {
-			fprintf(bash_fp, "vcgencmd display_power 1 2 &\n");
+			//fprintf(bash_fp, "vcgencmd display_power 1 2 &\n");
+			system("vcgencmd display_power 1 2");
 			laser_state = LASER_STATE_ON;
 		}
 		else if (laser_request == false) {
-			fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
+			//fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
+			system("vcgencmd display_power 0 2");
 			laser_state = LASER_STATE_OFF;
 		}
-		fflush(bash_fp);
+		//fflush(bash_fp);
 		return;
 	}
 

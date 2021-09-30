@@ -23,6 +23,7 @@ int main()
     drm = init_drm_legacy(device, mode_str, vrefresh,1);
     if (!drm ) {
         printf("failed to initialize DRM\n");
+        system("sudo reboot");
         return -1;
     }
 

@@ -13,9 +13,11 @@
 
 void INThandler(int dummy) {
     printf("\nCleaning up...\n");
+	pipe_cleanup();
+	printf("pipe_laser_pwr...\n");
     pipe_laser_pwr(true,NULL);
+	printf("LED wipe...\n");
     led_wipe();
-    pipe_cleanup();
     shared_cleanup();
     exit(1);
 }
@@ -35,8 +37,8 @@ int main(void)
 
     /* catch ctrl+c for exit */
     signal(SIGINT, INThandler);
-    /* catch kill for exit */	
     signal(SIGTERM, INThandler);
+    signal(SIGKILL, INThandler);
 
     /* setup libraries */
     pipe_www_out(this_gun); //output initial data now to let website load during gun init
