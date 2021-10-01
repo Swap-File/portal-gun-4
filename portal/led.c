@@ -246,7 +246,7 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 	
 	if (led_width_requested == 0){
 		//decay handle
-		if (handle_static.r == handle_breath.r && handle_static.g == handle_breath.g && handle_static.b == handle_breath.b )
+		if (handle_static.r >= handle_breath.r && handle_static.g >= handle_breath.g && handle_static.b >= handle_breath.b)
 		handle_static = (struct CRGB) {.r = 0, .g = 0, .b = 0};
 		
 		//use breath or decayed value
