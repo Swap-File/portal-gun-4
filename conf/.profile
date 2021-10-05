@@ -42,5 +42,5 @@ else
 	sudo ifconfig wlan0 192.168.3.20  #or 192.168.3.21
 	cd /home/pi/portal
 	sudo -E ./portal
-	sudo -E screen -S portal
+	sudo -E screen -S portal -c "/home/pi/.screenrc"
 fi
