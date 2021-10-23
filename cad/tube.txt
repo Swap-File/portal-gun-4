@@ -1,5 +1,5 @@
 www.mcmaster.com
-8585K49
+8585K55
 
 Clear Impact-Resistant Polycarbonate Tubes
 Color: Clear
@@ -9,7 +9,12 @@ Impact Strength: 12-18 ft.-lbs./in. (Excellent)
 Hardness: Rockwell R118 (Hard)
 For Use Outdoors: No
 
-1/4" Wall Thick. (-0.025" to 0.025")
-4"	-0.040" to 0.040"	3 1/2"	-0.035" to 0.035"	FDA Compliant 21 CFR 177.1580, UL 94 HB	8585K49	$42.19
+1/8" Wall Thick. (-0.01" to 0.01")
+4"	-0.025" to 0.025"	3 3/4"	-0.025" to 0.025"	FDA Compliant 21 CFR 177.1580, UL 94 HB	8585K55	
+$31.66 1ft
+$55.87 2ft
+$80.08 3ft
+$102.43 4ft
+$186.24 8ft
 
 Cut to 9.8125 inches long
