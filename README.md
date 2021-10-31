@@ -6,6 +6,8 @@ Gun:
 
 [Raspberry Pi 4B](https://www.raspberrypi.org/) + [Laser Beam Pro C200](http://laserbeampro.com/) + Pi NoIR Camera V2 + 3W IR Emitters
 
+CAD Design inspired by [Kirby Downey](https://kirbydowney.com/)
+
 5Ghz Bridge via hostapd + [Fe-Pi Audio Z I2S Sound Card](https://fe-pi.com/) + Onboard BT tethering
 
 [Pololu MinIMU-9 v2](https://www.pololu.com/product/1268) + ADS1115 for Battery Meter and Temp Sensing
