@@ -61,7 +61,7 @@ void drm_wait_master(int fd){
 	while (drmSetMaster(fd) != 0){
 		usleep(100);  //manually tuned so one sleep is enough
 		cycles++;
-		if (cycles > 10000) {
+		if (cycles > 100000) {
 			printf("drm_wait_master: Break\n");
 			break;
 		}

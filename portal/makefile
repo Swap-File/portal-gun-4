@@ -10,7 +10,7 @@ MAKEFLAGS += -j4
 .PHONY: all
 all: subprocesses portal
 
-portal:	$(OBJs) -lbcm2835
+portal:	$(OBJs) $(LDFLAGS) -lbcm2835
 
 .PHONY: clean
 clean:
