@@ -136,7 +136,12 @@ void projector_logic_update(int gst_state, int portal_state) {
 void projector_logic_init(volatile bool *video_done_flag_p) {
 
     video_done_flag = video_done_flag_p;
-
+	
+	//spawn audio udp loopback to prevent re-init issues (bringing it back from portal gun v1.0)
+    system("gst-launch-1.0 --no-position alsasrc buffer-time=10000 device=hw:0 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! queue !  audioconvert ! rtpL24pay ! udpsink host=127.0.0.1 port=5000 sync=false &");
+ 
+	
+	
     //test patterns
     gstcontext_load_pipeline(GST_BLANK,             &pipeline[GST_BLANK],               GST_STATE_NULL,"videotestsrc pattern=2 ! video/x-raw,width=640,height=480,framerate=(fraction)30/1 ! queue ! glupload ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true");
     gstcontext_load_pipeline(GST_VIDEOTESTSRC,      &pipeline[GST_VIDEOTESTSRC],        GST_STATE_NULL,"videotestsrc ! video/x-raw,width=640,height=480,framerate=(fraction)30/1 ! queue ! glupload ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true");
@@ -172,45 +177,25 @@ void projector_logic_init(volatile bool *video_done_flag_p) {
 	gstcontext_load_pipeline(GST_GLBULGE,       &pipeline[GST_GLBULGE]      ,GST_STATE_NULL,"udpsrc port=9000 caps=application/x-rtp retrieve-sender-address=false !  queue ! rtpjpegdepay ! jpegdec ! glupload ! glcolorconvert ! gleffects_bulge   ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false");
     gstcontext_load_pipeline(GST_GLHEAT,        &pipeline[GST_GLHEAT]       ,GST_STATE_NULL,"udpsrc port=9000 caps=application/x-rtp retrieve-sender-address=false !  queue ! rtpjpegdepay ! jpegdec ! glupload ! glcolorconvert ! gleffects_heat    ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=false");
     
-	//spawn audio udp loopback to prevent re-init issues (bringing it back from portal gun v1.0)
-	/*
-    system("gst-launch-1.0 --no-position alsasrc do-timestamp=true buffer-time=40000 device=hw:0 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! queue !  audioconvert ! audio/x-raw,layout=interleaved,rate=48000,channels=2 ! rtpL24pay ! udpsink host=127.0.0.1 port=5000 sync=false async=false &");
-    g_usleep(100000);
-
-	
-    gstcontext_load_pipeline(GST_LIBVISUAL_CORONA,  &pipeline[GST_LIBVISUAL_CORONA]     ,GST_STATE_NULL,"udpsrc do-timestamp=false port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  libvisual_corona                                     !	video/x-raw,width=320,height=400,framerate=30/1 ! videoflip video-direction=1        ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
-	 g_usleep(100000);
-	 gstcontext_load_pipeline(GST_LIBVISUAL_JESS,    &pipeline[GST_LIBVISUAL_JESS]       ,GST_STATE_NULL,"udpsrc do-timestamp=false port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  libvisual_jess                                        ! video/x-raw,width=320,height=240,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
-	 g_usleep(100000);
-	gstcontext_load_pipeline(GST_LIBVISUAL_INFINITE,&pipeline[GST_LIBVISUAL_INFINITE]   ,GST_STATE_NULL,"udpsrc do-timestamp=false port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! volume volume=0.5 ! libvisual_infinite                ! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
-	 g_usleep(100000);
-	gstcontext_load_pipeline(GST_LIBVISUAL_JAKDAW,  &pipeline[GST_LIBVISUAL_JAKDAW]     ,GST_STATE_NULL,"udpsrc do-timestamp=false port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  libvisual_jakdaw                                      ! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
-	 g_usleep(100000);
-	gstcontext_load_pipeline(GST_LIBVISUAL_OINKSIE, &pipeline[GST_LIBVISUAL_OINKSIE]    ,GST_STATE_NULL,"udpsrc do-timestamp=false port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! libvisual_oinksie                                     ! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
-	 g_usleep(100000);
-	gstcontext_load_pipeline(GST_GOOM,              &pipeline[GST_GOOM]                 ,GST_STATE_NULL,"udpsrc do-timestamp=false port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! goom                                                  ! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
-	
-	 g_usleep(100000);
-	gstcontext_load_pipeline(GST_LIBVISUAL_WAVE,    &pipeline[GST_LIBVISUAL_WAVE]    ,GST_STATE_PLAYING,"udpsrc do-timestamp=false port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! wavescope style=3                                     ! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
-	 g_usleep(100000);
-	gstcontext_load_pipeline(GST_GOOM2K1,           &pipeline[GST_GOOM2K1]              ,GST_STATE_NULL,"udpsrc do-timestamp=false port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert !  volume volume=1.5 ! goom2k1                           ! video/x-raw,width=400,height=320,framerate=30/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
-    g_usleep(100000);
-	  gst_element_set_state (GST_ELEMENT (pipeline[GST_LIBVISUAL_WAVE]), GST_STATE_NULL);
-	gstcontext_load_pipeline(GST_LIBVISUAL_SYNAE,   &pipeline[GST_LIBVISUAL_SYNAE]      ,GST_STATE_PLAYING,"udpsrc do-timestamp=false port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! ! audioconvert !  synaescope shader=2  ! video/x-raw,width=320,height=400   ! videoflip video-direction=1   ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=false async=false");
-     g_usleep(100000);
-	 gst_element_set_state (GST_ELEMENT (pipeline[GST_LIBVISUAL_SYNAE]), GST_STATE_NULL);
-	 
-	  g_usleep(100000);
-	 */
-	 
+	//wave must load and play a frame before synae loads
+    gstcontext_load_pipeline(GST_LIBVISUAL_CORONA,  &pipeline[GST_LIBVISUAL_CORONA]     ,GST_STATE_NULL,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! libvisual_corona !     video/x-raw,width=320,height=400,framerate=60/1 ! videoflip video-direction=1    ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_JESS,    &pipeline[GST_LIBVISUAL_JESS]       ,GST_STATE_NULL,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! libvisual_jess                                        ! video/x-raw,width=320,height=240,framerate=60/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_INFINITE,&pipeline[GST_LIBVISUAL_INFINITE]   ,GST_STATE_NULL,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! volume volume=0.5 ! libvisual_infinite                ! video/x-raw,width=400,height=320,framerate=60/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_JAKDAW,  &pipeline[GST_LIBVISUAL_JAKDAW]     ,GST_STATE_NULL,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! libvisual_jakdaw                                      ! video/x-raw,width=400,height=320,framerate=60/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_OINKSIE, &pipeline[GST_LIBVISUAL_OINKSIE]    ,GST_STATE_NULL,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! libvisual_oinksie                                     ! video/x-raw,width=400,height=320,framerate=60/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	gstcontext_load_pipeline(GST_GOOM,              &pipeline[GST_GOOM]                 ,GST_STATE_NULL,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! goom                                                  ! video/x-raw,width=400,height=320,framerate=60/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	gstcontext_load_pipeline(GST_GOOM2K1,           &pipeline[GST_GOOM2K1]              ,GST_STATE_NULL,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! volume volume=1.5 ! goom2k1                           ! video/x-raw,width=400,height=320,framerate=60/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_WAVE,    &pipeline[GST_LIBVISUAL_WAVE]    ,GST_STATE_PLAYING,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! wavescope style=3                                     ! video/x-raw,width=400,height=320,framerate=60/1 ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	gstcontext_load_pipeline(GST_LIBVISUAL_SYNAE,   &pipeline[GST_LIBVISUAL_SYNAE]      ,GST_STATE_NULL,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! synaescope shader=2  ! video/x-raw,width=320,height=400,framerate=60/1   ! videoflip video-direction=1  ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
+	gst_element_set_state (GST_ELEMENT (pipeline[GST_LIBVISUAL_WAVE]), GST_STATE_NULL);
+	 	 
     for (int slot = GST_MOVIE1; slot <= GST_MOVIE10; slot++){
         char launch[1000];
         static int i = 1;
         sprintf(launch, "filesrc location=/home/pi/assets/movies/down/%d.mp4 ! queue ! qtdemux name=dmux dmux.video_0 ! queue ! avdec_h264 ! queue ! glupload ! glcolorconvert ! glcolorscale  ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true async=false dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume name=vol ! audio/x-raw,rate=48000,channels=2,format=S32LE,layout=interleaved !  alsasink  sync=true async=false device=dsp0",i++);
-	
         gstcontext_load_pipeline(slot,&pipeline[slot],GST_STATE_PAUSED,launch);
-		   g_usleep(100000);
-
     }
   
 }
+//gst-launch-1.0 alsasrc buffer-time=10000 device=hw:0 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! queue !  audioconvert ! rtpL24pay ! udpsink host=127.0.0.1 port=5000 sync=true
+//gst-launch-1.0 udpsrc port=5000 caps=application/x-rtp,channels=1,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue ! audioconvert ! volume volume=0.5 ! libvisual_infinite                ! video/x-raw,width=400,height=320,framerate=20/1 ! kmssink sync=true

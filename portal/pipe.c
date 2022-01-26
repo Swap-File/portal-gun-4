@@ -37,11 +37,13 @@ void pipe_cleanup(void)
 	system("pkill console");
 	system("pkill projector");
 	system("pkill mjpeg*");
-	system("pkill gst*");
+	system("pkill gst*"); 	// may cause sgtl5000 error in dmesg due to killing gstreamer
 }
 
 void pipe_init(const struct gun_struct *this_gun)
 {
+	pipe_www_out(this_gun);    //output initial data now to let website load during gun init
+	
 	//let this priority get inherited to the children
 	//setpriority(PRIO_PROCESS, getpid(), -10);
 

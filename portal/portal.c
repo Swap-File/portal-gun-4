@@ -41,15 +41,13 @@ int main(void)
     signal(SIGKILL, INThandler);
 
     /* setup libraries */
-    pipe_www_out(this_gun); //output initial data now to let website load during gun init
+	udp_init(this_gun->gordon);
+	pipe_init(this_gun);
     bcm2835_init();
     led_init(this_gun->gordon);
     io_init();
     i2c_init();
-    udp_init(this_gun->gordon);
-
-    pipe_init(this_gun);
-
+ 
     /* toggles every other cycle, cuts 100hz core tick speed to 50hz */
     bool freq_50hz = true;
 
