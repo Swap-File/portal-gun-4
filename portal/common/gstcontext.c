@@ -110,7 +110,7 @@ void gstcontext_init(EGLDisplay display, EGLContext context,volatile GLint *text
     /* Initialize GStreamer */
     static char *arg1_gst[]  = {"gstcontext"};
     static char *arg2_gst[]  = {"--gst-disable-registry-update"};  //dont rescan the registry to load faster.
-    static char *arg3_gst[]  = {"--gst-debug-level=2"};  //dont show debug messages
+    static char *arg3_gst[]  = {"--gst-debug-level=1"};  //dont show debug messages
     static char **argv_gst[] = {arg1_gst,arg2_gst,arg3_gst};
     int argc_gst = sizeof(argv_gst)/sizeof(char *);
     gst_init (&argc_gst, argv_gst);
