@@ -1,10 +1,6 @@
-#!/usr/bin/env python2
-from __future__ import absolute_import, print_function
-
+#!/usr/bin/env python3
 import os, sys, time, types, subprocess, signal
-
 import dbus
-
 
 ### ~bluezutils.py
 
@@ -40,7 +36,7 @@ def find_adapter(pattern=None):
 
 def find_adapter_in_objects(objects, pattern=None):
 	bus, obj = get_bus(), None
-	for path, ifaces in objects.iteritems():
+	for path, ifaces in objects.items():
 		adapter = ifaces.get(iface_adapter)
 		if adapter is None: continue
 		if not pattern or pattern == adapter['Address'] or path.endswith(pattern):
@@ -56,10 +52,10 @@ def find_device_in_objects(objects, device_address, adapter_pattern=None):
 	bus = get_bus()
 	path_prefix = ''
 	if adapter_pattern:
-		if not isinstance(adapter_pattern, types.StringTypes): adapter = adapter_pattern
+		if not isinstance(adapter_pattern, (str,)): adapter = adapter_pattern
 		else: adapter = find_adapter_in_objects(objects, adapter_pattern)
 		path_prefix = adapter.object_path
-	for path, ifaces in objects.iteritems():
+	for path, ifaces in objects.items():
 		device = ifaces.get(iface_dev)
 		if device is None: continue
 		if device['Address'] == device_address and path.startswith(path_prefix):
@@ -120,7 +116,7 @@ def main(args=None):
 			parser.error('--device-all option is only valid with "server" mode.')
 		devs = list(find_adapter())
 	devs = dict((prop_get(dev, 'Address'), dev) for dev in devs)
-	for dev_addr, dev in devs.viewitems():
+	for dev_addr, dev in devs.items():
 		prop_set(dev, 'Powered', True)
 		log.debug('Using local device (addr: %s): %s', dev_addr, dev.object_path)
 
@@ -167,7 +163,7 @@ def main(args=None):
 
 		servers = list()
 		try:
-			for dev_addr, dev in devs.viewitems():
+			for dev_addr, dev in devs.items():
 				server = dbus.Interface(dev, 'org.bluez.NetworkServer1')
 				server.Unregister(opts.uuid) # in case already registered
 				server.Register(opts.uuid, opts.iface_name)
@@ -183,14 +179,14 @@ def main(args=None):
 
 
 	elif opts.call == 'client':
-		dev_remote = find_device(opts.remote_addr, devs.values()[0])
+		dev_remote = find_device(opts.remote_addr, list(devs.values())[0])
 		log.debug( 'Using remote device (addr: %s): %s',
 			prop_get(dev_remote, 'Address'), dev_remote.object_path )
 		try: dev_remote.ConnectProfile(opts.uuid)
 		except: pass # no idea why it fails sometimes, but still creates dbus interface
 
 		net = dbus.Interface(dev_remote, 'org.bluez.Network1')
-		for n in xrange(2):
+		for n in range(2):
 			try: iface = net.Connect(opts.uuid)
 			except dbus.exceptions.DBusException as err:
 				if err.get_dbus_name() != 'org.bluez.Error.Failed': raise
@@ -220,3 +216,4 @@ def main(args=None):
 	log.debug('Finished')
 
 if __name__ == '__main__': sys.exit(main())
+

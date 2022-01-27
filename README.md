@@ -31,10 +31,10 @@ Website:
 OS:
 ```
 Raspberry Pi OS Lite
-Release date: May 7th 2021
+Release date: October 30th 2021
 Kernel version: 5.10
-Size: 444 MB
-SHA-256: c5dad159a2775c687e9281b1a0e586f7471690ae28f2f2282c90e7d59f64273c
+Size: 463MB
+008d7377b8c8b853a6663448a3f7688ba98e2805949127a1d9e8859ff96ee1a9
 ```
 Packages:
 
@@ -47,7 +47,7 @@ libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev gstreamer1.0-alsa gstreamer
 apache2 php libapache2-mod-php
 ```
 ```
-dos2unix libdrm-dev libgles2-mesa-dev libgbm-dev ifstat python-dbus apt-file libbluetooth-dev
+dos2unix libdrm-dev libgles2-mesa-dev libgbm-dev ifstat python3-dbus apt-file libbluetooth-dev
 ```
 Services:
 
