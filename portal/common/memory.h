@@ -56,8 +56,8 @@ struct gun_struct {
     float  current_pretty;
     float  temperature_pretty;
 
-    int gst_state;
-    int portal_state;
+    volatile int gst_state;
+    volatile int portal_state;
 
     volatile bool video_done;  //flag set via shared memory with projector
     volatile bool projector_loaded;  //flag set via shared memory with projector

@@ -229,7 +229,10 @@ void state_engine(int button,struct gun_struct *this_gun)
 
     /* load next duo playlist item */
     if (this_gun->state_duo == 6 && this_gun->state_duo_previous == 5) {
+		if (this_gun->playlist_duo[this_gun->playlist_duo_index] <= -1 )
+			this_gun->playlist_duo_index = 0;
         this_gun->effect_duo = this_gun->playlist_duo[this_gun->playlist_duo_index];
+        if (this_gun->effect_duo <= -1) this_gun->effect_duo = GST_VIDEOTESTSRC;
         this_gun->playlist_duo_index++;
         if (this_gun->playlist_duo[this_gun->playlist_duo_index] <= -1) this_gun->playlist_duo_index = 0;
         if (this_gun->playlist_duo_index >= PLAYLIST_SIZE) this_gun->playlist_duo_index = 0;
@@ -237,7 +240,10 @@ void state_engine(int button,struct gun_struct *this_gun)
 
     /* load next solo playlist item */
     if ((this_gun->state_solo == 4 && (this_gun->state_solo_previous == 5 || this_gun->state_solo_previous == -5 )) || (this_gun->state_solo == -4 && (this_gun->state_solo_previous == -5 || this_gun->state_solo_previous == 5))) {
+		if (this_gun->playlist_solo[this_gun->playlist_solo_index] <= -1 )
+			this_gun->playlist_solo_index = 0;
         this_gun->effect_solo = this_gun->playlist_solo[this_gun->playlist_solo_index];
+		if (this_gun->effect_solo <= -1) this_gun->effect_solo = GST_VIDEOTESTSRC;
         this_gun->playlist_solo_index++;
         if (this_gun->playlist_solo[this_gun->playlist_solo_index] <= -1) this_gun->playlist_solo_index = 0;
         if (this_gun->playlist_solo_index >= PLAYLIST_SIZE) this_gun->playlist_solo_index = 0;

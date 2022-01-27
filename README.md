@@ -58,6 +58,8 @@ systemctl start hostapd
 ```
 ```
 systemctl mask systemd-rfkill.socket systemd-rfkill.service
+sudo apt purge libpam-chksshpwd
+sudo apt purge rfkill
 ```
 ```
 systemctl mask rpi-eeprom-update

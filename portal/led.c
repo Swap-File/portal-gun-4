@@ -194,7 +194,6 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 
 	//Update the color1 and time of lit LEDs
 	if (color_update_index < led_width_current) {
-		printf("update %d\n ",color_update_index);
 		timearray[color_update_index] = timeoffset;
 		main_buffer_step1[color_update_index] = color1;
 		color_update_index = color_update_index + 1;

@@ -79,6 +79,11 @@ static void start_pipeline(void)
 
 void projector_logic_update(int gst_state, int portal_state) {
 
+	if (pipeline[gst_state] == NULL){
+		printf("NON EXISTANT PIPELINE %d REQUESTED!\n", gst_state);
+		gst_state = 0;
+	}
+	
     video_mode_requested = gst_state;
 
     //if a movie is loaded and the portal is open, start it playing
@@ -189,13 +194,10 @@ void projector_logic_init(volatile bool *video_done_flag_p) {
 	gstcontext_load_pipeline(GST_LIBVISUAL_SYNAE,   &pipeline[GST_LIBVISUAL_SYNAE]      ,GST_STATE_NULL,"udpsrc port=5000 caps=application/x-rtp,channels=2,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue max-size-time=10000000 leaky=downstream ! audioconvert ! synaescope shader=2  ! video/x-raw,width=320,height=400,framerate=60/1   ! videoflip video-direction=1  ! glupload ! glcolorconvert ! glcolorscale ! video/x-raw(memory:GLMemory),width=640,height=480 ! glfilterapp name=grabtexture ! fakesink sync=true async=false");
 	gst_element_set_state (GST_ELEMENT (pipeline[GST_LIBVISUAL_WAVE]), GST_STATE_NULL);
 	 	 
-    for (int slot = GST_MOVIE1; slot <= GST_MOVIE10; slot++){
+    for (int slot = GST_MOVIE_FIRST; slot <= GST_MOVIE_LAST; slot++){
         char launch[1000];
         static int i = 1;
         sprintf(launch, "filesrc location=/home/pi/assets/movies/down/%d.mp4 ! queue ! qtdemux name=dmux dmux.video_0 ! queue ! avdec_h264 ! queue ! glupload ! glcolorconvert ! glcolorscale  ! video/x-raw(memory:GLMemory),width=640,height=480,format=RGBA ! glfilterapp name=grabtexture ! fakesink sync=true async=false dmux.audio_0 ! queue ! aacparse ! avdec_aac ! audioconvert ! volume name=vol ! audio/x-raw,rate=48000,channels=2,format=S32LE,layout=interleaved !  alsasink  sync=true async=false device=dsp0",i++);
         gstcontext_load_pipeline(slot,&pipeline[slot],GST_STATE_PAUSED,launch);
     }
-  
 }
-//gst-launch-1.0 alsasrc buffer-time=10000 device=hw:0 ! audio/x-raw,layout=interleaved,rate=48000,format=S32LE,channels=2 ! queue !  audioconvert ! rtpL24pay ! udpsink host=127.0.0.1 port=5000 sync=true
-//gst-launch-1.0 udpsrc port=5000 caps=application/x-rtp,channels=1,clock-rate=48000 retrieve-sender-address=false ! rtpL24depay ! queue ! audioconvert ! volume volume=0.5 ! libvisual_infinite                ! video/x-raw,width=400,height=320,framerate=20/1 ! kmssink sync=true
