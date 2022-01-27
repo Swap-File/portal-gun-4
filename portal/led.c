@@ -164,13 +164,6 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 		}
 	}
 
-	//Update the color1 and time of lit LEDs
-	if (color_update_index < led_width_current) {
-		timearray[color_update_index] = timeoffset;
-		main_buffer_step1[color_update_index] = color1;
-		color_update_index = color_update_index + 1;
-	}
-
 	//width stuff
 	if (time_this_cycle - width_update_speed_last_update > width_update_speed) {
 		//Narrow the lit section by blanking the index LED and incrementing the index.
@@ -199,6 +192,13 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 		width_update_speed_last_update = time_this_cycle;
 	}
 
+	//Update the color1 and time of lit LEDs
+	if (color_update_index < led_width_current) {
+		printf("update %d\n ",color_update_index);
+		timearray[color_update_index] = timeoffset;
+		main_buffer_step1[color_update_index] = color1;
+		color_update_index = color_update_index + 1;
+	}
 	//printf("curtime %d\n", ((total_offset + timearray[0]) % EFFECT_RESOLUTION));
 
 	for ( int i = 0; i < EFFECT_LENGTH; i++ ) {
