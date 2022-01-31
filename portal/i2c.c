@@ -41,10 +41,10 @@ void calculate_offset(struct gun_struct *this_gun, int * gyro_data)
 	gyro_smoothed[i] = gyro_smoothed[i] * GYRO_BLENDING + (1.0-GYRO_BLENDING) * gyro[i];
 
 	//find magnitude
-	this_gun->particle_magnitude = sqrt(gyro_smoothed[1] * gyro_smoothed[1] + gyro_smoothed[2] * gyro_smoothed[2]);
+	this_gun->particle_magnitude = sqrt(gyro_smoothed[0] * gyro_smoothed[0] + gyro_smoothed[2] * gyro_smoothed[2]);
 	if (this_gun->particle_magnitude > GYRO_DEADSPOT) {
 
-		float angle_target = atan2(gyro_smoothed[1],gyro_smoothed[2]);
+		float angle_target = atan2(gyro_smoothed[0],gyro_smoothed[2]);
 		int array_target = (int)(720.0 * angle_target/(2.0*M_PI) + 720.0) % 720;
 
 		for (int i = 0; i <= 360; i++) { //go over half the circle (it's mirrored) plus one (to cover the unmirrored pixel at i=0)
