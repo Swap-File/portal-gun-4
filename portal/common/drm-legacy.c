@@ -29,7 +29,7 @@
 #include <sys/time.h>
 #include "opengl.h"
 #include "drm-common.h"
-
+#include <stdlib.h>
 
 static struct drm drm;
 
@@ -99,6 +99,7 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 		debug_msg[0] = '\0';
 		if (ret) {
 			printf("failed to queue page flip: %s\n", strerror(errno));
+			exit(1);
 		}else{
 			while (waiting_for_flip) {
 				FD_ZERO(&fds);

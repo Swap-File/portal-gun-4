@@ -13,6 +13,8 @@ static const struct drm *drm;
 
 int main()
 {
+	printf("Starting Projector...\n");
+
     const char *device = "/dev/dri/card1";
     char mode_str[DRM_DISPLAY_MODE_LEN] = "";
     uint32_t format = DRM_FORMAT_XRGB8888;
