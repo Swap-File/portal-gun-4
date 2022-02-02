@@ -46,13 +46,19 @@ void pipe_init(const struct gun_struct *this_gun)
 	
 	//let this priority get inherited to the children
 	//setpriority(PRIO_PROCESS, getpid(), -10);
-
+	
+	//init drm - this should not be needed, but for some reason the first init can fail on a pi4?
+	system("/home/pi/portal/projector/projector 1");
+	sleep(1);  //required to release resources
+	system("/home/pi/portal/console/console 1");
+	sleep(1);  //required to release resources
+	
+	//actually start the programs
 	system("/home/pi/portal/projector/projector &");
 	while(this_gun->projector_loaded == false) {
 		sleep(1);
 	}
-
-	system("sudo -E /home/pi/portal/console/console &");
+	system("/home/pi/portal/console/console &");
 	while(this_gun->console_loaded == false) {
 		sleep(1);
 	}
