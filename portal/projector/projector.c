@@ -13,10 +13,7 @@ static const struct drm *drm;
 
 int main(int argc, char *argv[])
 {
-	if( argc >= 2 )
-		printf("Warming Projector...\n");
-	else 
-		printf("Starting Projector...\n");
+	printf("Starting Projector...\n");
 
     const char *device = "/dev/dri/card1";
     char mode_str[DRM_DISPLAY_MODE_LEN] = "";
@@ -37,10 +34,7 @@ int main(int argc, char *argv[])
         printf("failed to initialize GBM\n");
         return -1;
     }
-	
-	if(argc >= 2)
-		exit(1);
-	
+
     egl = scene_init(gbm, samples);
     if (!egl) {
         printf("failed to initialize EGL\n");
