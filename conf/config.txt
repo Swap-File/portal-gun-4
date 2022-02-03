@@ -1,5 +1,4 @@
-# For more options and information see
-# http://rpf.io/configtxt
+# For more options and information see# http://rpf.io/configtxt
 # Some settings may impact device functionality. See link above for details
 
 # uncomment if you get no picture on HDMI for a default "safe" mode
@@ -27,7 +26,7 @@ hdmi_force_hotplug:0=1
 hdmi_force_hotplug:1=1
 
 # uncomment to force a specific HDMI mode (this will force VGA)
-hdmi_cvt=1366 768 60
+hdmi_cvt=1360 768 60
 hdmi_group:0=2
 hdmi_mode:0=87
 hdmi_group:1=2
@@ -48,7 +47,7 @@ hdmi_mode:1=4
 #arm_freq=800
 
 # Uncomment some or all of these to enable the optional hardware interfaces
-dtparam=i2c_arm=on
+dtparam=i2c_arm=on,i2c_arm_baudrate=100000
 #dtparam=i2s=on
 dtparam=spi=on
 
