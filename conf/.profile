@@ -48,7 +48,7 @@ else
 	sudo iptables -t nat -A PREROUTING -i bnep0 -p tcp --dport 8021 -j DNAT --to-destination 192.168.3.21:80
 	sudo iptables -t nat -A POSTROUTING -j MASQUERADE
 	cd /home/pi/portal
-	sleep 10
+	sleep 5 #errors seen at 3, but not 4.  set to 5 for safety
 	sudo -E ./portal
 	sudo -E screen -S portal -c "/home/pi/.screenrc"
 fi
