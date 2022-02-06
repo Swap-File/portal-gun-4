@@ -45,20 +45,19 @@ void pipe_init(const struct gun_struct *this_gun)
 	pipe_www_out(this_gun);    //output initial data now to let website load during gun init
 	
 	//let this priority get inherited to the children
-	//setpriority(PRIO_PROCESS, getpid(), -10);
+	setpriority(PRIO_PROCESS, getpid(), -10);
 	
 	//actually start the programs
 	system("/home/pi/portal/projector/projector &");
 	while(this_gun->projector_loaded == false) {
 		sleep(1);
 	}
+	setpriority(PRIO_PROCESS, getpid(), -5);
 	system("/home/pi/portal/console/console &");
 	while(this_gun->console_loaded == false) {
 		sleep(1);
 	}
-
-	//kick the core logic up to realtime for faster bit banging
-	//piHiPri(40);
+	setpriority(PRIO_PROCESS, getpid(), 0);
 
 	bash_fp = popen("bash", "w");
 	fcntl(fileno(bash_fp), F_SETFL, fcntl(fileno(bash_fp), F_GETFL, 0) | O_NONBLOCK);
@@ -91,6 +90,10 @@ void pipe_init(const struct gun_struct *this_gun)
 
 	iw_fp = popen("bash -c 'while true; do  iw dev wlan0 station dump; echo 'a'; sleep 1; done'", "r");
 	fcntl(fileno(iw_fp), F_SETFL, fcntl(fileno(ping_fp), F_GETFL, 0) | O_NONBLOCK);
+
+	//kick the core logic up to realtime for faster bit banging
+	setpriority(PRIO_PROCESS, getpid(), -15);
+	piHiPri(40);
 
 	//empty named pipe
 	char buffer[100];
