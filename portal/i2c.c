@@ -101,18 +101,17 @@ void i2c_update(struct gun_struct *this_gun)
 	calculate_offset(this_gun,gyro_data);
 
 	int * adc_data = ads1115_update();
-
-	/* old battery calibration:  21600 = 16.1v  16000 = 12.1v */
+	
 	static float current = 0;
 	if(this_gun->gordon) {
 		this_gun->temperature_pretty = temp_conversion(adc_data[0],1500);
-		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)(adc_data[3]) * 0.00075;
-		current = current * .9 + .1 *(float)adc_data[2] * 0.00075 * .166666;
-		this_gun->current_pretty = (2.65 - current) / 0.185;   //.185 is fixed
+		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)(adc_data[3]) * 0.00072;
+		current = current * .9 + .1 *(float)(adc_data[2]);
+		this_gun->current_pretty = current * -0.000654 + 13.2338;
 	} else {
 		this_gun->temperature_pretty = temp_conversion(adc_data[0],1500);
-		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)(adc_data[3]) * 0.000735;
-		current = current * .9 + .1 *(float)(adc_data[2]) * 0.00075 * .166666;
-		this_gun->current_pretty = (2.63 - current) / 0.185;  //.185 is fixed
+		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)(adc_data[3]) * 0.00072;
+		current = current * .9 + .1 *(float)(adc_data[2]);
+		this_gun->current_pretty  = current * -0.000654 + 13.2338;
 	}
 }
