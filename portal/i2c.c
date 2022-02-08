@@ -110,7 +110,7 @@ void i2c_update(struct gun_struct *this_gun)
 		this_gun->current_pretty = current * -0.000654 + 13.2338;
 	} else {
 		this_gun->temperature_pretty = temp_conversion(adc_data[0],1500);
-		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)(adc_data[3]) * 0.00072;
+		this_gun->battery_level_pretty = this_gun->battery_level_pretty * .9 + .1 *(float)(adc_data[3]) * 0.000724;
 		current = current * .9 + .1 *(float)(adc_data[2]);
 		this_gun->current_pretty  = current * -0.000654 + 13.2338;
 	}
