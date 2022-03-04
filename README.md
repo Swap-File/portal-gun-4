@@ -8,11 +8,11 @@ Gun:
 
 CAD Design inspired by [Kirby Downey](https://kirbydowney.com/)
 
-5Ghz Bridge via hostapd + Fe-Pi Audio Z I2S Sound Card + Onboard BT tethering
+5Ghz Bridge with hostapd via onboard WiFi + Fe-Pi Audio Z I2S Sound Card + USB CSR BT Dongle for tethering (avoids onboard WiFi/BT coexistence issues)
 
 [Pololu MinIMU-9 v2](https://www.pololu.com/product/1268) + ADS1115 for Battery Meter and Temp Sensing
 
-4S 5000mAh Lipo + [Pololu D36V28F5 5V 3.2A Regulators](https://www.pololu.com/product/3782) (3x, one for Projector, one for CPU, one for Lighting and Sound)
+[4S 2200mAh LiPo](https://hobbyking.com/en_us/turnigy-2200mah-4s-20c-lipoly-pack-w-xt60-connector.html) + 3x [Pololu D36V28F5 5V 3.2A Regulators](https://www.pololu.com/product/3782) (Projector, CPU, Lighting and Sound)
 
 APA102 LEDs + PAM8302 Class D Amplifier + ACS712 Current Sensor
 
