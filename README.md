@@ -1,20 +1,20 @@
 # portal-gun-4
-Portal Gun IV: Cake is My Weakness
+Portal Gun IV
 
 
 Gun:
 
-[Raspberry Pi 4B](https://www.raspberrypi.org/) + [Laser Beam Pro C200](http://laserbeampro.com/) + Pi NoIR Camera V2 + 3W IR Emitters
+[Raspberry Pi 4B](https://www.raspberrypi.org/) + [Laser Beam Pro C200](http://laserbeampro.com/) + [Pi NoIR Camera V2](https://www.raspberrypi.com/products/pi-noir-camera-v2/) + 3W IR Emitters
 
 CAD Design inspired by [Kirby Downey](https://kirbydowney.com/)
 
-5Ghz Bridge via hostapd + [Fe-Pi Audio Z I2S Sound Card](https://fe-pi.com/) + Onboard BT tethering
+5Ghz Bridge via hostapd + Fe-Pi Audio Z I2S Sound Card + Onboard BT tethering
 
 [Pololu MinIMU-9 v2](https://www.pololu.com/product/1268) + ADS1115 for Battery Meter and Temp Sensing
 
-4S 5000mAh Lipo + 3 Amp 5v regulator (3x, one for Projector, one for CPU, one for Lighting and Sound)
+4S 5000mAh Lipo + [Pololu D36V28F5 5V 3.2A Regulators](https://www.pololu.com/product/3782) (3x, one for Projector, one for CPU, one for Lighting and Sound)
 
-APA102 LEDs + PAM8302 Class D Amplifier
+APA102 LEDs + PAM8302 Class D Amplifier + ACS712 Current Sensor
 
 KMS + EGL + GLES3 thanks to:
 
