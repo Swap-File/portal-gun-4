@@ -10,7 +10,6 @@
 #include <GLES3/gl31.h> //GLint
 #include "effects.h"
 
-static GMainLoop *loop;
 static GstContext *egl_context;
 static GstContext *gst_context;
 
@@ -28,56 +27,20 @@ static gboolean drawCallback(GstElement* object, guint id, guint width,guint hei
     return true;
 }
 
-static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data)
-{
-    GMainLoop *loop = (GMainLoop*)data;
-
-    switch (GST_MESSAGE_TYPE (msg))	{
-    case GST_MESSAGE_EOS:
-        g_print ("End-of-stream\n");  //pausing or nulling a stream wont trigger this.
-        if (video_done_flag != NULL) *video_done_flag = true;
-        break;
-    case GST_MESSAGE_ERROR: //normal debug callback
-    {
-        gchar *debug = NULL;
-        GError *err = NULL;
-        gst_message_parse_error (msg, &err, &debug);
-        g_print ("Error: %s\n", err->message);
-        g_error_free (err);
-        if (debug) {
-            g_print ("Debug deails: %s\n", debug);
-            g_free (debug);
-        }
-        g_main_loop_quit (loop);
-        break;
-    }
-    case GST_MESSAGE_NEED_CONTEXT:  //THIS IS THE IMPORTANT PART
-    {
-        const gchar *context_type;
-        gst_message_parse_context_type (msg, &context_type);
-        if (g_strcmp0 (context_type, "gst.gl.app_context") == 0) {
-            g_print("OpenGL Context Request Intercepted! %s\n", context_type);
-            gst_element_set_context (GST_ELEMENT (msg->src), gst_context);
-        }
-        if (g_strcmp0 (context_type, GST_GL_DISPLAY_CONTEXT_TYPE) == 0) {
-            g_print("X11 Display Request Intercepted! %s\n", context_type);
-            gst_element_set_context (GST_ELEMENT (msg->src), egl_context);
-        }
-        break;
-    }
-    case GST_MESSAGE_HAVE_CONTEXT:
-        g_print("This should never happen! Don't let the elements request their own context!\n");
-    default:
-        break;
-    }
-
-    return TRUE;
-}
-
 void gstcontext_set(GstPipeline **pipeline)
 {
     gst_element_set_context(GST_ELEMENT (*pipeline), gst_context);
     gst_element_set_context(GST_ELEMENT (*pipeline), egl_context);
+}
+
+void gstcontext_handle_bus(GstPipeline **pipeline)
+{
+	 GstMessage *msg = gst_bus_pop_filtered (GST_ELEMENT_BUS(*pipeline), GST_MESSAGE_EOS);
+	 
+	 if (msg != NULL){
+		g_print ("End-of-stream\n");  //pausing or nulling a stream wont trigger this.
+        if (video_done_flag != NULL) *video_done_flag = true;
+	 }
 }
 
 void gstcontext_load_pipeline(int index, GstPipeline **pipeline, GstState state, char * text)
@@ -85,12 +48,6 @@ void gstcontext_load_pipeline(int index, GstPipeline **pipeline, GstState state,
     printf("Loading %s...\n",effectnames[index]);
 
     *pipeline = GST_PIPELINE(gst_parse_launch(text, NULL));
-
-    //set the bus watcher for error handling and to pass the egl display and gles context when the elements request it
-    //must be BEFORE setting the client-draw callback
-    GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE (*pipeline));
-    gst_bus_add_watch(bus, bus_call, loop);
-    gst_object_unref(bus);
 
     //set the glfilterapp callback that will capture the textures
     //do this AFTER attaching the bus handler so context can be set

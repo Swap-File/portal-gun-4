@@ -25,14 +25,6 @@ static void seek_to_time(gint64 time_nanoseconds,GstPipeline **pipeline)
     }
 }
 
-gint64 get_position(GstPipeline **pipeline)
-{
-    gint64 pos;
-    bool result = gst_element_query_position ( GST_ELEMENT(*pipeline), GST_FORMAT_TIME, &pos);
-    if (!result) pos = -1;
-    return pos;
-}
-
 void mute_pipeline( bool state, GstPipeline **pipeline) {
     GstElement *outputselector = gst_bin_get_by_name (GST_BIN (*pipeline), "vol");
     g_object_set (outputselector, "mute",  state, NULL);
@@ -78,7 +70,11 @@ static void start_pipeline(void)
 }
 
 void projector_logic_update(int gst_state, int portal_state) {
-
+	
+	if (GST_IS_ELEMENT(pipeline_active)){
+		gstcontext_handle_bus(&pipeline_active); 
+	}
+	
 	if (pipeline[gst_state] == NULL){
 		printf("NON EXISTANT PIPELINE %d REQUESTED!\n", gst_state);
 		gst_state = 0;
@@ -92,6 +88,7 @@ void projector_logic_update(int gst_state, int portal_state) {
             gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PLAYING);
             movie_is_loaded = false;
             movie_is_playing = true;
+			video_done_flag = false;
             //if we didnt get primed in time, unmute it now
             if (!movie_is_primed) mute_pipeline(false, &pipeline_active);
         }
@@ -109,19 +106,11 @@ void projector_logic_update(int gst_state, int portal_state) {
     //detect the end of a movie
     if (movie_is_playing) {
 
-        static gint64 last_pos = ULONG_MAX;
-        static int frame_count = 0;
-        gint64 new_pos = get_position(&pipeline_active);
-        if (new_pos == last_pos) frame_count++;
-        else frame_count = 0;
-        last_pos = new_pos;
-
         //if the video has 3 frames the same, set the video_done_flag and the app will request the portal to close
-        if (frame_count > 2) {
+        if (video_done_flag) {
             printf("Video is EoF\n");
             gst_element_set_state (GST_ELEMENT (pipeline_active), GST_STATE_PAUSED);
             movie_is_playing = false;
-            if (video_done_flag != NULL) *video_done_flag = true;
         }
 
         //if the portal closes, stop the video
