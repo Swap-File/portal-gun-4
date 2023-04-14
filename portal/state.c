@@ -7,7 +7,7 @@
 
 #define GUN_EXPIRE 1000 //expire a gun if not seen for 1 second
 #define SHUTTER_DELAY 100
-#define MIN_VOLTAGE (14.4)
+#define MIN_VOLTAGE (14.0)
 
 void state_engine(int button,struct gun_struct *this_gun)
 {
