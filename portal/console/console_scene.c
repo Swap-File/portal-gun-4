@@ -135,9 +135,10 @@ static void draw_scene(unsigned i,char *debug_msg)
         }
     }
 
-    if		(this_gun->state_solo < 0 || this_gun->state_duo < 0)	slide_to(0.0,0.5,0.5);
-    else if (this_gun->state_solo > 0 || this_gun->state_duo > 0)	slide_to(0.8,0.4,0.0);
-    else 															slide_to(0.0,0.0,0.0);
+    if		((this_gun->state_solo < 0 || this_gun->state_duo < 0) && this_gun->gun_health_combined)	slide_to(0.0,0.5,0.5);
+    else if ((this_gun->state_solo > 0 || this_gun->state_duo > 0) && this_gun->gun_health_combined)	slide_to(0.8,0.4,0.0);
+    else if (this_gun->gun_health_combined == false) 													slide_to(1.0,0.0,0.0);
+    else 																								slide_to(0.0,0.0,0.0);
 
     console_logic(this_gun->gst_state);
     uint32_t render_start_time = micros();
@@ -164,9 +165,13 @@ static void draw_scene(unsigned i,char *debug_msg)
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         glDisableVertexAttribArray(basic_in_Position);
         glDisableVertexAttribArray(basic_in_TexCoord);
-
-        GLfloat color[4] = { 0.0, 0.75, 1.0, 1 };
-        text_color(color);
+        if (this_gun->gun_health_combined) {
+            GLfloat color[4] = { 0.0, 0.75, 1.0, 1 };
+            text_color(color);
+        } else {
+            GLfloat color[4] = { 1.0, 0.0, 0.0, 1 };
+            text_color(color);
+        }
     } else {
         GLfloat color[4] = { 1, 1, 1, 1 };
         text_color(color);

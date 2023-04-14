@@ -31,6 +31,17 @@ cat /home/pi/arpeture.txt
 export GORDON="1"
 #export CHELL="1"
 
+if [ ! "$(pidof portal)" ]; then
+	sleep 5 #errors seen at 3, but not 4.  set to 5 for safety, let network start
+fi
+
+if sudo ethtool eth0 | grep -q "Link detected: yes"; then
+    export TETHERED="1"
+	echo "Tethered"
+else
+    unset TETHERED
+	echo "Not Tethered"
+fi
 
 if [ "$(pidof portal)" ]; then
 	echo "Portal is running already!"
@@ -48,7 +59,8 @@ else
 	sudo iptables -t nat -A PREROUTING -i bnep0 -p tcp --dport 8021 -j DNAT --to-destination 192.168.3.21:80
 	sudo iptables -t nat -A POSTROUTING -j MASQUERADE
 	cd /home/pi/portal
-	sleep 5 #errors seen at 3, but not 4.  set to 5 for safety
+	
 	sudo -E ./portal
 	sudo -E screen -S portal -c "/home/pi/.screenrc"
 fi
+

@@ -72,15 +72,17 @@ void udp_init(bool gordon)
     printf("UDP_Control : bind() successful\n");
 }
 
-int udp_send_state(int state, uint32_t offset)
+int udp_send_state(int state, uint32_t offset, bool health)
 {
+    int health_to_send = 0;
+    if (health) health_to_send = 1;
     char buf[BUFLEN];
-    int n = sprintf (buf, "%d %d", state, offset);
+    int n = sprintf (buf, "%d %d %d", state, offset, health_to_send);
     /* n + 1 to include terminator */
     return sendto(sender_sockfd, buf, n + 1, MSG_DONTWAIT, (struct sockaddr*)&sender_addr, srlen);
 }
 
-int udp_receive_state(int * state, uint32_t * offset)
+int udp_receive_state(int * state, uint32_t * offset, bool * health)
 {
     char buf[BUFLEN];
     int n = recvfrom(receiver_sockfd, buf, BUFLEN, 0, (struct sockaddr*)&incoming_addr, &slen);
@@ -93,10 +95,13 @@ int udp_receive_state(int * state, uint32_t * offset)
             //printf("%d %d %d %d\n", ipbytes[0] , ipbytes[1] , ipbytes[2], ipbytes[3]);
             int temp_offset;
             int temp_state;
-            sscanf(buf, "%d %d",&temp_state,&temp_offset);
+            int temp_health;
+            sscanf(buf, "%d %d %d",&temp_state,&temp_offset,&temp_health);
             if (temp_offset > *offset) {
                 *offset = temp_offset;
                 *state = temp_state;
+                if (temp_health == 1) *health = true;
+                else  *health = false;
             } else {
                 printf("Going back in time?\n");
                 return -1;

@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 void udp_init(bool gordon);
-int udp_send_state(int state, uint32_t offset);
-int udp_receive_state(int *state, uint32_t *offset);
+int udp_send_state(int state, uint32_t offset, bool health);
+int udp_receive_state(int *state, uint32_t *offset, bool * health);
 
 #endif

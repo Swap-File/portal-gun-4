@@ -32,7 +32,7 @@ void io_init(void)
 	bcm2835_gpio_set_pud(PIN_ALT, BCM2835_GPIO_PUD_UP);
 	bcm2835_gpio_set_pud(PIN_MODE, BCM2835_GPIO_PUD_UP);
 	bcm2835_gpio_set_pud(PIN_RESET, BCM2835_GPIO_PUD_UP);
-    bcm2835_gpio_set_pud(PIN_REMOTE, BCM2835_GPIO_PUD_UP);
+	bcm2835_gpio_set_pud(PIN_REMOTE, BCM2835_GPIO_PUD_UP);
 }
 
 int io_servo(bool servo_open) {
@@ -73,8 +73,12 @@ int io_update(struct gun_struct *this_gun)
 {
 	bcm2835_pwm_set_data(FAN_PWM_CHANNEL, this_gun->fan_pwm);
 
-	if (this_gun->state_duo < -1)	bcm2835_pwm_set_data(IR_PWM_CHANNEL, this_gun->ir_pwm);
-	else							bcm2835_pwm_set_data(IR_PWM_CHANNEL, 0);
+	//don't use IR LEDs if in bad health
+	if (this_gun->state_duo < -1 && this_gun->gun_health){
+		bcm2835_pwm_set_data(IR_PWM_CHANNEL, this_gun->ir_pwm);
+	} else {
+		bcm2835_pwm_set_data(IR_PWM_CHANNEL, 0);
+	}
 
 	//buckets for debounce
 	static uint_fast8_t primary_bucket = 0;
@@ -105,8 +109,7 @@ int io_update(struct gun_struct *this_gun)
 	bool remote_button = bcm2835_gpio_lev(PIN_REMOTE);
 	
 	if(remote_button == 0) {
-		if (remote_bucket < DEBOUNCE_COUNT) 
-			remote_bucket++;
+		if (remote_bucket < DEBOUNCE_COUNT) remote_bucket++;
 	}
 	
 

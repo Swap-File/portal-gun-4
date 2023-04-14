@@ -15,7 +15,13 @@
 #define LASER_WARMUP_MS 5000
 
 struct gun_struct {
-    bool gordon;
+    bool gordon;  // set at boot via environment variable, false means chell
+
+    bool tethered; // set at boot via environment variable, checks if ethernet is plugged in
+    bool gun_health; // this gun health
+    bool other_gun_health; // state read from other gun
+    bool gun_health_combined; // if connected, this ORs both guns health
+	
     uint8_t mode;
     uint8_t brightness;
     int8_t state_duo;  //state reported to other gun
@@ -63,11 +69,11 @@ struct gun_struct {
     volatile bool projector_loaded;  //flag set via shared memory with projector
     volatile bool console_loaded;  //flag set via shared memory with console
 
-    int other_gun_state; //state read from other gun
+    int other_gun_state; // state read from other gun
     int other_gun_state_previous;
 
     uint32_t other_gun_last_seen;
-    uint32_t other_gun_clock;
+    uint32_t other_gun_clock; // state read from other gun
 
     uint8_t acces_counter;
 

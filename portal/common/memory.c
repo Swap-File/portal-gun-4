@@ -98,6 +98,10 @@ void shared_init(struct gun_struct **this_gun,bool init)
         printf("\nSET THE GORDON OR CHELL ENVIRONMENT VARIABLE!\n");
         exit(1);
     }
+
+    /* check if tethered to a desk via ethernet: */
+    if(getenv("TETHERED"))	(*this_gun)->tethered = true;
+    else					(*this_gun)->tethered = false;
 }
 
 void shared_cleanup(void)

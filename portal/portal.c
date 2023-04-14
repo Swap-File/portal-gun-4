@@ -95,7 +95,7 @@ int main(void)
 
         /* Otherwise Read Other Gun */
         while (button_event == BUTTON_NONE) {
-            int result = udp_receive_state(&(this_gun->other_gun_state),&(this_gun->other_gun_clock));
+            int result = udp_receive_state(&(this_gun->other_gun_state),&(this_gun->other_gun_clock),&(this_gun->other_gun_health));
             if (result <= 0) break;  //read until buffer empty
             else this_gun->other_gun_last_seen = this_gun->clock;  //update time data was seen
             if (millis() - this_gun->clock > 5) break; //flood protect
@@ -113,7 +113,7 @@ int main(void)
         /* Send data to other gun and www output */
         static uint32_t time_udp_send = 0;
         if (this_gun->clock - time_udp_send > 100) {
-            udp_send_state(this_gun->state_duo,this_gun->clock);
+            udp_send_state(this_gun->state_duo,this_gun->clock,this_gun->gun_health);
             time_udp_send = this_gun->clock;
             pipe_www_out(this_gun);
         }
