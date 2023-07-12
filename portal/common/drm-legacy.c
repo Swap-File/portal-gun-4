@@ -71,13 +71,18 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 		return ret;
 	}
 	
+	
+	bool dpms_enabled = true;
+	
 	char debug_msg[100];
 	
 	while (1) {
 		struct gbm_bo *next_bo;
 		int waiting_for_flip = 1;
-
-		egl->draw(i++,debug_msg);
+		bool dpms_request;
+		
+		egl->draw(i++,debug_msg,&dpms_request);
+		//printf(" %d \n",dpms_request);
 
 		eglSwapBuffers(egl->display, egl->surface);
 		next_bo = gbm_surface_lock_front_buffer(gbm->surface);
@@ -87,40 +92,62 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 			return -1;
 		}
 
+
+	drm_wait_master(drm.fd);
+		if (dpms_request == false && dpms_enabled == true){
+			
+		   int ret = drmModeConnectorSetProperty(drm.fd, drm.connector_id, drm.dpms_idx, DRM_MODE_DPMS_SUSPEND);
+		     printf("DPMS Turning off... %d\n",ret);
+		     if (ret == 0) dpms_enabled = dpms_request;
+		}
+		
+		if (dpms_request == true && dpms_enabled == false){
+			
+		   int ret =  drmModeConnectorSetProperty(drm.fd, drm.connector_id, drm.dpms_idx, DRM_MODE_DPMS_ON);
+		     printf("DPMS Turning on... %d\n",ret);
+		   if (ret == 0) dpms_enabled = dpms_request;
+		
+		}		
+		
+		
 		/*
 		 * Here you could also update drm plane layers if you want
 		 * hw composition
 		 */
-
-		drm_wait_master(drm.fd);
-		ret = drmModePageFlip(drm.fd, drm.crtc_id, fb->fb_id,DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
-		drmDropMaster(drm.fd);
+		if (dpms_enabled){
 		
-		debug_msg[0] = '\0';
-		if (ret) {
-			printf("failed to queue page flip: %s\n", strerror(errno));
-			exit(1);
-		}else{
-			while (waiting_for_flip) {
-				FD_ZERO(&fds);
-				FD_SET(STDIN_FILENO, &fds);
-				FD_SET(drm.fd, &fds);
+			ret = drmModePageFlip(drm.fd, drm.crtc_id, fb->fb_id,DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
+			drmDropMaster(drm.fd);
+			
+			debug_msg[0] = '\0';
+			if (ret) {
+				printf("failed to queue page flip: %s\n", strerror(errno));
+				exit(1);
+			}else{
+				while (waiting_for_flip) {
+					FD_ZERO(&fds);
+					FD_SET(STDIN_FILENO, &fds);
+					FD_SET(drm.fd, &fds);
 
-				ret = select(drm.fd + 1, &fds, NULL, NULL, NULL);
-				if (ret < 0) {
-					printf("select err: %s\n", strerror(errno));
-					return ret;
-				} else if (ret == 0) {
-					printf("select timeout!\n");
-					return -1;
-				} else if (FD_ISSET(STDIN_FILENO, &fds)) {
-					//stdin is generally line buffered so this works fine for debug input
-					int results = read(STDIN_FILENO, debug_msg, 90);
-					debug_msg[results] = '\0';
+					ret = select(drm.fd + 1, &fds, NULL, NULL, NULL);
+					if (ret < 0) {
+						printf("select err: %s\n", strerror(errno));
+						return ret;
+					} else if (ret == 0) {
+						printf("select timeout!\n");
+						return -1;
+					} else if (FD_ISSET(STDIN_FILENO, &fds)) {
+						//stdin is generally line buffered so this works fine for debug input
+						int results = read(STDIN_FILENO, debug_msg, 90);
+						debug_msg[results] = '\0';
+					}
+					drmHandleEvent(drm.fd, &evctx);
 				}
-				drmHandleEvent(drm.fd, &evctx);
 			}
+		}else{
+				drmDropMaster(drm.fd);
 		}
+		
 		
 		/* release last buffer to render on again: */
 		gbm_surface_release_buffer(gbm->surface, bo);

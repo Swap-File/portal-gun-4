@@ -86,8 +86,10 @@ static GLfloat vTexCoords[] = {
     0.0f, 0.0f,
 };
 
-static void projector_scene_draw(unsigned i,char *debug_msg)
+static void projector_scene_draw(unsigned i,char *debug_msg,bool * dpms)
 {
+	*dpms = this_gun->dpms_request;
+	
     if (debug_msg[0] != '\0') {
         int temp[3];
         int result = sscanf(debug_msg,"%d %d %d", &temp[0],&temp[1],&temp[2]);

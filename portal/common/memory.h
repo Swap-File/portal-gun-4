@@ -78,6 +78,8 @@ struct gun_struct {
     uint8_t acces_counter;
 
     int reset_countdown;
+	
+	bool dpms_request;
 };
 
 void shared_init(struct gun_struct **this_gun,bool init);

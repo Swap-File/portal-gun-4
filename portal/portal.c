@@ -14,8 +14,6 @@
 void INThandler(int dummy) {
     printf("\nCleaning up...\n");
 	pipe_cleanup();
-	printf("pipe_laser_pwr...\n");
-    pipe_laser_pwr(true,NULL);
 	printf("LED wipe...\n");
     led_wipe();
     shared_cleanup();

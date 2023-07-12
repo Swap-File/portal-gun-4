@@ -9,18 +9,97 @@
 #define SHUTTER_DELAY 100
 #define MIN_VOLTAGE (14.0)
 
+#define LASER_STATE_DELAYED_OFF	0
+#define LASER_STATE_DELAYED_ON	1
+#define LASER_STATE_OFF			2
+#define LASER_STATE_ON			3
+
+static void state_laser_pwr(bool laser_request,struct gun_struct *this_gun, bool force)
+{
+	static uint8_t laser_state = LASER_STATE_OFF;
+	
+	if (force){
+		this_gun->dpms_request = false;
+		laser_state = LASER_STATE_OFF;
+	}
+
+	//this is fixed, laser_startup_delay is a function of the projector
+	static uint32_t laser_startup_delay = 5000;
+
+	//higher laser_shutdown_delay values will keep the laser on longer between shutting down for power savings
+	//it may be 0 if we are operating without a shutter (immediate shutdown on request)
+	uint32_t laser_shutdown_delay;
+	if (this_gun->servo_bypass == SERVO_BYPASS)	laser_shutdown_delay = 0;
+	else 										laser_shutdown_delay = 30000;
+
+	static uint32_t startup_complete_time = 0;
+	static uint32_t shutdown_complete_time = 0;
+
+	//issue the startup command on request, and start the timer so we know when its done
+	if (laser_state == LASER_STATE_OFF && laser_request == true) {
+		printf("Starting Laser Warmup...\n");
+		this_gun->dpms_request = true;
+		laser_state = LASER_STATE_DELAYED_ON;
+		startup_complete_time = millis() + laser_startup_delay; //5 second laser warmup
+	}
+
+	//delayed startup countdown
+	if (laser_state == LASER_STATE_DELAYED_ON) {
+		uint32_t time_now = millis();
+		if (startup_complete_time > time_now) {
+			this_gun->laser_countdown = startup_complete_time - time_now;
+		} else {
+			this_gun->laser_countdown = 0;
+			laser_state = LASER_STATE_ON;
+		}
+	}
+
+	//if we get a shutdown request during startup, shut down immediately
+	if (laser_state == LASER_STATE_DELAYED_ON && laser_request == false) {
+		laser_state = LASER_STATE_OFF;
+		this_gun->laser_countdown = 0;
+		printf("Stopping Laser...\n");
+		this_gun->dpms_request = false;
+	}
+
+	//if we get a shutdown request during normal operation, delay the shutdown
+	if (laser_state == LASER_STATE_ON && laser_request == false) {
+		laser_state = LASER_STATE_DELAYED_OFF;
+		shutdown_complete_time = millis() + laser_shutdown_delay;
+	}
+
+	//delayed shutdown countdown
+	if (laser_state == LASER_STATE_DELAYED_OFF) {
+		uint32_t time_now = millis();
+		if (shutdown_complete_time < time_now) {
+			printf("Stopping Laser...\n");
+			this_gun->dpms_request = false;
+			laser_state = LASER_STATE_OFF;
+		}
+	}
+
+	//if we get a turnon request during shutdown, go right back to being on
+	if (laser_state == LASER_STATE_DELAYED_OFF && laser_request == true) {
+		laser_state = LASER_STATE_ON;
+	}
+
+	if (laser_state == LASER_STATE_ON)			this_gun->laser_on = true;
+	else if (laser_state == LASER_STATE_OFF)	this_gun->laser_on = false;
+
+}
+
 void state_engine(int button,struct gun_struct *this_gun)
 {
 	/* set individual and combined health */
 	if (this_gun->tethered == false && this_gun->battery_level_pretty < MIN_VOLTAGE) 
-		this_gun->gun_health = false;
+	this_gun->gun_health = false;
 	else
-		this_gun->gun_health = true;
+	this_gun->gun_health = true;
 
 	if ((this_gun->gun_health == false) || (this_gun->connected && this_gun->other_gun_health == false)) 
-		this_gun->gun_health_combined = false;
+	this_gun->gun_health_combined = false;
 	else 
-		this_gun->gun_health_combined = true;
+	this_gun->gun_health_combined = true;
 
 	static uint32_t shutter_ready_time = 0;
 
@@ -47,7 +126,7 @@ void state_engine(int button,struct gun_struct *this_gun)
 	}
 
 	if (button == BUTTON_RESET) {
-		if (this_gun->state_solo == 0 && this_gun->state_duo == 0) pipe_laser_pwr(false,NULL);
+		if (this_gun->state_solo == 0 && this_gun->state_duo == 0) state_laser_pwr(false,this_gun,true); // add servo and 
 		this_gun->state_solo = 0; //reset self state
 		this_gun->state_duo = 0; //reset local state
 		this_gun->mode = MODE_DUO; //reset to duo mode for common use case
@@ -178,16 +257,16 @@ void state_engine(int button,struct gun_struct *this_gun)
 		this_gun->servo_open = true;
 		/* laser power states */
 		if ((abs(this_gun->state_solo) < 3 && this_gun->mode == MODE_SOLO) || (this_gun->state_duo < 3 && this_gun->mode == MODE_DUO)) {
-			pipe_laser_pwr(false,this_gun);
+			state_laser_pwr(false,this_gun,false);
 		} else {
-			pipe_laser_pwr(true,this_gun);
+			state_laser_pwr(true,this_gun,false);
 		}
 	} else {
 		/* laser power states */
 		if ((abs(this_gun->state_solo) < 2 && this_gun->mode == MODE_SOLO) || (this_gun->state_duo == 0 && this_gun->mode == MODE_DUO)) {
-			pipe_laser_pwr(false,this_gun);
+			state_laser_pwr(false,this_gun,false);
 		} else {
-			pipe_laser_pwr(true,this_gun);
+			state_laser_pwr(true,this_gun,false);
 		}
 	}
 

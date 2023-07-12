@@ -17,11 +17,6 @@
 #define IFSTAT_BNEP 0
 #define IFSTAT_WLAN 1
 
-#define LASER_STATE_DELAYED_OFF	0
-#define LASER_STATE_DELAYED_ON	1
-#define LASER_STATE_OFF			2
-#define LASER_STATE_ON			3
-
 static int temp_in;
 static int web_in;
 
@@ -107,93 +102,6 @@ void pipe_audio(const char *filename)
 	fflush(bash_fp);
 }
 
-void pipe_laser_pwr(bool laser_request,struct gun_struct *this_gun)
-{
-	static uint8_t laser_state = LASER_STATE_OFF;
-
-	if (this_gun == NULL) {
-		if (laser_request == true) {
-			//fprintf(bash_fp, "vcgencmd display_power 1 2 &\n");
-			system("vcgencmd display_power 1 2");
-			laser_state = LASER_STATE_ON;
-		}
-		else if (laser_request == false) {
-			//fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
-			system("vcgencmd display_power 0 2");
-			laser_state = LASER_STATE_OFF;
-		}
-		//fflush(bash_fp);
-		return;
-	}
-
-	//this is fixed, laser_startup_delay is a function of the projector
-	static uint32_t laser_startup_delay = 5000;
-
-	//higher laser_shutdown_delay values will keep the laser on longer between shutting down for power savings
-	//it may be 0 if we are operating without a shutter (immediate shutdown on request)
-	uint32_t laser_shutdown_delay;
-	if (this_gun->servo_bypass == SERVO_BYPASS)	laser_shutdown_delay = 0;
-	else 										laser_shutdown_delay = 30000;
-
-	static uint32_t startup_complete_time = 0;
-	static uint32_t shutdown_complete_time = 0;
-
-	//issue the startup command on request, and start the timer so we know when its done
-	if (laser_state == LASER_STATE_OFF && laser_request == true) {
-		printf("Starting Laser Warmup...\n");
-		fprintf(bash_fp, "vcgencmd display_power 1 2 &\n");
-		fflush(bash_fp);
-		laser_state = LASER_STATE_DELAYED_ON;
-		startup_complete_time = millis() + laser_startup_delay; //5 second laser warmup
-	}
-
-	//delayed startup countdown
-	if (laser_state == LASER_STATE_DELAYED_ON) {
-		uint32_t time_now = millis();
-		if (startup_complete_time > time_now) {
-			this_gun->laser_countdown = startup_complete_time - time_now;
-		} else {
-			this_gun->laser_countdown = 0;
-			laser_state = LASER_STATE_ON;
-		}
-	}
-
-	//if we get a shutdown request during startup, shut down immediately
-	if (laser_state == LASER_STATE_DELAYED_ON && laser_request == false) {
-		laser_state = LASER_STATE_OFF;
-		this_gun->laser_countdown = 0;
-		printf("Stopping Laser...\n");
-		fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
-		fflush(bash_fp);
-	}
-
-	//if we get a shutdown request during normal operation, delay the shutdown
-	if (laser_state == LASER_STATE_ON && laser_request == false) {
-		laser_state = LASER_STATE_DELAYED_OFF;
-		shutdown_complete_time = millis() + laser_shutdown_delay;
-	}
-
-	//delayed shutdown countdown
-	if (laser_state == LASER_STATE_DELAYED_OFF) {
-		uint32_t time_now = millis();
-		if (shutdown_complete_time < time_now) {
-			printf("Stopping Laser...\n");
-			fprintf(bash_fp, "vcgencmd display_power 0 2 &\n");
-			fflush(bash_fp);
-			laser_state = LASER_STATE_OFF;
-		}
-	}
-
-	//if we get a turnon request during shutdown, go right back to being on
-	if (laser_state == LASER_STATE_DELAYED_OFF && laser_request == true) {
-		laser_state = LASER_STATE_ON;
-	}
-
-	if (laser_state == LASER_STATE_ON)			this_gun->laser_on = true;
-	else if (laser_state == LASER_STATE_OFF)	this_gun->laser_on = false;
-
-}
-
 void pipe_www_out(const struct gun_struct *this_gun )
 {
 	static uint8_t web_packet_counter = 0;
@@ -254,7 +162,6 @@ int pipe_button_out(int button,bool gordon){
 	button_last = button;
 	return button;
 }
-
 
 int pipe_www_in(struct gun_struct *this_gun)
 {

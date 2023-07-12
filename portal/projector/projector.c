@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 	printf("Starting Projector...\n");
 
     const char *device = "/dev/dri/card1";
-    char mode_str[DRM_DISPLAY_MODE_LEN] = "";
+    char mode_str[DRM_DISPLAY_MODE_LEN] = "1360x768";
     uint32_t format = DRM_FORMAT_XRGB8888;
     uint64_t modifier = DRM_FORMAT_MOD_LINEAR;
     int samples = 0;

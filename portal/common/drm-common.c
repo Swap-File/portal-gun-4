@@ -305,6 +305,22 @@ int init_drm(struct drm *drm, const char *device, const char *mode_str, unsigned
 		}
 	}
 
+
+	int dpms_id = -1;
+	for (i = 0 ; i < connector->count_props; i++) {
+		drmModePropertyPtr prop = drmModeGetProperty( drm->fd,connector->props[i]);
+		if (strcmp(prop->name, "DPMS") == 0) {
+				dpms_id = prop->prop_id;
+				printf("Found DPMS at index %d\n",prop->prop_id );
+			break;
+		}
+	}
+	if (dpms_id == -1){
+		printf("no dpms found!\n");
+		return -1;
+	}
+	drm->dpms_idx = dpms_id;
+	
 	if (!drm->mode) {
 		printf("could not find mode!\n");
 		return -1;

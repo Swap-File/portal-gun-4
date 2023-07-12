@@ -64,6 +64,8 @@ struct drm {
 	uint32_t connector_id;
 
 	int (*run)(const struct gbm *gbm, const struct egl *egl);
+	
+	int dpms_idx;
 };
 
 struct drm_fb {

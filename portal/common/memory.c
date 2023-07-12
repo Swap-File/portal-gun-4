@@ -60,6 +60,8 @@ static void shared_init_gun(struct gun_struct *this_gun)
     this_gun->effect_duo = this_gun->playlist_duo[0];
 
     this_gun->servo_bypass = SERVO_NORMAL;
+	
+	this_gun->dpms_request = false;
 }
 
 void shared_init(struct gun_struct **this_gun,bool init)

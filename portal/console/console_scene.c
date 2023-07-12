@@ -123,8 +123,11 @@ static void draw_emitter(int line) {
     center_text(&a64,temp, line);
 }
 
-static void draw_scene(unsigned i,char *debug_msg)
+static void console_draw_scene(unsigned i,char *debug_msg,bool * dpms)
 {
+
+	*dpms = true;
+	
     if (debug_msg[0] != '\0') {
         int temp[2];
         int result = sscanf(debug_msg,"%d %d", &temp[0],&temp[1]);
@@ -391,7 +394,7 @@ const struct egl * scene_init(const struct gbm *gbm, int samples)
     font_init("/home/pi/assets/consolab.ttf");
     font_atlas_init(64,&a64b);
 
-    egl.draw = draw_scene;
+    egl.draw = console_draw_scene;
 
     this_gun->console_loaded = true;
 
