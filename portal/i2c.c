@@ -1,10 +1,10 @@
 #include "i2c.h"
 #include <stdio.h>
 #include <math.h>
-#include <bcm2835.h>
 #include "i2c/LSM6.h"
 #include "i2c/sgtl5000.h"
 #include "i2c/ads1115.h"
+#include <stdlib.h>
 
 static float temp_conversion(int input,int offset)
 {
@@ -70,18 +70,15 @@ void calculate_offset(struct gun_struct *this_gun, int * gyro_data)
 void i2c_init(void)
 {
 
-	bcm2835_i2c_begin();
-	//speed is already set to 100khz, setting it here can mess with other peripherals
-	bcm2835_i2c_setClockDivider(BCM2835_I2C_CLOCK_DIVIDER_2500); //BCM2835_I2C_CLOCK_DIVIDER_2500 = 100khz
-
 	// Gyro Init
-	LSM6_init(device_DS33,sa0_high);
+	LSM6_init("/dev/i2c-1",device_DS33,sa0_high);
 	LSM6_enableDefault();
 
 	// ads1115 setup
-	ads1115_setup(0x48,ADS1115_GAIN_4,ADS1115_DR_128);
+	ads1115_setup("/dev/i2c-1",0x48,ADS1115_GAIN_4,ADS1115_DR_128);
 
 	// sgtl5000 & alsamixer
+	sgtl5000_init("/dev/i2c-1",SGTL5000_I2C_ADDR_CS_LOW);
 	sgtl5000_audioPreProcessorEnable();
 	sgtl5000_autoVolumeEnable();
 	// maxGain (0,1,2) lbiResponse (0,1,2,3) hardLimit (0,1)
@@ -99,9 +96,9 @@ void i2c_update(struct gun_struct *this_gun)
 	int gyro_data[3];
 	LSM6_readGyro(gyro_data);
 	calculate_offset(this_gun,gyro_data);
-
-	int * adc_data = ads1115_update();
 	
+	int * adc_data = ads1115_update();
+
 	static float current = 0;
 	if(this_gun->gordon) {
 		this_gun->temperature_pretty = temp_conversion(adc_data[0],1500);

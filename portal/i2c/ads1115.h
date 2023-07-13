@@ -50,6 +50,6 @@
 
 
 int * ads1115_update(void);
-void ads1115_setup(uint8_t address,int gain_idx,int dr_idx );
+void ads1115_setup(char * handle_name, uint8_t address,int gain_idx,int dr_idx);
 
 #endif

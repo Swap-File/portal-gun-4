@@ -2,8 +2,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
-#include <bcm2835.h>
 #include <stdio.h>
+#include  "common.h"
+#include <fcntl.h> // open
+
 // converted from https://github.com/pololu/lsm6-arduino/blob/master/LSM6.cpp
 
 // Defines ////////////////////////////////////////////////////////////////
@@ -16,32 +18,38 @@
 #define TEST_REG_ERROR -1
 
 #define DS33_WHO_ID    0x69
-
+static int i2c_fd;
+ 
 enum deviceType _device = device_DS33; // chip type
 uint8_t address = DS33_SA0_HIGH_ADDRESS;
 
 static int testReg(char address, char reg)
 {
-	char temp;
-	bcm2835_i2c_setSlaveAddress(address);
-	bcm2835_i2c_write((char *)&reg,1);
-	bcm2835_i2c_read(&temp,1);
+	uint8_t temp;
+	//bcm2835_i2c_setSlaveAddress(address);
+	//bcm2835_i2c_write((char *)&reg,1);
+	//bcm2835_i2c_read(&temp,1);
+	i2c_read(i2c_fd, address, reg,&temp,1 );
 	return temp;
 }
 
 static void writeReg(char reg, char value)
 {
-	char temp[2];
+	uint8_t temp[2];
 	temp[0] = reg;
 	temp[1] = value;
-	bcm2835_i2c_setSlaveAddress(address);
-	bcm2835_i2c_write(temp,2);
+	i2c_write(i2c_fd,address,temp,2);
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-bool LSM6_init(enum deviceType device,enum sa0State sa0)
+bool LSM6_init(char * handle_name,enum deviceType device,enum sa0State sa0)
 {  
+
+	i2c_fd = open(handle_name, O_RDWR);
+	if(i2c_fd < -1) printf("i2c open error");
+	
+	
 	// perform auto-detection unless device type and SA0 state were both specified
 	if (device == device_auto || sa0 == sa0_auto)
 	{
@@ -127,13 +135,13 @@ void LSM6_enableDefault(void)
 // Reads the 3 gyro channels and stores them in vector g
 void LSM6_readGyro(int * gyro_data)
 {
-	char temp[6];
-	temp[0] = OUTX_L_G;
+	uint8_t temp[6];
+	uint8_t reg = OUTX_L_G;
 
-	bcm2835_i2c_setSlaveAddress(address);
-	bcm2835_i2c_write(temp,1);
-	bcm2835_i2c_read(temp,6);
-
+	//bcm2835_i2c_setSlaveAddress(address);
+	//bcm2835_i2c_write(temp,1);
+	//bcm2835_i2c_read(temp,6);
+	i2c_read(i2c_fd, address, reg,temp,6 ) ;
 	gyro_data[0] = (int16_t)(temp[0] | temp[1] << 8);
 	gyro_data[1] = (int16_t)(temp[2] | temp[3] << 8);
 	gyro_data[2] = (int16_t)(temp[4] | temp[5] << 8);

@@ -82,7 +82,7 @@ enum regAddr
 	MD2_CFG           = 0x5F
 };
 
-bool LSM6_init(enum deviceType device, enum sa0State sa0);
+bool LSM6_init(char * handle_name, enum deviceType device, enum sa0State sa0);
 void LSM6_enableDefault(void);
 void LSM6_readGyro(int * gyro_data);
 

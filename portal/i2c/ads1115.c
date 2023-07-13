@@ -35,8 +35,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <bcm2835.h>
 #include "ads1115.h"
+#include "common.h"
+#include <fcntl.h> // open
 
 // Bits in the config register (it's a 16-bit register)
 
@@ -113,7 +114,7 @@
 
 #define	CONFIG_DEFAULT		(0x8583)	// From the datasheet
 
-
+static int i2c_fd;
 
 static uint16_t global_gain;	// Gain in global_gain
 static uint16_t global_dr;	// Samples/sec in global_dr
@@ -173,39 +174,33 @@ static void adc_start (int chan)
 
 
     //	Start a single conversion
-    char temp[3];
+    uint8_t temp[3];
     temp[0] = 1;
     temp[1] = (config >> 8);
     temp[2] = (config & 0xFF);
 
-    bcm2835_i2c_setSlaveAddress(i2cAddr);
-    bcm2835_i2c_write(temp,3);
 
-}
+	i2c_write(i2c_fd ,i2cAddr,temp,3);
 
-static int16_t i2c_read16(uint8_t reg)
-{
-    char temp[2];
-    temp[0] = reg;
-    bcm2835_i2c_write(temp,1);
-    bcm2835_i2c_read(temp,2);
-    return temp[1] | temp[0] << 8;
 }
 
 static bool adc_ready(void)
 {
-    bcm2835_i2c_setSlaveAddress(i2cAddr);
-    int16_t result = i2c_read16(1);
-
+	
+	uint8_t temp[2];
+	i2c_read(i2c_fd ,i2cAddr,1,temp,2);
+	int16_t result = temp[1] | temp[0] << 8;
+	
     if ((result & CONFIG_OS_MASK) != 0) return true;
     return false;
 }
 
 static void adc_finish(int chan,int * adc_data)
 {
-    bcm2835_i2c_setSlaveAddress(i2cAddr);
-    int16_t result = i2c_read16(0);
 
+	uint8_t temp[2];
+	i2c_read(i2c_fd ,i2cAddr,0,temp,2);
+	int16_t result = temp[1] | temp[0] << 8;
     //Sometimes with a 0v input on a single-ended channel the internal 0v reference
     //can be higher than the input, so you get a negative result...
     if (result < 0) result = 0;
@@ -215,45 +210,12 @@ static void adc_finish(int chan,int * adc_data)
 
 }
 
-/*
-* analogWrite:
-*	We're using this to write to the 2 comparitor threshold registers.
-*	We could use a digitalWrite here but as it's an analog comparison
-*	then it feels better to do it this way.
-*********************************************************************************
-*/
-/*
-void myAnalogWrite (int chan, int data)
+void ads1115_setup(char * handle_name,uint8_t address,int gain_idx,int dr_idx )
 {
-
-	int reg ;
-	int16_t ndata ;
-
-	chan &= 3 ;
-
-	reg = chan + 2 ;
-
-	if (data < -32767)
-	ndata = -32767 ;
-	else if (data > 32767)
-	ndata = 32767 ;
-	else
-	ndata = (int16_t)data ;
-
-	ndata = __bswap_16 (ndata) ;
-	wiringPiI2CWriteReg16 (node->fd, reg, data) ;
-}*/
-
-
-/*
-* ads1115Setup:
-*	Create a new wiringPi device node for an ads1115 on the Pi's
-*	I2C interface.
-*********************************************************************************
-*/
-
-void ads1115_setup(uint8_t address,int gain_idx,int dr_idx )
-{
+	
+	i2c_fd = open(handle_name, O_RDWR);
+	if(i2c_fd < -1) printf("i2c open error");
+	
     i2cAddr = address;
     if (dr_idx > 7) dr_idx = 7;   // Use default if out of range
     if (gain_idx > 5) gain_idx = 2 ;  // Use default if out of range

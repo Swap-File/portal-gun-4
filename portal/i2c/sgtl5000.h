@@ -48,7 +48,10 @@
 #define TONE_CONTROLS 2
 #define GRAPHIC_EQUALIZER 3
 
-void sgtl5000_setAddress(uint8_t level);
+#define SGTL5000_I2C_ADDR_CS_LOW	0x0A  // CTRL_ADR0_CS pin low (normal configuration)
+#define SGTL5000_I2C_ADDR_CS_HIGH	0x2A // CTRL_ADR0_CS  pin high
+
+void sgtl5000_init(char * handle_name, uint8_t level);
 bool sgtl5000_enable(void);
 bool sgtl5000_volume(float n);
 bool sgtl5000_inputLevel(float n);

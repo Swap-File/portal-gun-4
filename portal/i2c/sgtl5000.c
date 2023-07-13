@@ -25,9 +25,12 @@
 */
 #include <stdbool.h>
 #include <stdint.h>
-#include <bcm2835.h>
+#include "common.h"
 #include <math.h>
 #include "sgtl5000.h"
+#include <fcntl.h> // open
+#include <unistd.h> //usleep
+#include <stdio.h>
 
 #define CHIP_ID				0x0000
 // 15:8 PARTID		0xA0 - 8 bit identifier for SGTL5000
@@ -497,15 +500,14 @@
 #define DAP_COEF_WR_A2_MSB		0x0138
 #define DAP_COEF_WR_A2_LSB		0x013A
 
-#define SGTL5000_I2C_ADDR_CS_LOW	0x0A  // CTRL_ADR0_CS pin low (normal configuration)
-#define SGTL5000_I2C_ADDR_CS_HIGH	0x2A // CTRL_ADR0_CS  pin high
+
 
 static bool muted;
 static uint8_t i2c_addr;
 static uint16_t ana_ctrl;
 //unsigned char calcVol(float n, unsigned char range);
 //uint16_t calcMix(float n, uint16_t range);
-
+static int i2c_fd;
 
 unsigned short dap_audio_eq_band(uint8_t bandNum, float n);
 
@@ -513,34 +515,33 @@ bool semi_automated;
 void automate_2(uint8_t dap, uint8_t eq);
 void automate_3(uint8_t dap, uint8_t eq, uint8_t filterCount);
 
-static uint16_t read(uint16_t reg)
+static uint16_t i2c_read_sgtl(uint16_t reg)
 {
-    bcm2835_i2c_setSlaveAddress(SGTL5000_I2C_ADDR_CS_LOW);
-    char val[2];
+    uint8_t val[2];
     val[0] = reg >> 8;
     val[1] = reg;
-    bcm2835_i2c_write(val,2);
-    bcm2835_i2c_read(val,2);
+   i2c_write(i2c_fd,i2c_addr,val,2);
+    val[0] = 0;
+    val[1] = 0;
+   i2c_read_only(i2c_fd, i2c_addr, val, 2);
     return val[1] | val[0] << 8;
 }
 
-static bool write(uint16_t reg, uint16_t val)
+static bool i2c_write_sgtl(uint16_t reg, uint16_t val)
 {
-    bcm2835_i2c_setSlaveAddress(SGTL5000_I2C_ADDR_CS_LOW);
-    char tmp[4];
+    uint8_t tmp[4];
     tmp[0] = reg >> 8;
     tmp[1] = reg;
     tmp[2] = val >> 8;
     tmp[3] = val;
-    int result = bcm2835_i2c_write(tmp,4);
-    if (result == BCM2835_I2C_REASON_OK) return true;
-    return false;
+    bool result = i2c_write(i2c_fd,i2c_addr,tmp,4);
+    return result;
 }
 
 static uint16_t modify(uint16_t reg, uint16_t val, uint16_t iMask)
 {
-    uint16_t val1 = (read(reg)&(~iMask))|val;
-    if(!write(reg,val1)) return 0;
+    uint16_t val1 = (i2c_read_sgtl(reg)&(~iMask))|val;
+    if(!i2c_write_sgtl(reg,val1)) return 0;
     return val1;
 }
 
@@ -559,37 +560,36 @@ static unsigned char calcVol(float n, unsigned char range)
     return (unsigned char)n;
 }
 
-void sgtl5000_setAddress(uint8_t level)
+void sgtl5000_init( char * handle_name ,uint8_t level)
 {
-    if (level == LOW) {
-        i2c_addr = SGTL5000_I2C_ADDR_CS_LOW;
-    } else {
-        i2c_addr = SGTL5000_I2C_ADDR_CS_HIGH;
-    }
+	i2c_fd = open(handle_name, O_RDWR);
+	if(i2c_fd < -1) printf("i2c open error");
+
+    i2c_addr = level;
 }
 
 bool sgtl5000_enable(void)
 {
     muted = true;
-    int r = write(CHIP_ANA_POWER, 0x4060);  // VDDD is externally driven with 1.8V
+    int r = i2c_write_sgtl(CHIP_ANA_POWER, 0x4060);  // VDDD is externally driven with 1.8V
     if (!r) return false;
-    write(CHIP_LINREG_CTRL, 0x006C);  // VDDA & VDDIO both over 3.1V
-    write(CHIP_REF_CTRL, 0x01F2); // VAG=1.575, normal ramp, +12.5% bias current
-    write(CHIP_LINE_OUT_CTRL, 0x0F22); // LO_VAGCNTRL=1.65V, OUT_CURRENT=0.54mA
-    write(CHIP_SHORT_CTRL, 0x4446);  // allow up to 125mA
-    write(CHIP_ANA_CTRL, 0x0137);  // enable zero cross detectors
-    write(CHIP_ANA_POWER, 0x40FF); // power up: lineout, hp, adc, dac
-    write(CHIP_DIG_POWER, 0x0073); // power up all digital stuff
-    delay(400);
-    write(CHIP_LINE_OUT_VOL, 0x1D1D); // default approx 1.3 volts peak-to-peak
-    write(CHIP_CLK_CTRL, 0x0004);  // 44.1 kHz, 256*Fs
-    write(CHIP_I2S_CTRL, 0x0030); // SCLK=64*Fs, 16bit, I2S format
+    i2c_write_sgtl(CHIP_LINREG_CTRL, 0x006C);  // VDDA & VDDIO both over 3.1V
+    i2c_write_sgtl(CHIP_REF_CTRL, 0x01F2); // VAG=1.575, normal ramp, +12.5% bias current
+    i2c_write_sgtl(CHIP_LINE_OUT_CTRL, 0x0F22); // LO_VAGCNTRL=1.65V, OUT_CURRENT=0.54mA
+    i2c_write_sgtl(CHIP_SHORT_CTRL, 0x4446);  // allow up to 125mA
+    i2c_write_sgtl(CHIP_ANA_CTRL, 0x0137);  // enable zero cross detectors
+    i2c_write_sgtl(CHIP_ANA_POWER, 0x40FF); // power up: lineout, hp, adc, dac
+    i2c_write_sgtl(CHIP_DIG_POWER, 0x0073); // power up all digital stuff
+    usleep(400000);
+    i2c_write_sgtl(CHIP_LINE_OUT_VOL, 0x1D1D); // default approx 1.3 volts peak-to-peak
+    i2c_write_sgtl(CHIP_CLK_CTRL, 0x0004);  // 44.1 kHz, 256*Fs
+    i2c_write_sgtl(CHIP_I2S_CTRL, 0x0030); // SCLK=64*Fs, 16bit, I2S format
     // default signal routing is ok?
-    write(CHIP_SSS_CTRL, 0x0010); // ADC->I2S, I2S->DAC
-    write(CHIP_ADCDAC_CTRL, 0x0000); // disable dac mute
-    write(CHIP_DAC_VOL, 0x3C3C); // digital gain, 0dB
-    write(CHIP_ANA_HP_CTRL, 0x7F7F); // set volume (lowest level)
-    write(CHIP_ANA_CTRL, 0x0036);  // enable zero cross detectors
+    i2c_write_sgtl(CHIP_SSS_CTRL, 0x0010); // ADC->I2S, I2S->DAC
+    i2c_write_sgtl(CHIP_ADCDAC_CTRL, 0x0000); // disable dac mute
+    i2c_write_sgtl(CHIP_DAC_VOL, 0x3C3C); // digital gain, 0dB
+    i2c_write_sgtl(CHIP_ANA_HP_CTRL, 0x7F7F); // set volume (lowest level)
+    i2c_write_sgtl(CHIP_ANA_CTRL, 0x0036);  // enable zero cross detectors
     //mute = false;
     semi_automated = true;
     return true;
@@ -599,7 +599,7 @@ static bool volumeInteger(uint16_t n)
 {
     if (n == 0) {
         muted = true;
-        write(CHIP_ANA_HP_CTRL, 0x7F7F);
+        i2c_write_sgtl(CHIP_ANA_HP_CTRL, 0x7F7F);
         return sgtl5000_muteHeadphone();
     } else if (n > 0x80) {
         n = 0;
@@ -611,13 +611,13 @@ static bool volumeInteger(uint16_t n)
         sgtl5000_unmuteHeadphone();
     }
     n = n | (n << 8);
-    return write(CHIP_ANA_HP_CTRL, n);  // set volume
+    return i2c_write_sgtl(CHIP_ANA_HP_CTRL, n);  // set volume
 }
 
 bool sgtl5000_volume_stereo(float left, float right)
 {
     unsigned short m=((0x7F-calcVol(right,0x7F))<<8)|(0x7F-calcVol(left,0x7F));
-    return write(CHIP_ANA_HP_CTRL, m);
+    return i2c_write_sgtl(CHIP_ANA_HP_CTRL, m);
 }
 
 bool sgtl5000_micGain(uint16_t dB)
@@ -639,8 +639,8 @@ bool sgtl5000_micGain(uint16_t dB)
     input_gain = (dB * 2) / 3;
     if (input_gain > 15) input_gain = 15;
 
-    return write(CHIP_MIC_CTRL, 0x0170 | preamp_gain)
-           && write(CHIP_ANA_ADC_CTRL, (input_gain << 4) | input_gain);
+    return i2c_write_sgtl(CHIP_MIC_CTRL, 0x0170 | preamp_gain)
+           && i2c_write_sgtl(CHIP_ANA_ADC_CTRL, (input_gain << 4) | input_gain);
 }
 
 // CHIP_ANA_ADC_CTRL
@@ -665,7 +665,7 @@ bool sgtl5000_lineInLevel_stereo(uint8_t left, uint8_t right)
 {
     if (left > 15) left = 15;
     if (right > 15) right = 15;
-    return write(CHIP_ANA_ADC_CTRL, (left << 4) | right);
+    return i2c_write_sgtl(CHIP_ANA_ADC_CTRL, (left << 4) | right);
 }
 
 // CHIP_LINE_OUT_VOL
@@ -708,7 +708,7 @@ unsigned short sgtl5000_lineOutLevel_stereo(uint8_t left, uint8_t right)
 
 unsigned short sgtl5000_dacVolume(float n) // set both directly
 {
-    if ((read(CHIP_ADCDAC_CTRL)&(3<<2)) != ((n>0 ? 0:3)<<2)) {
+    if ((i2c_read_sgtl(CHIP_ADCDAC_CTRL)&(3<<2)) != ((n>0 ? 0:3)<<2)) {
         modify(CHIP_ADCDAC_CTRL,(n>0 ? 0:3)<<2,3<<2);
     }
     unsigned char m=calcVol(n,0xC0);
@@ -717,7 +717,7 @@ unsigned short sgtl5000_dacVolume(float n) // set both directly
 unsigned short sgtl5000_dacVolume_stereo(float left, float right)
 {
     unsigned short adcdac=((right>0 ? 0:2)|(left>0 ? 0:1))<<2;
-    if ((read(CHIP_ADCDAC_CTRL)&(3<<2)) != adcdac) {
+    if ((i2c_read_sgtl(CHIP_ADCDAC_CTRL)&(3<<2)) != adcdac) {
         modify(CHIP_ADCDAC_CTRL,adcdac,1<<2);
     }
     unsigned short m=(0xFC-calcVol(right,0xC0))<<8|(0xFC-calcVol(left,0xC0));
@@ -760,23 +760,23 @@ unsigned short sgtl5000_adcHighPassFilterDisable(void)
 unsigned short sgtl5000_audioPreProcessorEnable(void)
 {
     // audio processor used to pre-process analog input before Teensy
-    return write(DAP_CONTROL, 0x0001) && write(CHIP_SSS_CTRL, 0x0013);
+    return i2c_write_sgtl(DAP_CONTROL, 0x0001) && i2c_write_sgtl(CHIP_SSS_CTRL, 0x0013);
 }
 
 unsigned short sgtl5000_audioPostProcessorEnable(void)
 {
     // audio processor used to post-process Teensy output before headphones/lineout
-    return write(DAP_CONTROL, 0x0001) && write(CHIP_SSS_CTRL, 0x0070);
+    return i2c_write_sgtl(DAP_CONTROL, 0x0001) && i2c_write_sgtl(CHIP_SSS_CTRL, 0x0070);
 }
 
 unsigned short sgtl5000_audioProcessorDisable(void)
 {
-    return write(CHIP_SSS_CTRL, 0x0010) && write(DAP_CONTROL, 0);
+    return i2c_write_sgtl(CHIP_SSS_CTRL, 0x0010) && i2c_write_sgtl(DAP_CONTROL, 0);
 }
 
 unsigned short sgtl5000_dapMix(float main, float mix)
 {
-    return write(DAP_MAIN_CHAN, calcMix( main, 0xFFFF)) && write(DAP_MIX_CHAN, calcMix( mix, 0xFFFF));
+    return i2c_write_sgtl(DAP_MAIN_CHAN, calcMix( main, 0xFFFF)) && i2c_write_sgtl(DAP_MIX_CHAN, calcMix( mix, 0xFFFF));
 }
 
 // DAP_PEQ
@@ -818,17 +818,17 @@ void sgtl5000_eqFilter(uint8_t filterNum, int *filterParameters)
     // TODO: add the part that selects 7 PEQ filters.
     if(semi_automated) automate_3(1,1,filterNum+1);
     modify(DAP_FILTER_COEF_ACCESS,(uint16_t)filterNum,15);
-    write(DAP_COEF_WR_B0_MSB,(*filterParameters>>4)&65535);
-    write(DAP_COEF_WR_B0_LSB,(*filterParameters++)&15);
-    write(DAP_COEF_WR_B1_MSB,(*filterParameters>>4)&65535);
-    write(DAP_COEF_WR_B1_LSB,(*filterParameters++)&15);
-    write(DAP_COEF_WR_B2_MSB,(*filterParameters>>4)&65535);
-    write(DAP_COEF_WR_B2_LSB,(*filterParameters++)&15);
-    write(DAP_COEF_WR_A1_MSB,(*filterParameters>>4)&65535);
-    write(DAP_COEF_WR_A1_LSB,(*filterParameters++)&15);
-    write(DAP_COEF_WR_A2_MSB,(*filterParameters>>4)&65535);
-    write(DAP_COEF_WR_A2_LSB,(*filterParameters++)&15);
-    write(DAP_FILTER_COEF_ACCESS,(uint16_t)0x100|filterNum);
+    i2c_write_sgtl(DAP_COEF_WR_B0_MSB,(*filterParameters>>4)&65535);
+    i2c_write_sgtl(DAP_COEF_WR_B0_LSB,(*filterParameters++)&15);
+    i2c_write_sgtl(DAP_COEF_WR_B1_MSB,(*filterParameters>>4)&65535);
+    i2c_write_sgtl(DAP_COEF_WR_B1_LSB,(*filterParameters++)&15);
+    i2c_write_sgtl(DAP_COEF_WR_B2_MSB,(*filterParameters>>4)&65535);
+    i2c_write_sgtl(DAP_COEF_WR_B2_LSB,(*filterParameters++)&15);
+    i2c_write_sgtl(DAP_COEF_WR_A1_MSB,(*filterParameters>>4)&65535);
+    i2c_write_sgtl(DAP_COEF_WR_A1_LSB,(*filterParameters++)&15);
+    i2c_write_sgtl(DAP_COEF_WR_A2_MSB,(*filterParameters>>4)&65535);
+    i2c_write_sgtl(DAP_COEF_WR_A2_LSB,(*filterParameters++)&15);
+    i2c_write_sgtl(DAP_FILTER_COEF_ACCESS,(uint16_t)0x100|filterNum);
 }
 
 /* Valid values for dap_avc parameters
@@ -859,16 +859,16 @@ void sgtl5000_eqFilter(uint8_t filterNum, int *filterParameters)
 */
 unsigned short sgtl5000_autoVolumeControl(uint8_t maxGain, uint8_t lbiResponse, uint8_t hardLimit, float threshold, float attack, float decay)
 {
-    //if(semi_automated&&(!read(DAP_CONTROL)&1)) audioProcessorEnable();
+    //if(semi_automated&&(!i2c_read_sgtl(DAP_CONTROL)&1)) audioProcessorEnable();
     if(maxGain>2) maxGain=2;
     lbiResponse&=3;
     hardLimit&=1;
     uint16_t thresh=(pow(10,threshold/20)*0.636)*pow(2,15);
     uint16_t att=(1-pow(10,-(attack/(20*44100))))*pow(2,19);
     uint16_t dec=(1-pow(10,-(decay/(20*44100))))*pow(2,23);
-    write(DAP_AVC_THRESHOLD,thresh);
-    write(DAP_AVC_ATTACK,att);
-    write(DAP_AVC_DECAY,dec);
+    i2c_write_sgtl(DAP_AVC_THRESHOLD,thresh);
+    i2c_write_sgtl(DAP_AVC_ATTACK,att);
+    i2c_write_sgtl(DAP_AVC_DECAY,dec);
     return 	modify(DAP_AVC_CTRL,maxGain<<12|lbiResponse<<8|hardLimit<<5,3<<12|3<<8|1<<5);
 }
 unsigned short sgtl5000_autoVolumeEnable(void)
@@ -928,14 +928,14 @@ unsigned short dap_audio_eq_band(uint8_t bandNum, float n) // by signed percenta
 
 void automate_2(uint8_t dap, uint8_t eq)
 {
-    //if((dap!=0)&&(!(read(DAP_CONTROL)&1))) audioProcessorEnable();
-    if((read(DAP_AUDIO_EQ)&3) != eq) sgtl5000_eqSelect(eq);
+    //if((dap!=0)&&(!(i2c_read_sgtl(DAP_CONTROL)&1))) audioProcessorEnable();
+    if((i2c_read_sgtl(DAP_AUDIO_EQ)&3) != eq) sgtl5000_eqSelect(eq);
 }
 
 void automate_3(uint8_t dap, uint8_t eq, uint8_t filterCount)
 {
     automate_2(dap,eq);
-    if (filterCount > (read(DAP_PEQ)&7)) sgtl5000_eqFilterCount(filterCount);
+    if (filterCount > (i2c_read_sgtl(DAP_PEQ)&7)) sgtl5000_eqFilterCount(filterCount);
 }
 
 
@@ -1046,29 +1046,29 @@ bool sgtl5000_inputLevel(float n) {
     return false;
 }
 bool sgtl5000_muteHeadphone(void) {
-    return write(0x0024, ana_ctrl | (1<<4));
+    return i2c_write_sgtl(0x0024, ana_ctrl | (1<<4));
     return false;
 }
 bool sgtl5000_unmuteHeadphone(void) {
-    return write(0x0024, ana_ctrl & ~(1<<4));
+    return i2c_write_sgtl(0x0024, ana_ctrl & ~(1<<4));
     return false;
 }
 bool sgtl5000_muteLineout(void) {
-    return write(0x0024, ana_ctrl | (1<<8));
+    return i2c_write_sgtl(0x0024, ana_ctrl | (1<<8));
     return false;
 }
 bool sgtl5000_unmuteLineout(void) {
-    return write(0x0024, ana_ctrl & ~(1<<8));
+    return i2c_write_sgtl(0x0024, ana_ctrl & ~(1<<8));
     return false;
 }
 bool sgtl5000_inputSelect(int n) {
     if (n == AUDIO_INPUT_LINEIN) {
-        return write(0x0020, 0x055) // +7.5dB gain (1.3Vp-p full scale)
-               && write(0x0024, ana_ctrl | (1<<2)); // enable linein
+        return i2c_write_sgtl(0x0020, 0x055) // +7.5dB gain (1.3Vp-p full scale)
+               && i2c_write_sgtl(0x0024, ana_ctrl | (1<<2)); // enable linein
     } else if (n == AUDIO_INPUT_MIC) {
-        return write(0x002A, 0x0173) // mic preamp gain = +40dB
-               && write(0x0020, 0x088)     // input gain +12dB (is this enough?)
-               && write(0x0024, ana_ctrl & ~(1<<2)); // enable mic
+        return i2c_write_sgtl(0x002A, 0x0173) // mic preamp gain = +40dB
+               && i2c_write_sgtl(0x0020, 0x088)     // input gain +12dB (is this enough?)
+               && i2c_write_sgtl(0x0024, ana_ctrl & ~(1<<2)); // enable mic
     }
     return false;
 
