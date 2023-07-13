@@ -437,7 +437,6 @@ void led_wipe(void)
 
 	//end of data
 	for (int j = 0; j < 4; j++) output_buffer[i++] = 0x00;
-	printf(" %d ",output_buffer[0]);
 	spiWrite(spi_fd,spi_speed,output_buffer,sizeof(output_buffer));
 	close(spi_fd);
 }

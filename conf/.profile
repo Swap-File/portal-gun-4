@@ -48,6 +48,7 @@ if [ "$(pidof portal)" ]; then
 else
 # set up in sudo nano /etc/dhcpcd.conf
 	#sudo iw wlan0 set power_save off
+	sudo modprobe i2c-dev
 	sudo sysctl -w net.ipv4.ip_forward=1
 	if [[ -z "${CHELL}" ]]; then
 		sudo ifconfig wlan0 192.168.3.20  #or 192.168.3.21
