@@ -2,7 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>  //abs
 #include <math.h>  //PI & E
-#include <bcm2835.h>
+#include <string.h> //memset
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/spi/spidev.h>
 
 #define EFFECT_LENGTH 19  //length of the effect, doubled for output
 #define LED_STRIP_LENGTH 23  //actual physical length (two stacks of 20 in parallel)
@@ -13,6 +17,9 @@
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+static int spi_speed = 10000000;
+static int spi_fd;
+
 static struct CRGB color1;
 static struct CRGB color2;
 static struct CRGB color_last;
@@ -22,6 +29,26 @@ static int overlay_timer;
 static int width_update_speed_last_update = 0;
 static float effect_array[EFFECT_RESOLUTION];
 static uint8_t brightnesslookup[256][EFFECT_RESOLUTION];
+
+int spiWrite(int fd, unsigned speed, char *buf, unsigned count)
+{
+   int err;
+   struct spi_ioc_transfer spi;
+
+   memset(&spi, 0, sizeof(spi));
+
+   spi.tx_buf        = (unsigned) buf;
+   spi.rx_buf        = (unsigned) NULL;
+   spi.len           = count;
+   spi.speed_hz      = speed;
+   spi.delay_usecs   = 0;
+   spi.bits_per_word = 8;
+   spi.cs_change     = 0;
+
+   err = ioctl(fd, SPI_IOC_MESSAGE(1), &spi);
+
+   return err;
+}
 
 float led_update_internal(int width_temp,int width_update_speed_temp,int overlay_temp,int total_offset)
 {
@@ -279,8 +306,8 @@ float led_update_internal(int width_temp,int width_update_speed_temp,int overlay
 	//end of data
 	for (int j = 0; j < 4; j++) output_buffer[i++] = 0x00;
 
-	bcm2835_spi_writenb(output_buffer, sizeof(output_buffer));
-	//printf("Benchmark Microseconds! %d \n",micros()- start_time);
+	spiWrite(spi_fd,spi_speed,output_buffer,sizeof(output_buffer));
+	//printf("Benchmark Microseconds! %d \n",micros()- start_time);  
 
 	//return a number representing the current breathing of the array for other LEDs to use
 	return effect_array[curtime];
@@ -349,10 +376,17 @@ uint8_t led_update(const struct gun_struct *this_gun) {
 	return 255 * led_update_internal(width_request,width_update_speed,shutdown_effect,total_time_offset);
 }
 
+
+
 void led_init(bool gordon) {
 
-	bcm2835_spi_begin();
-	bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);
+	char spiMode  = 3;
+	char spiBits  = 8;
+
+	if ((spi_fd = open("/dev/spidev0.0", O_RDWR)) < 0) printf("Spi Init Err\n");
+	if (ioctl(spi_fd, SPI_IOC_WR_MODE, &spiMode) < 0) printf("Spi Init Err\n");
+	if (ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &spiBits) < 0) printf("Spi Init Err\n");
+	if (ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &spi_speed) < 0) printf("Spi Init Err\n");
 
 	overlay_timer =  millis();
 
@@ -403,7 +437,7 @@ void led_wipe(void)
 
 	//end of data
 	for (int j = 0; j < 4; j++) output_buffer[i++] = 0x00;
-
-	bcm2835_spi_writenb(output_buffer, sizeof(output_buffer));
-	bcm2835_spi_end();
+	printf(" %d ",output_buffer[0]);
+	spiWrite(spi_fd,spi_speed,output_buffer,sizeof(output_buffer));
+	close(spi_fd);
 }
