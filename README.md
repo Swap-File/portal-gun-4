@@ -31,10 +31,13 @@ Website:
 OS:
 ```
 Raspberry Pi OS Lite
-Release date: October 30th 2021
-Kernel version: 5.10
-Size: 463MB
-008d7377b8c8b853a6663448a3f7688ba98e2805949127a1d9e8859ff96ee1a9
+Release date: May 3rd 2023
+System: 64-bit
+Kernel version: 6.1
+Debian version: 11 (bullseye)
+Size: 308MB
+Show SHA256 file integrity hash:
+bf982e56b0374712d93e185780d121e3f5c3d5e33052a95f72f9aed468d58fa7
 ```
 Packages:
 
@@ -47,7 +50,8 @@ libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev gstreamer1.0-alsa gstreamer
 apache2 php libapache2-mod-php
 ```
 ```
-dos2unix libdrm-dev libgles2-mesa-dev libgbm-dev ifstat python3-dbus apt-file libbluetooth-dev
+dos2unix libdrm-dev libgles2-mesa-dev libgbm-dev ifstat python3-dbus libbluetooth-dev
+hostapd libi2c-dev screen apt-file
 ```
 Services:
 
@@ -59,6 +63,7 @@ systemctl start hostapd
 ```
 systemctl mask systemd-rfkill.socket systemd-rfkill.service
 sudo apt purge libpam-chksshpwd
+sudo apt remove libpam-chksshpwd
 sudo apt purge rfkill
 ```
 ```
@@ -67,4 +72,5 @@ systemctl disable apt-daily.service
 systemctl disable apt-daily.timer
 systemctl disable apt-daily-upgrade.timer
 systemctl disable apt-daily-upgrade.service
+sudo rpi-eeprom-update -a
 ```

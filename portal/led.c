@@ -37,8 +37,8 @@ int spiWrite(int fd, unsigned speed, char *buf, unsigned count)
 
    memset(&spi, 0, sizeof(spi));
 
-   spi.tx_buf        = (unsigned) buf;
-   spi.rx_buf        = (unsigned) NULL;
+   spi.tx_buf        = (uint64_t) buf;
+   spi.rx_buf        = (uint64_t) NULL;
    spi.len           = count;
    spi.speed_hz      = speed;
    spi.delay_usecs   = 0;

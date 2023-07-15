@@ -3,6 +3,7 @@ amixer -q sset 'Headphone' 'off'
 amixer -q sset 'Headphone Playback ZC' 'off'
 amixer -q sset 'PCM' 150 # 0 - 192
 amixer -q sset 'Lineout' 25  # 0 - 31
+amixer -q sset 'Lineout' 'on'
 amixer -q sset 'Mic' 0
 amixer -q sset 'Capture' 2 #0 - 15
 amixer -q sset 'Capture Attenuate Switch (-6dB)' 'off' #0 - 15
