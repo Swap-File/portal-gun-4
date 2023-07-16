@@ -28,6 +28,8 @@ fi
 
 cat /home/pi/arpeture.txt
 
+export LIBCAMERA_RPI_TUNING_FILE=/usr/share/libcamera/ipa/raspberrypi/imx219_noir.json
+
 export GORDON="1"
 #export CHELL="1"
 
@@ -64,4 +66,3 @@ else
 	sudo -E ./portal
 	sudo -E screen -S portal -c "/home/pi/.screenrc"
 fi
-
