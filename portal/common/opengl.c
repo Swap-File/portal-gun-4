@@ -247,7 +247,7 @@ int init_egl(struct egl *egl, const struct gbm *gbm, int samples)
 
 	egl->context = eglCreateContext(egl->display, egl->config,
 			EGL_NO_CONTEXT, context_attribs);
-	if (egl->context == NULL) {
+	if (egl->context == EGL_NO_CONTEXT) {
 		printf("failed to create context\n");
 		return -1;
 	}
@@ -282,6 +282,10 @@ int create_program(const char *vs_src, const char *fs_src)
 	GLint ret;
 
 	vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+	if (vertex_shader == 0) {
+		printf("vertex shader creation failed!:\n");
+		return -1;
+	}
 
 	glShaderSource(vertex_shader, 1, &vs_src, NULL);
 	glCompileShader(vertex_shader);
@@ -303,7 +307,10 @@ int create_program(const char *vs_src, const char *fs_src)
 	}
 
 	fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-
+	if (fragment_shader == 0) {
+		printf("fragment shader creation failed!:\n");
+		return -1;
+	}
 	glShaderSource(fragment_shader, 1, &fs_src, NULL);
 	glCompileShader(fragment_shader);
 

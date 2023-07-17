@@ -71,9 +71,7 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
 		return ret;
 	}
 	
-	
 	bool dpms_enabled = true;
-	
 	char debug_msg[100];
 	
 	while (1) {

@@ -32,6 +32,9 @@
 #include "opengl.h"
 #include "drm-common.h"
 
+WEAK union gbm_bo_handle
+gbm_bo_get_handle_for_plane(struct gbm_bo *bo, int plane);
+
 WEAK uint64_t
 gbm_bo_get_modifier(struct gbm_bo *bo);
 
@@ -89,20 +92,21 @@ struct drm_fb * drm_fb_get_from_bo(struct gbm_bo *bo)
 	height = gbm_bo_get_height(bo);
 	format = gbm_bo_get_format(bo);
 
-	if (gbm_bo_get_modifier && gbm_bo_get_plane_count &&
-	    gbm_bo_get_stride_for_plane && gbm_bo_get_offset) {
+	if (gbm_bo_get_handle_for_plane && gbm_bo_get_modifier &&
+	    gbm_bo_get_plane_count && gbm_bo_get_stride_for_plane &&
+	    gbm_bo_get_offset) {
 
 		uint64_t modifiers[4] = {0};
 		modifiers[0] = gbm_bo_get_modifier(bo);
 		const int num_planes = gbm_bo_get_plane_count(bo);
 		for (int i = 0; i < num_planes; i++) {
+			handles[i] = gbm_bo_get_handle_for_plane(bo, i).u32;
 			strides[i] = gbm_bo_get_stride_for_plane(bo, i);
-			handles[i] = gbm_bo_get_handle(bo).u32;
 			offsets[i] = gbm_bo_get_offset(bo, i);
 			modifiers[i] = modifiers[0];
 		}
 
-		if (modifiers[0]) {
+		if (modifiers[0] && modifiers[0] != DRM_FORMAT_MOD_INVALID) {
 			flags = DRM_MODE_FB_MODIFIERS;
 			printf("Using modifier %" PRIx64 "\n", modifiers[0]);
 		}
@@ -134,7 +138,7 @@ struct drm_fb * drm_fb_get_from_bo(struct gbm_bo *bo)
 	return fb;
 }
 
-static uint32_t find_crtc_for_encoder(const drmModeRes *resources,
+static int32_t find_crtc_for_encoder(const drmModeRes *resources,
 		const drmModeEncoder *encoder) {
 	int i;
 
@@ -153,7 +157,7 @@ static uint32_t find_crtc_for_encoder(const drmModeRes *resources,
 	return -1;
 }
 
-static uint32_t find_crtc_for_connector(const struct drm *drm, const drmModeRes *resources,
+static int32_t find_crtc_for_connector(const struct drm *drm, const drmModeRes *resources,
 		const drmModeConnector *connector) {
 	int i;
 
@@ -162,7 +166,7 @@ static uint32_t find_crtc_for_connector(const struct drm *drm, const drmModeRes 
 		drmModeEncoder *encoder = drmModeGetEncoder(drm->fd, encoder_id);
 
 		if (encoder) {
-			const uint32_t crtc_id = find_crtc_for_encoder(resources, encoder);
+			const int32_t crtc_id = find_crtc_for_encoder(resources, encoder);
 
 			drmModeFreeEncoder(encoder);
 			if (crtc_id != 0) {
@@ -338,8 +342,8 @@ int init_drm(struct drm *drm, const char *device, const char *mode_str, unsigned
 	if (encoder) {
 		drm->crtc_id = encoder->crtc_id;
 	} else {
-		uint32_t crtc_id = find_crtc_for_connector(drm, resources, connector);
-		if (crtc_id == 0) {
+		int32_t crtc_id = find_crtc_for_connector(drm, resources, connector);
+		if (crtc_id == -1) {
 			printf("no crtc found!\n");
 			return -1;
 		}
