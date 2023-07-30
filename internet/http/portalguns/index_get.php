@@ -36,6 +36,8 @@ try {
 			$row["c_temp2"]= 0; 
 			$row["c_state"]= 0; 
 			$row["synced"] = 0;
+			$row["lat"]= 0; 
+			$row["lon"] = 0;
 		}
 		
 		//lookup when gordon was last seen if not online
@@ -69,7 +71,8 @@ try {
 		$row["c_lag"]. "\t" . $row["c_volts"]."\t" . 		
 		$row["c_temp1"]. "\t" . $row["c_temp2"] ."\t". 
 		
-		$row["g_state"]."\t" . $row["c_state"];
+		$row["g_state"]. "\t" . $row["c_state"] ."\t". 
+		$row["lat"]."\t" . $row["lon"];
 		
     }
 }

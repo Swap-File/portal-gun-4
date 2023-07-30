@@ -2,6 +2,7 @@ from androidhelper import Android
 import time
 import requests
 import re
+import pprint
 requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = "ALL"
 droid = Android() 
 droid.wakeLockAcquirePartial()
@@ -9,7 +10,7 @@ droid.wakeLockAcquirePartial()
 delay = 2
 
 auth = ('', '')
-url_upload = 'https://upload.portalguns.com/add.php'
+url_upload = 'https://portalguns.com/upload/add.php'
 
 gordon_packet_id_last = -1
 chell_packet_id_last = -1
@@ -44,7 +45,17 @@ def upload_data():
 
 	payload = {}
 	payload['keyframe'] = 0
-
+	payload['lat'] = 0
+	payload['lon'] = 0
+	
+	try:
+		location = droid.getLastKnownLocation().result
+		payload['lat'] = location["fused"]["latitude"]
+		payload['lon'] = location["fused"]["longitude"]
+	except:
+		payload['lat'] = 0
+		payload['lon'] = 0
+    
 	retries = 0
 	while retries < 2:
 		try:

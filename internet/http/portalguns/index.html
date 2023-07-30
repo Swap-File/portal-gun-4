@@ -3,13 +3,14 @@
 <head>
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-<meta name="viewport" content="initial-scale=1, maximum-scale=1">
-<title>Portal Guns 4.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0">
+<meta name="darkreader-lock">
+<title>Portal Guns 4.5</title>
 <link rel="stylesheet" type="text/css" href="portalstyle.css">
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="datetimepicker/jquery.datetimepicker.min.css"/>
 <link rel="stylesheet" href="dropit/dropit.css" type="text/css" />
-<script src="https://code.jquery.com/jquery-3.5.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="datetimepicker/jquery.datetimepicker.full.min.js"></script>
 <script src="dropit/dropit.js"></script>
 
@@ -24,6 +25,7 @@
 <li><a onclick="set_mode(1)"><i class="fa fa-home fa-fw"></i> Live Feed</a></li>
 <li><a onclick="set_mode(0)"><i class="fa fa-history fa-fw"></i> Archives</a></li>
 <li><a href="https://github.com/Swap-File/portal-gun-4"><i class="fa fa-code fa-fw"></i> View Code</a></li>
+<li><a href="https://portalbutton.com"><i class="fa fa-external-link fa-fw"></i> Portal Button</a></li>
 <li><a href="preview.html"><i class="fa fa-wrench fa-fw"></i> Effects</a></li>
 <li><a href="state1.png"><i class="fa fa-wrench fa-fw"></i> States</a></li>
 <li><a href="sim.html"><i class="fa fa-wrench fa-fw"></i> Simulator</a></li>
@@ -38,14 +40,14 @@
 <div id="running_div" onclick="running_man_click()">
 <div class="flip_wrap">
 <div class="flipper">
-<div class="front"><img class="running_img" alt="" src="assets/2.png"></div>
-<div class="back"><img class="running_img" alt="" src="assets/1.png" ></div>
+<div class="front"><img class="running_img" alt="orange running man" src="assets/2.png"></div>
+<div class="back"><img class="running_img" alt="blue running man" src="assets/1.png" ></div>
 </div>
 </div>
 <div id="loading_txt">Loading</div>
 </div>
 
-<div id="titletext">Portal Guns 4.0</div>
+<div id="titletext">Portal Guns 4.5</div>
 <div id="subtext">Live Feed</div>
 <div id="mainpage">
 
@@ -54,6 +56,7 @@
 <div id="gordonstats_live"></div>
 <div id="chelltxt"></div>
 <div id="chellstats_live"></div>
+
 </div>
 
 <div id="histpage">
@@ -68,13 +71,13 @@
 </div>
 
 <div class="portal_spacer"></div>
-<img class="portal_image" id="portal_back" alt="" src="test.jpg">
-<img class="portal_image" id="portal_front" alt="" src="mask.png">
+<img class="portal_image" id="portal_back" alt="test pattern" src="test.jpg">
+<img class="portal_image" id="portal_front" alt="oval masking pattern" src="mask.png">
 <svg id="portal_svg" width="240" height="240" viewBox="0 0 900 900" xmlns="http://www.w3.org/2000/svg">
 <path id="portal_svg1" d="M 756.40902,784.0783 C 616.0042,905.68214 406.7082,935.38868 255.32421,855.20018 95.456062,770.51755 -14.28054,574.63033 1.5088513,402.12233 c 0.7212765,-7.88061 9.9179217,27.56439 18.6659637,71.94121 7.144324,36.24178 13.115668,58.30906 24.861546,78.0185 6.269958,10.5211 6.05171,10.08558 4.01957,2.16031 C -39.956792,207.09946 264.09254,-88.248872 593.22907,24.359284 914.50598,134.27856 1007.3874,566.70754 756.40902,784.0783 Z m 26.3128,-101.80801 c 11.1115,-16.00214 19.61599,-29.92739 25.06045,-43.92576 3.42873,-8.81569 2.62855,-9.94171 -9.91798,4.42425 -97.29734,111.40648 -241.34032,149.46671 -369.73254,95.95989 -10.90363,-4.54408 -10.40659,-4.79062 3.83466,-1.90211 178.69635,36.24486 346.73752,-71.53617 372.99635,-239.23868 28.98311,-185.10091 -131.06343,-382.66985 -337.576,-416.719266 -15.40391,-2.539801 -15.60922,-2.237873 -1.99385,2.93177 92.94107,35.289056 159.2535,96.896116 168.65244,156.684996 1.19408,7.59634 1.00593,10.8979 -0.36128,6.337 C 621.1429,204.98718 547.70656,146.46123 479.0548,123.58889 201.7575,31.203709 19.725511,327.98554 183.57947,605.32674 c 128.859,218.10822 375.55268,273.9781 554.84391,126.02091 4.36065,-3.59853 15.70861,-14.3553 16.66543,-15.57231 5.38114,-6.84445 21.44862,-24.59842 27.63301,-33.50505 z" fill="orange" stroke-width="0" />
 <use id="use" xlink:href="#c1" />
 </svg>
-
+<div id="portal_gps"></div>
 <div id="hist_browser">Searching for Portal Openings prior to:
 <input id="datetimepicker" type="text"><br><br>
 <div id="hist_results"></div>
@@ -100,16 +103,21 @@ $(document).ready(function() {
 	//prep the menu, set init color, and hide secret items
 	$('.menu').dropit();	
 	$(".menu ul.dropit-submenu a").addClass("blue");
-	$(".menu li:eq(4)").hide();
 	$(".menu li:eq(5)").hide();
 	$(".menu li:eq(6)").hide();
 	$(".menu li:eq(7)").hide();
 	$(".menu li:eq(8)").hide();
+	$(".menu li:eq(9)").hide();
 	//check for SVG Transform support, if none, fallback to GIF
 	getSupportedTransform();
-	//load live data  
+	//load live data 
 	request_data(-1);
 });
+function update_gps(lat,lon){
+	lat_txt = lat.toFixed(6);
+	lon_txt = lon.toFixed(6);
+	portal_gps.innerHTML = '<a href=\"http://www.google.com/maps/place/' + lat + ',' + lon + '\">'+ lat_txt + ',' + lon_txt + '</a>' ;
+}
 function initiate_search(){
 	hist_results.innerHTML = "";
 	var searchtime = parseInt($('#datetimepicker').datetimepicker('getValue').getTime() / 1000);
@@ -186,11 +194,11 @@ function running_man_click(){
 	secret_menu_clicks++;
 	if (secret_menu_clicks == 5){
 		titletext.innerHTML = "Unlocked!"
-		$(".menu li:eq(4)").show();
 		$(".menu li:eq(5)").show();
 		$(".menu li:eq(6)").show();
 		$(".menu li:eq(7)").show();
 		$(".menu li:eq(8)").show();
+		$(".menu li:eq(9)").show();
 		suppress_menu_close = 1;
 		$('#menu_icon').trigger('click');
 	}
@@ -219,7 +227,7 @@ function request_data(number) {
 	$.post('index_get.php', {id: number,live: live_mode}, function(data) {
 		var line = data.split("\t");
 
-		if (line.length == 17){
+		if (line.length == 19){
 			
 			var timestamp = line[0];
 			var id = parseInt(line[1]);
@@ -241,6 +249,10 @@ function request_data(number) {
 			
 			var g_state = parseFloat(line[15]);
 			var c_state = parseFloat(line[16]);
+			
+			var new_lat = parseFloat(line[17]);
+			var new_lon = parseFloat(line[18]);
+			update_gps(new_lat,new_lon);	
 			current_id = id;
 			timestampdiv.innerHTML = timestamp;
 			
@@ -334,18 +346,6 @@ function request_data(number) {
 		}		
 	});
 }
-
-
-
-</script>
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-  ga('create', 'UA-76741703-1', 'auto');
-  ga('send', 'pageview');
 
 </script>
 </body>

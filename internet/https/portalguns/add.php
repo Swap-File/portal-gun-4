@@ -12,8 +12,8 @@ try {
 
 	if (count($last_result) > 0 ) {
 
-		$stmt = $conn->prepare("INSERT INTO log (img,ip,g_state,c_state,g_lag,c_lag,g_temp1,c_temp1,g_temp2,c_temp2,g_volts,c_volts,g_live,c_live,synced,keyframe)
-		VALUES (:img,:ip,:g_state,:c_state,:g_lag,:c_lag,:g_temp1,:c_temp1,:g_temp2,:c_temp2,:g_volts,:c_volts,:g_live,:c_live,:synced,:keyframe)");
+		$stmt = $conn->prepare("INSERT INTO log (img,ip,g_state,c_state,g_lag,c_lag,g_temp1,c_temp1,g_temp2,c_temp2,g_volts,c_volts,g_live,c_live,synced,keyframe,lat,lon)
+		VALUES (:img,:ip,:g_state,:c_state,:g_lag,:c_lag,:g_temp1,:c_temp1,:g_temp2,:c_temp2,:g_volts,:c_volts,:g_live,:c_live,:synced,:keyframe,:lat,:lon)");
 
 		$imageData = file_get_contents($_FILES["img"]["tmp_name"]);
 
@@ -41,6 +41,9 @@ try {
 		$stmt->bindParam(':synced', $_POST["synced"], PDO::PARAM_INT);
 		$stmt->bindParam(':keyframe', $_POST["keyframe"], PDO::PARAM_INT);
 
+		$stmt->bindParam(':lat', $_POST["lat"], PDO::PARAM_STR);
+		$stmt->bindParam(':lon', $_POST["lon"], PDO::PARAM_STR);
+		
 		$stmt->execute();
 
 	}
