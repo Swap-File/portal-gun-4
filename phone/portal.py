@@ -2,7 +2,14 @@ from androidhelper import Android
 import time
 import requests
 import re
+import os
 import pprint
+import subprocess
+import requests
+import socket
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import android
+
 requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = "ALL"
 droid = Android() 
 droid.wakeLockAcquirePartial()
@@ -11,6 +18,51 @@ delay = 2
 
 auth = ('', '')
 url_upload = 'https://portalguns.com/upload/add.php'
+
+droid.startLocating()
+
+print ("BT Scan Active")
+
+res = droid.getInternetInterfaceAddress().result
+bt_pan_addresses = res.get('bt-pan', [])
+local_ip = next((ip for ip in bt_pan_addresses if '.' in ip), None)
+
+print("My IP:", local_ip)
+
+def check_host(ip):
+    url = f"http://{ip}:8020/tmp/portal.txt"
+    try:
+        r = requests.get(url, timeout=1)
+        if r.status_code == 200:
+            print(f"✅ Found Gordon at {ip}")
+            return ip
+    except:
+        pass
+    return None
+
+base_ip = ".".join(local_ip.split(".")[:-1])
+
+remote_ip = None
+
+with ThreadPoolExecutor(max_workers=50) as executor:
+    futures = [executor.submit(check_host, f"{base_ip}.{i}") for i in range(1, 255)]
+
+    for future in as_completed(futures):
+        result = future.result()
+        if result:
+            remote_ip = result
+            break
+
+print("Result:", remote_ip)
+
+print ("Building URLs...")
+url_gordon_data = 'http://' + remote_ip + ':8020/portal.php'
+url_chell_data = 'http://' + remote_ip + ':8021/portal.php'
+url_gordon_image = 'http://' + remote_ip + ':8020/tmp/snapshot.jpg'
+url_chell_image = 'http://' + remote_ip + ':8021/tmp/snapshot.jpg'
+print ('Gordon: http://' + remote_ip +':8020')
+print ('Chell: http://' + remote_ip +':8021')
+
 
 gordon_packet_id_last = -1
 chell_packet_id_last = -1
@@ -27,7 +79,6 @@ gordon_last_state = 0
 cycle = 0
 
 requests.packages.urllib3.disable_warnings()
-ip = ""
 
 def upload_data():
 	global cycle
@@ -143,11 +194,12 @@ def upload_data():
 		gordon_last_state = 0
 
 	retries = 0
+	files = {'img':('img', b'') };
 	while retries < 2:
 		try:
 			retries = retries + 1
 			#determine which gun if any to get image from
-			files = {};
+			
 			if payload['c_state'] < -2:
 				files['img'] = ('i.jpg', session_chell.get(url_chell_image,timeout=1).content)
 
@@ -161,6 +213,7 @@ def upload_data():
 	if cycle > 0:
 		try:
 			upload_result = session_upload.post(url_upload,data=payload, auth=auth,files=files, verify=False)
+			#print(upload_result) 
 			upload_result = str( upload_result.content, encoding=upload_result.encoding )
 			gordon_last_state = payload['g_state']
 			chell_last_state = payload['c_state']
@@ -170,41 +223,6 @@ def upload_data():
 		print("Warming...")
 
 	cycle = cycle + 1
-
-print ("BT Scan Active")
-while (ip == ""):
-    fullfile = open('/proc/net/arp', 'r').read()
-    results = re.findall( r'[0-9]+(?:\.[0-9]+){3}', fullfile )
-
-    for item in results:
-        print ("Trying Gordon at " + item)
-        try:
-            requests.get("http://" + item + ":8020/tmp/portal.txt",timeout=1)
-        except:
-            print ("Gordon Failed")
-        else:
-            print ("Found Gordon")
-            ip = item
-            break
-
-        print ("Trying Chell at " + item)
-        try:
-            requests.get("http://" + item + ":8021/tmp/portal.txt",timeout=1)
-        except:
-            print ("Chell Failed")
-        else:
-            print ("Found Chell")
-            ip = item
-            break
-    time.sleep(5)
-
-print ("Building URLs...")
-url_gordon_data = 'http://' + ip + ':8020/portal.php'
-url_chell_data = 'http://' + ip + ':8021/portal.php'
-url_gordon_image = 'http://' + ip + ':8020/tmp/snapshot.jpg'
-url_chell_image = 'http://' + ip + ':8021/tmp/snapshot.jpg'
-print ('Gordon: http://' + ip +':8020')
-print ('Chell: http://' + ip +':8021')
 
 print("Warming")
 upload_data()
